@@ -47,7 +47,7 @@ src/$(1)/.patched-all:
 output/$(1)_libretro.so: src/$(1)/.patched src/$(1)/.patched-all
 	mkdir -p output
 	cd src/$$($1_BUILD_PATH) && $$($1_MAKE) $(PROCS)
-	mv src/$$($1_BUILD_PATH)/$(if $($(1)_CORE),$($(1)_CORE),$(1)_libretro.so) ./output
+	cp src/$$($1_BUILD_PATH)/$(if $($(1)_CORE),$($(1)_CORE),$(1)_libretro.so) ./output
 
 clone-$(1): src/$(1)
 

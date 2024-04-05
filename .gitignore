@@ -7,7 +7,6 @@
 
 build
 releases
-toolchains
 libretro-common
 
 **/cores/src
@@ -19,6 +18,8 @@ libretro-common
 **/other/sdl12-compat
 **/other/unzip60
 **/other/DinguxCommander
+**/other/__DINGUX
+**/other/_DinguxCommander
 
 **/tmp
 
@@ -26,3 +27,8 @@ workspace/hash.txt
 workspace/readmes
 
 FAKESD
+skeleton/BASE/Bios/GBA/gba_bios.bin
+skeleton/BASE/Roms/Game Boy Advance (GBA)/castlevania_aria_of_sorrow_eur.gba
+skeleton/BASE/Roms/Game Boy Advance (GBA)/Wario Ware Inc.gba
+skeleton/EXTRAS/Roms/Game Boy Advance (MGBA)/Wario Ware Inc.gba
+skeleton/EXTRAS/Roms/Pico-8 (P8)/194-8.p8.png
