@@ -5,7 +5,7 @@
 #define INHIBIT(X) /* X */
 
 #ifndef FONTS
-#define FONTS {"FreeSans.ttf",19}
+#define FONTS {"FreeSans.ttf",20}
 #endif
 
 // Font stack to use on screens with low DPI.
