@@ -1849,6 +1849,13 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		
 		break;
 	}
+	case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT: {
+		//puts("RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT"); fflush(stdout);
+		int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
+		if (data)
+            *(int*)data = result;
+			break;
+	}
 	
 	// unused
 	// case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK: {
