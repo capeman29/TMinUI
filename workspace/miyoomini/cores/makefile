@@ -1,5 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
-CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race
+CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom puae mame2003-plus 
+
 
 ###############################
 
@@ -38,6 +39,30 @@ pokemini_MAKEFILE = Makefile.libretro
 snes9x2005_plus_REPO = https://github.com/libretro/snes9x2005
 snes9x2005_plus_FLAGS = USE_BLARGG_APU=1
 
+
+mame2003-plus_REPO = https://github.com/libretro/mame2003-plus-libretro
+mame2003-plus_CORE = mame2003_plus_libretro.so
+
+fbneo_REPO = https://github.com/libretro/fbneo
+fbneo_CORE = fbneo_libretro.so
+#same version as garlicos
+fbneo_HASH = db9f7e9
+fbneo_BUILD_PATH = fbneo/src/burner/libretro
+
+prboom_REPO = https://github.com/libretro/libretro-prboom
+prboom_CORE = prboom_libretro.so
+
+retroarch_REPO = https://github.com/libretro/RetroArch
+retroarch_CORE = retroarch.elf
+#retroarch 1.14
+#retroarch_HASH = ad89b0c 
+#retroarch 1.15
+retroarch_HASH = 6616b80
+retroarch_MAKEFILE = Makefile.miyoo
+
+puae_REPO = https://github.com/libretro/libretro-uae
+puae_BR = 2.6.1
+puae_CORE = puae2021_libretro.so
 ###############################
 
 include ../../all/cores/makefile

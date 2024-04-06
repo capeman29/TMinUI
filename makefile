@@ -5,7 +5,7 @@
 
 ifeq (,$(PLATFORMS))
 PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel
-PLATFORMS = rg35xx miyoomini
+PLATFORMS = miyoomini
 endif
 
 ###########################################################
@@ -13,7 +13,7 @@ endif
 BUILD_HASH:=$(shell git rev-parse --short HEAD)
 RELEASE_TIME:=$(shell TZ=GMT date +%Y%m%d)
 RELEASE_BETA=b
-RELEASE_BASE=MinUI-$(RELEASE_TIME)$(RELEASE_BETA)
+RELEASE_BASE=MyMinUI-$(RELEASE_TIME)$(RELEASE_BETA)
 RELEASE_DOT:=$(shell find ./releases/. | grep -e ".*/${RELEASE_BASE}-[0-9]+-base\.zip" | wc -l | sed 's/ //g')
 RELEASE_NAME=$(RELEASE_BASE)-$(RELEASE_DOT)
 
@@ -77,6 +77,17 @@ ifneq ($(PLATFORM),gkdpixel)
 	cp ./workspace/$(PLATFORM)/cores/output/mednafen_supafaust_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/SUPA.pak
 	cp ./workspace/$(PLATFORM)/cores/output/mednafen_vb_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/VB.pak
 endif
+#ifeq ($(PLATFORM),rg35xx)
+ifneq (,$(filter $(PLATFORM), rg35xx miyoomini))
+	cp ./workspace/$(PLATFORM)/cores/output/puae2021_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/PUAE.pak
+	cp ./workspace/$(PLATFORM)/cores/output/mame2003_plus_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/MAME.pak
+	cp ./workspace/$(PLATFORM)/cores/output/fbneo_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/FBN.pak
+	cp ./workspace/$(PLATFORM)/cores/output/prboom_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/DOOM.pak
+endif
+ifeq ($(PLATFORM),rg35xx)
+	cp ./workspace/$(PLATFORM)/cores/output/retroarch.elf ./build/SYSTEM/$(PLATFORM)/bin/
+endif
+
 endif
 
 common: build system cores
@@ -146,8 +157,21 @@ package: tidy
 	mv ./build/PAYLOAD/MinUI.zip ./build/BASE
 	
 	# TODO: can I just add everything in BASE to zip?
-	cd ./build/BASE && zip -r ../../releases/$(RELEASE_NAME)-base.zip Bios Roms Saves miyoo miyoo354 trimui rg35xx rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
-	cd ./build/EXTRAS && zip -r ../../releases/$(RELEASE_NAME)-extras.zip Bios Emus Roms Saves Tools README.txt
+#	cd ./build/BASE && zip -r ../../releases/$(RELEASE_NAME)-base.zip Bios Roms Saves miyoo miyoo354 trimui rg35xx rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
+#	cd ./build/EXTRAS && zip -r ../../releases/$(RELEASE_NAME)-extras.zip Bios Emus Roms Saves Tools README.txt
+	
+	
+	rm -fr ./build/FULL
+	mkdir ./build/FULL
+	cp -fR ./build/BASE/* ./build/FULL/
+	cp -fR ./build/EXTRAS/* ./build/FULL/
+	rm -rf ./build/BASE
+	rm -rf ./build/EXTRAS
+	rm -rf ./build/PAYLOAD
+	rm -rf ./build/BOOT
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORMS).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xx rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
+	
+	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
 	
 
