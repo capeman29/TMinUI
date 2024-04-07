@@ -155,6 +155,32 @@ void getParentFolderName(const char* in_name, char* out_name) { // NOTE: both ch
 }
 
 
+//get the name of the parent directory removing parentesys
+void getDisplayParentFolderName(const char* in_name, char* out_name) { // NOTE: both char arrays need to be MAX_PATH length!
+	char* tmp, *tmp3;
+	strcpy(out_name, in_name);
+	tmp = out_name;
+
+	// printf("--------\n  in_name: %s\n",in_name); fflush(stdout);
+	
+	// extract just the Roms folder name if necessary
+	if (prefixMatch(ROMS_PATH, tmp)) {
+		tmp += strlen(ROMS_PATH) + 1;
+		char* tmp2 = strchr(tmp, '/');
+		if (tmp2) tmp2[0] = '\0';
+		// printf("    tmp1: %s\n", tmp);
+		strcpy(out_name, tmp);
+		tmp = out_name;
+	}
+	//remove parentesys as we need only the system name
+	tmp3 = strrchr(tmp, '(');
+	if (tmp3) {
+		tmp = strtok(tmp,"(");
+		tmp = out_name;
+	}
+}
+
+
 // end boxarts
 
 

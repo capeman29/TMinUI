@@ -14,6 +14,7 @@ void getEmuPath(char* emu_name, char* pak_path);
 //boxarts
 void getDisplayNameParens(const char* in_name, char* out_name);
 void getParentFolderName(const char* in_name, char* out_name);
+void getDisplayParentFolderName(const char* in_name, char* out_name);
 // end boxarts
 
 void normalizeNewline(char* line);

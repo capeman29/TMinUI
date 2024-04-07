@@ -427,6 +427,14 @@ static int restore_selected = 0;
 static int restore_start = 0;
 static int restore_end = 0;
 
+
+#define STANDARD_MODE "Standard"
+#define SIMPLE_MODE "Simple (no Setting)"
+#define FANCY_MODE "Fancy (Boxart + State)"
+
+static int fancy_mode = 0;
+
+
 ///////////////////////////////////////
 
 #define MAX_RECENTS 24 // a multiple of all menu rows
@@ -1010,8 +1018,9 @@ static void readyResumePath(char* rom_path, int type) {
 	tmp = strrchr(path, '/') + 1;
 	strcpy(rom_file, tmp);
 	
-	sprintf(slot_path, "%s/.minui/%s/%s.txt", SHARED_USERDATA_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext.txt
 	sprintf(slot_path_rom, "%s/.minui/%s/%s", SHARED_USERDATA_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext
+	sprintf(slot_path, "%s.txt", slot_path_rom); // /.userdata/.minui/<EMU>/<romname>.ext.txt
+	
 	can_resume = exists(slot_path);
 }
 static void readyResume(Entry* entry) {
@@ -1159,7 +1168,7 @@ static void openDirectory(char* path, int auto_launch) {
 	
 	top = Directory_new(path, selected);
 	top->start = start;
-	top->end = end ? end : ((top->entries->count<MAIN_ROW_COUNT) ? top->entries->count : MAIN_ROW_COUNT);
+	top->end = end ? end : ((top->entries->count < ( MAIN_ROW_COUNT + fancy_mode )) ? top->entries->count : ( MAIN_ROW_COUNT + fancy_mode ));
 
 	Array_push(stack, top);
 }
@@ -1251,10 +1260,10 @@ static void loadLast(void) { // call after loading root directory
 					top->selected = i;
 					if (i>=top->end) {
 						top->start = i;
-						top->end = top->start + MAIN_ROW_COUNT;
+						top->end = top->start + ( MAIN_ROW_COUNT + fancy_mode );
 						if (top->end>top->entries->count) {
 							top->end = top->entries->count;
-							top->start = top->end - MAIN_ROW_COUNT;
+							top->start = top->end - ( MAIN_ROW_COUNT + fancy_mode );
 						}
 					}
 					if (last->count==0 && !exactMatch(entry->path, FAUX_RECENT_PATH) && !(!exactMatch(entry->path, COLLECTIONS_PATH) && prefixMatch(COLLECTIONS_PATH, entry->path))) break; // don't show contents of auto-launch dirs
@@ -1354,9 +1363,21 @@ static void Menu_quit(void) {
 ///////////////////////////////////////
 
 int main (int argc, char *argv[]) {
-	if (autoResume()) return 0; // nothing to do
-	
+	if (autoResume()) return 0; // nothing to do	
+		
+	char modeStr[256]; 
+	char tmpName[256];
+	sprintf(modeStr, STANDARD_MODE);
 	simple_mode = exists(SIMPLE_MODE_PATH);
+	fancy_mode = exists(FANCY_MODE_PATH);
+	if (simple_mode){
+		sprintf(modeStr, SIMPLE_MODE);
+	}
+	if (fancy_mode){
+		simple_mode = 0;
+		sprintf(modeStr, FANCY_MODE);
+	}
+	
 
 	LOG_info("MinUI\n");
 	InitSettings();
@@ -1376,6 +1397,7 @@ int main (int argc, char *argv[]) {
 
 	PAD_reset();
 	int dirty = 1;
+	int mode_changed = 0;
 	int show_version = 0;
 	int show_setting = 0; // 1=brightness,2=volume
 	int was_online = PLAT_isOnline();
@@ -1399,6 +1421,32 @@ int main (int argc, char *argv[]) {
 				show_version = 0;
 				dirty = 1;
 				if (!HAS_POWER_BUTTON && !simple_mode) PWR_disableSleep();
+				if (mode_changed) { quit = 1;}
+			}
+			if (PAD_justPressed(BTN_UP) || PAD_justPressed(BTN_DOWN)){
+				
+				if (fancy_mode) {
+					// go to standard mode
+					remove(FANCY_MODE_PATH);
+					fancy_mode=0;
+					simple_mode=0;
+					sprintf(modeStr, STANDARD_MODE);
+				} else if (simple_mode) {
+					// go to fancy_mode
+					remove(SIMPLE_MODE_PATH);
+					touch(FANCY_MODE_PATH);
+					simple_mode = 0;
+					fancy_mode = 1;
+					sprintf(modeStr, FANCY_MODE);
+				} else {
+					//go to simple mode
+					touch(SIMPLE_MODE_PATH);
+					simple_mode = 1;
+					fancy_mode = 0;
+					sprintf(modeStr, SIMPLE_MODE);
+				}
+				mode_changed = 1;
+				dirty = 1;
 			}
 		}
 		else {
@@ -1416,7 +1464,7 @@ int main (int argc, char *argv[]) {
 						selected -= 1;
 						if (selected<0) {
 							selected = total-1;
-							int start = total - MAIN_ROW_COUNT;
+							int start = total - ( MAIN_ROW_COUNT + fancy_mode );
 							top->start = (start<0) ? 0 : start;
 							top->end = total; 
 						}
@@ -1435,7 +1483,7 @@ int main (int argc, char *argv[]) {
 						if (selected>=total) {
 							selected = 0;
 							top->start = 0;
-							top->end = (total<MAIN_ROW_COUNT) ? total : MAIN_ROW_COUNT;
+							top->end = (total<( MAIN_ROW_COUNT + fancy_mode )) ? total : ( MAIN_ROW_COUNT + fancy_mode );
 						}
 						else if (selected>=top->end) {
 							top->start += 1;
@@ -1468,30 +1516,30 @@ int main (int argc, char *argv[]) {
 					myentry = NULL;
 				}
 				if (PAD_justRepeated(BTN_L2)) {
-					selected -= MAIN_ROW_COUNT;
+					selected -= ( MAIN_ROW_COUNT + fancy_mode );
 					if (selected<0) {
 						selected = 0;
 						top->start = 0;
-						top->end = (total<MAIN_ROW_COUNT) ? total : MAIN_ROW_COUNT;
+						top->end = (total<( MAIN_ROW_COUNT + fancy_mode )) ? total : ( MAIN_ROW_COUNT + fancy_mode );
 					}
 					else if (selected<top->start) {
-						top->start -= MAIN_ROW_COUNT;
+						top->start -= ( MAIN_ROW_COUNT + fancy_mode );
 						if (top->start<0) top->start = 0;
-						top->end = top->start + MAIN_ROW_COUNT;
+						top->end = top->start + ( MAIN_ROW_COUNT + fancy_mode );
 					}
 				}
 				else if (PAD_justRepeated(BTN_R2)) {
-					selected += MAIN_ROW_COUNT;
+					selected += ( MAIN_ROW_COUNT + fancy_mode );
 					if (selected>=total) {
 						selected = total-1;
-						int start = total - MAIN_ROW_COUNT;
+						int start = total - ( MAIN_ROW_COUNT + fancy_mode );
 						top->start = (start<0) ? 0 : start;
 						top->end = total;
 					}
 					else if (selected>=top->end) {
-						top->end += MAIN_ROW_COUNT;
+						top->end += ( MAIN_ROW_COUNT + fancy_mode );
 						if (top->end>total) top->end = total;
-						top->start = top->end - MAIN_ROW_COUNT;
+						top->start = top->end - ( MAIN_ROW_COUNT + fancy_mode );
 					}
 				}
 			}
@@ -1501,11 +1549,11 @@ int main (int argc, char *argv[]) {
 				int i = entry->alpha-1;
 				if (i>=0) {
 					selected = top->alphas->items[i];
-					if (total>MAIN_ROW_COUNT) {
+					if (total>( MAIN_ROW_COUNT + fancy_mode )) {
 						top->start = selected;
-						top->end = top->start + MAIN_ROW_COUNT;
+						top->end = top->start + ( MAIN_ROW_COUNT + fancy_mode );
 						if (top->end>total) top->end = total;
-						top->start = top->end - MAIN_ROW_COUNT;
+						top->start = top->end - ( MAIN_ROW_COUNT + fancy_mode );
 					}
 				}
 			}
@@ -1514,11 +1562,11 @@ int main (int argc, char *argv[]) {
 				int i = entry->alpha+1;
 				if (i<top->alphas->count) {
 					selected = top->alphas->items[i];
-					if (total>MAIN_ROW_COUNT) {
+					if (total>( MAIN_ROW_COUNT + fancy_mode )) {
 						top->start = selected;
-						top->end = top->start + MAIN_ROW_COUNT;
+						top->end = top->start + ( MAIN_ROW_COUNT + fancy_mode );
 						if (top->end>total) top->end = total;
-						top->start = top->end - MAIN_ROW_COUNT;
+						top->start = top->end - ( MAIN_ROW_COUNT + fancy_mode );
 					}
 				}
 			}
@@ -1559,7 +1607,7 @@ int main (int argc, char *argv[]) {
 			int ow = GFX_blitHardwareGroup(screen, show_setting);
 			
 			if (show_version) {
-				if (!version) {
+				//if (!version) {
 					char release[256];
 					getFile(ROOT_SYSTEM_PATH "/version.txt", release, 256);
 					
@@ -1613,14 +1661,20 @@ int main (int argc, char *argv[]) {
 					SDL_FreeSurface(hash_txt);
 					SDL_FreeSurface(key_txt);
 					SDL_FreeSurface(val_txt);
-				}
+					SDL_Surface* fixedmode_txt = TTF_RenderUTF8_Blended(font.large, "Mode", COLOR_DARK_TEXT);
+					SDL_Surface* mode_txt = TTF_RenderUTF8_Blended(font.large, modeStr, COLOR_WHITE);
+					SDL_BlitSurface(fixedmode_txt, NULL, version, &(SDL_Rect){0,SCALE1(VERSION_LINE_HEIGHT*2)});
+					SDL_BlitSurface(mode_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT*2)});
+					SDL_FreeSurface(fixedmode_txt);
+					SDL_FreeSurface(mode_txt);
+				//}
 				SDL_BlitSurface(version, NULL, screen, &(SDL_Rect){(screen->w-version->w)/2,(screen->h-version->h)/2});
 				
 				// buttons (duped and trimmed from below)
 				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
 				else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU","SHUTDOWN",  NULL }, 0, screen, 0);
 				
-				GFX_blitButtonGroup((char*[]){ "B","BACK",  NULL }, 0, screen, 1);
+				GFX_blitButtonGroup((char*[]){ "UP/DOWN", "MODE", "B","BACK",  NULL }, 0, screen, 1);
 			}
 			else {
 				// list
@@ -1630,6 +1684,7 @@ int main (int argc, char *argv[]) {
 
 
 					/*  start entry for boxart and save state preview window*/
+				if (fancy_mode) {  //only when fancy_mode is active
 					Entry* myentry = top->entries->items[top->selected];
 					//if (myentry1->type == ENTRY_ROM) {
 					// current filename path is entry->path
@@ -1643,18 +1698,27 @@ int main (int argc, char *argv[]) {
 					//top->path;
 					getParentFolderName(myentry->path, myEmuName);
 					getDisplayNameParens(myentry->path, myRomName);
-					sprintf(myBoxart_path, "/%s/Imgs/%s.png", myEmuName , myRomName);
-					//printf("Current item name = %s\nCurrent Item path = %s\nCurrent Item Type = %d\nCurrent Item Save present = %d\nCurrent Item Last Save Slot = %d\nCurrent Item Slot bmp file = %s\nCurrent Item boxart Img = %s\n\n", 
-					//				myentry->name, myentry->path, myentry->type, can_resume, (can_resume) ? getInt(slot_path) : -1, myslot_path, myBoxart_path);
-					//fflush(stdout);
+					if ( myentry->type == ENTRY_ROM) {
+						sprintf(myBoxart_path, ROMS_PATH "/%s/Imgs/%s.png", myEmuName , myRomName);
+					} else if ( myentry->type == ENTRY_DIR ) {
+						sprintf(myBoxart_path,  "%s/Imgs/%s.png", myentry->path, myEmuName);
+					} else { //pak
+						sprintf(myBoxart_path, "%s/Imgs/%s.png", myentry->path, myentry->name);
+					}
+					/*
+					printf("\n\nCurrent item name = %s\nCurrent Item path = %s\nCurrent Item Type = %d\nCurrent Item Save present = %d\nCurrent Item Last Save Slot = %d\nCurrent Item Slot bmp file = %s\nCurrent Item boxart Img = %s\n", 
+									myentry->name, myentry->path, myentry->type, can_resume, (can_resume) ? getInt(slot_path) : -1, myslot_path, myBoxart_path);
+					fflush(stdout);
+					*/
 					// the boxart should be entry->path ../Imgs/entry->name.png
 
 					// print the boxart
-
-					drawBoxart(screen,myBoxart_path);
+					if (exists(myBoxart_path)){
+						drawBoxart(screen,myBoxart_path);
+					}
 					// end print boxart
 					//print the state slot preview if present
-					if (can_resume) {
+					if (can_resume && (myentry->type == ENTRY_ROM)) {
 						drawStatePreview(screen, myslot_path, getInt(slot_path));	
 					}
 
@@ -1663,23 +1727,37 @@ int main (int argc, char *argv[]) {
 					GFX_blitHardwareGroup(screen, show_setting);
 					// the slot bmp should be in minui_path/EmuName/entry->name
 					/* end for boxart and save state preview window, now print the text and the buttons */
-
+				}
 
 					for (int i=top->start,j=0; i<top->end; i++,j++) {
 						Entry* entry = top->entries->items[i];
 						char* entry_name = entry->name;
 						char* entry_unique = entry->unique;
-						int available_width = screen->w - SCALE1(PADDING * 2);
-						if (i==top->start) available_width -= ow;
-					
+
+						int available_width = 0;
+						TTF_Font *_font = font.large;
 						SDL_Color text_color = COLOR_WHITE;
+						available_width = FIXED_WIDTH - SCALE1(PADDING * 2);
+						if (fancy_mode) {
+							_font = font.medium;
+							available_width = FIXED_WIDTH / 2;
+							text_color = COLOR_GRAY;
+						}
+						
+						if ((j==selected_row) && (fancy_mode)) {
+							text_color = COLOR_WHITE;
+							_font = font.large;
+							available_width = FIXED_WIDTH - SCALE1(PADDING * 2);				
+						} 
+						if ((i==top->start) && !(fancy_mode) ) available_width -= ow;
 					
+											
 						trimSortingMeta(&entry_name);
 					
 						char display_name[256];
-						int text_width = GFX_truncateText(font.large, entry_unique ? entry_unique : entry_name, display_name, available_width, SCALE1(BUTTON_PADDING*2));
+						int text_width = GFX_truncateText(_font, entry_unique ? entry_unique : entry_name, display_name, available_width, SCALE1(BUTTON_PADDING*2));
 						int max_width = MIN(available_width, text_width);
-						if (j==selected_row) {
+						if ((j==selected_row) && !(fancy_mode)) {
 							GFX_blitPill(ASSET_WHITE_PILL, screen, &(SDL_Rect){
 								SCALE1(PADDING),
 								SCALE1(PADDING+(j*PILL_SIZE)),
@@ -1687,36 +1765,52 @@ int main (int argc, char *argv[]) {
 								SCALE1(PILL_SIZE)
 							});
 							text_color = COLOR_BLACK;
-						}
-						else if (entry->unique) {
+						}	else if (entry->unique) {
 							trimSortingMeta(&entry_unique);
 							char unique_name[256];
-							GFX_truncateText(font.large, entry_unique, unique_name, available_width, SCALE1(BUTTON_PADDING*2));
+							GFX_truncateText(_font, entry_unique, unique_name, available_width, SCALE1(BUTTON_PADDING*2));
 						
-							SDL_Surface* text = TTF_RenderUTF8_Blended(font.large, unique_name, COLOR_DARK_TEXT);
+							SDL_Surface* text = TTF_RenderUTF8_Blended(_font, unique_name, COLOR_DARK_TEXT);
 							SDL_BlitSurface(text, &(SDL_Rect){
 								0,
 								0,
 								max_width-SCALE1(BUTTON_PADDING*2),
 								text->h
 							}, screen, &(SDL_Rect){
-								SCALE1(PADDING+BUTTON_PADDING),
-								SCALE1(PADDING+(j*PILL_SIZE)+4)
+								//SCALE1(PADDING+BUTTON_PADDING),
+								//SCALE1(PADDING+(j*PILL_SIZE)+4)
+								SCALE1(PADDING+BUTTON_PADDING-(PADDING*fancy_mode)),
+								SCALE1(PADDING+(j*(PILL_SIZE-(7*fancy_mode)))+((PILL_SIZE-(7*fancy_mode))*fancy_mode)+4)
 							});
 						
-							GFX_truncateText(font.large, entry_name, display_name, available_width, SCALE1(BUTTON_PADDING*2));
+							GFX_truncateText(_font, entry_name, display_name, available_width, SCALE1(BUTTON_PADDING*2));
 						}
-						SDL_Surface* text = TTF_RenderUTF8_Blended(font.large, display_name, text_color);
+						SDL_Surface* text = TTF_RenderUTF8_Blended(_font, display_name, text_color);
 						SDL_BlitSurface(text, &(SDL_Rect){
 							0,
 							0,
 							max_width-SCALE1(BUTTON_PADDING*2),
 							text->h
 						}, screen, &(SDL_Rect){
-							SCALE1(PADDING+BUTTON_PADDING),
-							SCALE1(PADDING+(j*PILL_SIZE)+4)
+							SCALE1(PADDING+BUTTON_PADDING-(PADDING*fancy_mode)),
+							SCALE1(PADDING+(j*(PILL_SIZE-(7*fancy_mode))+((PILL_SIZE-(7*fancy_mode))*fancy_mode)+4))
 						});
 						SDL_FreeSurface(text);
+						}
+						if (fancy_mode){		
+								//sprintf(tmpName,"                 ");	
+								Entry * entry =top->entries->items[top->selected];			
+								if (entry->type == ENTRY_ROM) {								
+									getDisplayParentFolderName(entry->path, tmpName);
+									//getEmuName(entry->path, tmpName);
+								} else if (entry->type == ENTRY_PAK){
+									sprintf(tmpName, "Tools");
+								} else {
+									sprintf(tmpName, "Main Menu");
+								}
+								SDL_Surface* title_txt = TTF_RenderUTF8_Blended(font.small, tmpName, COLOR_WHITE);
+								SDL_BlitSurface(title_txt, NULL, screen, &(SDL_Rect){15, 0});
+								SDL_FreeSurface(title_txt);	
 					}
 				}
 				else {
