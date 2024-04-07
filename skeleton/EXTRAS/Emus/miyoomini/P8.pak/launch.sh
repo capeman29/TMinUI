@@ -1,7 +1,7 @@
 #!/bin/sh
 
 EMU_EXE=fake08
-CORES_PATH=$(dirname "$0")
+#CORES_PATH=$(dirname "$0")
 
 ###############################
 

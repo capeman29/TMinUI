@@ -1,7 +1,7 @@
 #!/bin/sh
 
 EMU_EXE=race
-CORES_PATH=$(dirname "$0")
+#CORES_PATH=$(dirname "$0")
 
 ###############################
 

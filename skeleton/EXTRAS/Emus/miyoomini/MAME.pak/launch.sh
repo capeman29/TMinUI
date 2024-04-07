@@ -1,7 +1,7 @@
 #!/bin/sh
 
 EMU_EXE=mame2003_plus
-CORES_PATH=$(dirname "$0")
+#CORES_PATH=$(dirname "$0")
 
 ###############################
 

@@ -47,46 +47,9 @@ system:
 	cp ./workspace/all/minput/build/$(PLATFORM)/minput.elf ./build/EXTRAS/Tools/$(PLATFORM)/Input.pak/
 	cp ./workspace/all/clear_recent/build/$(PLATFORM)/clear_recent.elf "./build/EXTRAS/Tools/$(PLATFORM)/Clear Recently Played.pak/"
 
-
-
-cores: # TODO: can't assume every platform will have the same stock cores (platform should be responsible for copy too)
-	# stock cores
-	cp ./workspace/$(PLATFORM)/cores/output/fceumm_libretro.so ./build/SYSTEM/$(PLATFORM)/cores
-	cp ./workspace/$(PLATFORM)/cores/output/gambatte_libretro.so ./build/SYSTEM/$(PLATFORM)/cores
-	cp ./workspace/$(PLATFORM)/cores/output/gpsp_libretro.so ./build/SYSTEM/$(PLATFORM)/cores
-	cp ./workspace/$(PLATFORM)/cores/output/picodrive_libretro.so ./build/SYSTEM/$(PLATFORM)/cores
-ifneq ($(PLATFORM),trimui)
-	cp ./workspace/$(PLATFORM)/cores/output/snes9x2005_plus_libretro.so ./build/SYSTEM/$(PLATFORM)/cores
-	cp ./workspace/$(PLATFORM)/cores/output/pcsx_rearmed_libretro.so ./build/SYSTEM/$(PLATFORM)/cores
-	
-	# extras
-ifeq ($(PLATFORM), trimuismart)
-	cp ./workspace/miyoomini/cores/output/fake08_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/P8.pak
-else ifeq ($(PLATFORM), m17)
-	cp ./workspace/miyoomini/cores/output/fake08_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/P8.pak
-else ifneq ($(PLATFORM),gkdpixel)
-	cp ./workspace/$(PLATFORM)/cores/output/fake08_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/P8.pak
-endif
-	cp ./workspace/$(PLATFORM)/cores/output/mgba_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/MGBA.pak
-	cp ./workspace/$(PLATFORM)/cores/output/mgba_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/SGB.pak
-	cp ./workspace/$(PLATFORM)/cores/output/mednafen_pce_fast_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/PCE.pak
-	cp ./workspace/$(PLATFORM)/cores/output/pokemini_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/PKM.pak
-	cp ./workspace/$(PLATFORM)/cores/output/race_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/NGP.pak
-	cp ./workspace/$(PLATFORM)/cores/output/race_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/NGPC.pak
-ifneq ($(PLATFORM),gkdpixel)
-	cp ./workspace/$(PLATFORM)/cores/output/mednafen_supafaust_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/SUPA.pak
-	cp ./workspace/$(PLATFORM)/cores/output/mednafen_vb_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/VB.pak
-endif
-#ifeq ($(PLATFORM),rg35xx)
-ifneq (,$(filter $(PLATFORM), rg35xx miyoomini))
-	cp ./workspace/$(PLATFORM)/cores/output/puae2021_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/PUAE.pak
-	cp ./workspace/$(PLATFORM)/cores/output/mame2003_plus_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/MAME.pak
-	cp ./workspace/$(PLATFORM)/cores/output/fbneo_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/FBN.pak
-	cp ./workspace/$(PLATFORM)/cores/output/prboom_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/DOOM.pak
-	cp ./workspace/$(PLATFORM)/cores/output/retroarch ./build/SYSTEM/$(PLATFORM)/bin/retroarch.elf
-endif
-
-endif
+cores:
+	cp ./workspace/$(PLATFORM)/cores/output/* ./build/SYSTEM/$(PLATFORM)/cores/
+	mv ./build/SYSTEM/$(PLATFORM)/cores/retroarch ./build/SYSTEM/$(PLATFORM)/bin/retroarch.elf
 
 common: build system cores
 	

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 EMU_EXE=mednafen_pce_fast
-CORES_PATH=$(dirname "$0")
+#CORES_PATH=$(dirname "$0")
 
 ###############################
 
