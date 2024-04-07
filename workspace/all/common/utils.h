@@ -11,6 +11,10 @@ int hide(char* file_name);
 void getDisplayName(const char* in_name, char* out_name);
 void getEmuName(const char* in_name, char* out_name);
 void getEmuPath(char* emu_name, char* pak_path);
+//boxarts
+void getDisplayNameParens(const char* in_name, char* out_name);
+void getParentFolderName(const char* in_name, char* out_name);
+// end boxarts
 
 void normalizeNewline(char* line);
 void trimTrailingNewlines(char* line);

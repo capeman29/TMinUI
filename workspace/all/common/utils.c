@@ -101,6 +101,64 @@ void getEmuPath(char* emu_name, char* pak_path) {
 	sprintf(pak_path, "%s/Emus/%s.pak/launch.sh", PAKS_PATH, emu_name);
 }
 
+//boxarts
+void getDisplayNameParens(const char* in_name, char* out_name) {
+	char* tmp;
+	char work_name[256];
+	strcpy(work_name, in_name);
+	strcpy(out_name, in_name);
+
+	if (suffixMatch("/" PLATFORM, work_name)) { // hide platform from Tools path...
+		tmp = strrchr(work_name, '/');
+		tmp[0] = '\0';
+	}
+
+	// extract just the filename if necessary
+	tmp = strrchr(work_name, '/');
+	if (tmp) strcpy(out_name, tmp+1);
+
+	// remove extension(s), eg. .p8.png
+	while ((tmp = strrchr(out_name, '.'))!=NULL) {
+		int len = strlen(tmp);
+		if (len>2 && len<=4) tmp[0] = '\0'; // 3 letter extension plus dot
+		else break;
+	}
+
+
+	// make sure we haven't nuked the entire name
+	if (out_name[0]=='\0') strcpy(out_name, work_name);
+
+	// remove trailing whitespace
+	tmp = out_name + strlen(out_name) - 1;
+    while(tmp>out_name && isspace((unsigned char)*tmp)) tmp--;
+    tmp[1] = '\0';
+}
+
+
+void getParentFolderName(const char* in_name, char* out_name) { // NOTE: both char arrays need to be MAX_PATH length!
+	char* tmp;
+	strcpy(out_name, in_name);
+	tmp = out_name;
+
+	// printf("--------\n  in_name: %s\n",in_name); fflush(stdout);
+
+	// extract just the Roms folder name if necessary
+	if (prefixMatch(ROMS_PATH, tmp)) {
+		tmp += strlen(ROMS_PATH) + 1;
+		char* tmp2 = strchr(tmp, '/');
+		if (tmp2) tmp2[0] = '\0';
+		// printf("    tmp1: %s\n", tmp);
+		strcpy(out_name, tmp);
+		tmp = out_name;
+	}
+
+}
+
+
+// end boxarts
+
+
+
 void normalizeNewline(char* line) {
 	int len = strlen(line);
 	if (len>1 && line[len-1]=='\n' && line[len-2]=='\r') { // windows!
