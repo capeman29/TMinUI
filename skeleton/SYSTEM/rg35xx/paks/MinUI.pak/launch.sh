@@ -26,8 +26,9 @@ echo on > /sys/devices/b0230000.mmc/mmc_host/mmc1/power/control
 #######################################
 
 export CPU_SPEED_MENU=504000
-export CPU_SPEED_GAME=1296000
-export CPU_SPEED_PERF=1488000
+export CPU_SPEED_GAME=1200000
+export CPU_SPEED_PERF=1392000
+export CPU_SPEED_MAX=1488000
 echo userspace > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 overclock.elf $CPU_SPEED_PERF
 

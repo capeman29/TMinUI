@@ -34,5 +34,5 @@ fi
 RA_HOME="${BIOS_PATH}/RETROARCH"
 cd "$RA_HOME"
 overclock.elf ${CPU_OC}
-retroarch.elf -v --config ${RA_HOME}/retroarch.cfg --appendconfig "${CORES_PATH}/specialcfg.cfg" -L "$CORES_PATH/${EMU_EXE}_libretro.so" "$ROM" &> "$LOGS_PATH/$EMU_TAG.txt"
+retroarch.elf -v --config ${RA_HOME}/${PLATFORM}/retroarch.cfg --appendconfig "${CORES_PATH}/specialcfg.cfg" -L "$CORES_PATH/${EMU_EXE}_libretro.so" "$ROM" &> "$LOGS_PATH/$EMU_TAG.txt"
 overclock.elf ${CPU_SPEED_MENU}

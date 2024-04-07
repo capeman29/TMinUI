@@ -65,10 +65,10 @@ static struct cpu_opp {
 	int volt;
 	char* desc;
 } cpu_opps[] = {
-	{1488000, 1375000}, // 1.5GHz, MinUI Performance + launch
-	{1392000, 1325000}, // 1.4GHz
-	{1296000, 1275000}, // 1.3GHz, MinUI Normal
-	{1200000, 1200000}, // 1.2GHz
+	{1488000, 1375000}, // 1.5GHz, MyMinUI Max
+	{1392000, 1325000}, // 1.4GHz  MyMinUI Performance + launch
+	{1296000, 1275000}, // 1.3GHz, 
+	{1200000, 1200000}, // 1.2GHz  MinUI Normal
 	{1104000, 1175000}, // 1.1GHz, MinUI Powersave
 	{1008000, 1100000}, // 1.0GHz, Anbernic default max, overvolted to stabilize
 	{ 840000, 1075000}, // 840MHz, overvolted to stabilize

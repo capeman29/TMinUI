@@ -773,6 +773,7 @@ static char* overclock_labels[] = {
 	"Powersave",
 	"Normal",
 	"Performance",
+	"Max",
 	NULL,
 };
 
@@ -836,7 +837,7 @@ static struct Config {
 				.desc	= "Over- or underclock the CPU to prioritize\npure performance or power savings.",
 				.default_value = 1,
 				.value = 1,
-				.count = 3,
+				.count = 4,
 				.values = overclock_labels,
 				.labels = overclock_labels,
 			},
@@ -906,6 +907,7 @@ static void setOverclock(int i) {
 		case 0: PWR_setCPUSpeed(CPU_SPEED_POWERSAVE); break;
 		case 1: PWR_setCPUSpeed(CPU_SPEED_NORMAL); break;
 		case 2: PWR_setCPUSpeed(CPU_SPEED_PERFORMANCE); break;
+		case 3: PWR_setCPUSpeed(CPU_SPEED_MAX); break;
 	}
 }
 static void Config_syncFrontend(char* key, int value) {

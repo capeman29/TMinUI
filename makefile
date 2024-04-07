@@ -4,8 +4,8 @@
 # it has to, otherwise we'd be running a docker in a docker and oof
 
 ifeq (,$(PLATFORMS))
-PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel
-PLATFORMS = miyoomini
+#PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel
+PLATFORMS = rg35xx miyoomini
 endif
 
 ###########################################################
@@ -22,7 +22,7 @@ RELEASE_NAME=$(RELEASE_BASE)-$(RELEASE_DOT)
 
 export MAKEFLAGS=--no-print-directory
 
-all: setup $(PLATFORMS) special package done
+all: setup $(PLATFORMS) done
 	
 shell:
 	make -f makefile.toolchain PLATFORM=$(PLATFORM)
@@ -83,9 +83,7 @@ ifneq (,$(filter $(PLATFORM), rg35xx miyoomini))
 	cp ./workspace/$(PLATFORM)/cores/output/mame2003_plus_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/MAME.pak
 	cp ./workspace/$(PLATFORM)/cores/output/fbneo_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/FBN.pak
 	cp ./workspace/$(PLATFORM)/cores/output/prboom_libretro.so ./build/EXTRAS/Emus/$(PLATFORM)/DOOM.pak
-endif
-ifeq ($(PLATFORM),rg35xx)
-	cp ./workspace/$(PLATFORM)/cores/output/retroarch.elf ./build/SYSTEM/$(PLATFORM)/bin/
+	cp ./workspace/$(PLATFORM)/cores/output/retroarch ./build/SYSTEM/$(PLATFORM)/bin/retroarch.elf
 endif
 
 endif
@@ -169,7 +167,7 @@ package: tidy
 	rm -rf ./build/EXTRAS
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORMS).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xx rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xx rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
@@ -181,46 +179,46 @@ package: tidy
 
 rg35xx:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 
 rg35xxplus:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 
 miyoomini:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 
 trimuismart:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 
 trimui:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 
 rgb30:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 
 tg5040:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 
 m17:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 
 gkdpixel:
 	# ----------------------------------------------------
-	make common PLATFORM=$@
+	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
 

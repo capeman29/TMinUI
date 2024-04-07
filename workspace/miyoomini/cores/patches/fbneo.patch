@@ -6,7 +6,7 @@ index 7d7002b3b..af4be5180 100644
  	CXXFLAGS += $(PLATFORM_FLAGS)
  #######################################
  
-+# RG35XX
++# MiyooMini
 +else ifeq ($(platform), miyoomini)
 +	TARGET := $(TARGET_NAME)_libretro.so
 +   CC = $(CROSS_COMPILE)gcc
@@ -14,13 +14,13 @@ index 7d7002b3b..af4be5180 100644
 +   AR = $(CROSS_COMPILE)ar
 +   SHARED := -shared -Wl,--version-script=link.T -Wl,-no-undefined
 +	fpic := -fPIC
-+	PLATFORM_FLAGS = -s -Ofast -marm -mtune=cortex-a7 -mfpu=neon-vfpv4  -mfloat-abi=hard -march=armv7ve -fomit-frame-pointer -flto
++	PLATFORM_FLAGS = -Ofast -marm -mtune=cortex-a7 -mfpu=neon-vfpv4  -mfloat-abi=hard -march=armv7ve -fomit-frame-pointer -flto
 +	USE_EXPERIMENTAL_FLAGS = 1
 +	HAVE_NEON = 1
 +	USE_CYCLONE = 1
 +	ARCH = arm
 +	ENDIANNESS_DEFINES := -DLSB_FIRST
-+	LDFLAGS += -lrt -lm -lpthread
++	LDFLAGS += -s -lrt -lm -lpthread
 +	CFLAGS += $(PLATFORM_FLAGS)
 +	CXXFLAGS += $(PLATFORM_FLAGS)
 +#######################################

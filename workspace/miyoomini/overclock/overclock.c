@@ -89,6 +89,7 @@ void set_cpuclock(int clock) {
 }
 
 int cpu_clocks[] = {
+	1800000, // 1.8GHz, Miyoo Mini Plus max
 	1700000, // 1.7GHz, Miyoo Mini max
 	1488000, // 1.5GHz, MinUI Performance + launch
 	1392000, // 1.4GHz

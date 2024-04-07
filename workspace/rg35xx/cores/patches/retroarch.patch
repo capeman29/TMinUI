@@ -11,10 +11,10 @@ index 0000000000..9a222c3c4f
 +# Default toolchain directory
 +TOOLCHAIN_DIR=/opt/rg35xx-toolchain/usr
 +MYHOST=arm-buildroot-linux-gnueabihf
-+ifeq ($(FBABI),softfp)
-+TOOLCHAIN_DIR=/opt/miyoo
-+MYHOST=arm-miyoo-linux-uclibcgnueabi
-+endif
++#ifeq ($(FBABI),softfp)
++#TOOLCHAIN_DIR=/opt/miyoo
++#MYHOST=arm-miyoo-linux-uclibcgnueabi
++#endif
 +
 +# All toolchain-related variables may be
 +# overridden via the command line
@@ -126,7 +126,7 @@ index 0000000000..9a222c3c4f
 +HAVE_NEAREST_RESAMPLER = 1
 +
 +OS = Linux
-+TARGET = retroarch.elf
++TARGET = retroarch
 +
 +OBJ :=
 +LINK := $(CXX)

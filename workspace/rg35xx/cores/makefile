@@ -52,7 +52,7 @@ prboom_REPO = https://github.com/libretro/libretro-prboom
 prboom_CORE = prboom_libretro.so
 
 retroarch_REPO = https://github.com/libretro/RetroArch
-retroarch_CORE = retroarch.elf
+retroarch_CORE = retroarch
 #retroarch 1.14
 retroarch_HASH = ad89b0c
 #retroarch 1.15

@@ -540,9 +540,10 @@ void PLAT_setCPUSpeed(int speed) {
 	int freq = 0;
 	switch (speed) {
 		case CPU_SPEED_MENU: 		freq =  504000; break;
-		case CPU_SPEED_POWERSAVE:	freq = 1104000; break;
-		case CPU_SPEED_NORMAL: 		freq = 1296000; break;
-		case CPU_SPEED_PERFORMANCE: freq = 1488000; break;
+		case CPU_SPEED_POWERSAVE:	freq = 1008000; break;
+		case CPU_SPEED_NORMAL: 		freq = 1200000; break;
+		case CPU_SPEED_PERFORMANCE: freq = 1392000; break;
+		case CPU_SPEED_MAX: 		freq = 1488000; break;
 	}
 	
 	char cmd[32];

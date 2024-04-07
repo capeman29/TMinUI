@@ -1,5 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom puae mame2003-plus 
+CORES += retroarch
 
 
 ###############################
@@ -52,13 +53,13 @@ fbneo_BUILD_PATH = fbneo/src/burner/libretro
 prboom_REPO = https://github.com/libretro/libretro-prboom
 prboom_CORE = prboom_libretro.so
 
-retroarch_REPO = https://github.com/libretro/RetroArch
-retroarch_CORE = retroarch.elf
+retroarch_REPO = https://github.com/OnionUI/RetroArch
+retroarch_CORE = retroarch
 #retroarch 1.14
 #retroarch_HASH = ad89b0c 
 #retroarch 1.15
-retroarch_HASH = 6616b80
-retroarch_MAKEFILE = Makefile.miyoo
+#retroarch_HASH = 6616b80
+#retroarch_MAKEFILE = Makefile.miyoo
 
 puae_REPO = https://github.com/libretro/libretro-uae
 puae_BR = 2.6.1
