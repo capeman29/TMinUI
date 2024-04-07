@@ -1453,7 +1453,7 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 		checked_charge_at = now;
 	}
 	
-	if (PAD_justReleased(BTN_POWEROFF) || (power_pressed_at && now-power_pressed_at>=1000)) {
+	if (PAD_justReleased(BTN_POWEROFF) || (power_pressed_at && now-power_pressed_at>=50)) {
 		if (before_sleep) {
 			before_sleep();
 		}

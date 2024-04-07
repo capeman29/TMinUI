@@ -1526,7 +1526,7 @@ int main (int argc, char *argv[]) {
 				
 				// buttons (duped and trimmed from below)
 				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
-				else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"POWER":"MENU","SLEEP",  NULL }, 0, screen, 0);
+				else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU","SHUTDOWN",  NULL }, 0, screen, 0);
 				
 				GFX_blitButtonGroup((char*[]){ "B","BACK",  NULL }, 0, screen, 1);
 			}
@@ -1597,8 +1597,8 @@ int main (int argc, char *argv[]) {
 				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
 				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RESUME",  NULL }, 0, screen, 0);
 				else GFX_blitButtonGroup((char*[]){ 
-					BTN_SLEEP==BTN_POWER?"POWER":"MENU",
-					BTN_SLEEP==BTN_POWER||simple_mode?"SLEEP":"INFO",  
+					BTN_SLEEP==BTN_POWER?"PWR":"MENU",
+					BTN_SLEEP==BTN_POWER||simple_mode?"SHUTDOWN":"INFO",  
 					NULL }, 0, screen, 0);
 			
 				if (total==0) {
