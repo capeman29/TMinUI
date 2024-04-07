@@ -25,7 +25,10 @@ int exactMatch(char* str1, char* str2) {
 	return (strncmp(str1,str2,len1)==0);
 }
 int hide(char* file_name) {
-	return file_name[0]=='.' || suffixMatch(".disabled", file_name) || exactMatch("map.txt", file_name);
+	int result = 0;
+	if (file_name[0]=='.' || suffixMatch(".disabled", file_name) || exactMatch("map.txt", file_name)) result = 1;
+	if (file_name[0] == 'I' && file_name[1] == 'm' && file_name[2] == 'g' && file_name[3] == 's' && file_name[4] == 0) result = 1; 
+	return result;
 }
 
 void getDisplayName(const char* in_name, char* out_name) {
