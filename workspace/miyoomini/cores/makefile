@@ -29,7 +29,9 @@ gambatte_REPO = https://github.com/libretro/gambatte-libretro
 
 mednafen_supafaust_REPO = https://github.com/libretro/supafaust
 
+pcsx_rearmed_REPO = https://github.com/KMFDManic/pcsx_rearmed
 pcsx_rearmed_MAKEFILE = Makefile.libretro
+
 
 picodrive_REPO = https://github.com/irixxxx/picodrive
 picodrive_MAKEFILE = Makefile.libretro
