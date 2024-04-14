@@ -4,6 +4,9 @@ MyMinUI is a fork of the latest MinUI, I like MinUI but I also like playing old 
 A missing feature when using MinUI with arcades is that while in the official MinUI's cores usually the name of the rom is enough to identifying a game with arcade the rom naming is quit difficult to decode so boxarts are nearly mandatory to properly identifying a game, that's why I spent a lot of time adding boxarts.
 I'm a player that uses a lot savestates, I really can't understand why almost all firmwares available in the retrogaming do not provide a way to select a specific slot with a graphical preview, when I saw for the first time the in game menu of MinUI I immediately felt that that was the way, then I added the minarch code to minui.   
 
+You can find the latest release here: https://github.com/Turro75/MyMinUI/releases
+
+
 
 Features from FinUI:
 - Add Favorites Collections (Press SELECT to toggle a rom)
