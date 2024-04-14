@@ -1,8 +1,8 @@
 # MyMinUI
 
 MyMinUI is a fork of the latest MinUI, I like MinUI but I also like playing old arcade coin up (thanks to FinUI) and DOOM which were missing so I added them. 
-A missing feature when using MinUI with arcades is that while in the official MinUI's cores usually the name of the rom is enough to identifying a game with arcade the rom naming is quit difficult to decode so boxarts are nearly mandatory to properly identifying a game, that's why I spent a lot of time adding boxarts.
-I'm a player that uses a lot savestates, I really can't understand why almost all firmwares available in the retrogaming do not provide a way to select a specific slot with a graphical preview, when I saw for the first time the in game menu of MinUI I immediately felt that that was the way, then I added the minarch code to minui.   
+A missing feature when using MinUI with arcades is that while in the official MinUI's cores usually the name of the rom is enough to identify a game with arcade the rom naming is quit difficult to decode so boxarts are nearly mandatory to properly identifying a game, that's why I spent a my time adding boxarts.
+Since I'm a player that uses a lot savestates, I really can't understand why almost any firmwares available in the retrogaming do not provide a way to select a specific slot with a graphical preview, when I saw for the first time the in game menu of MinUI I immediately felt that that was the way, then I added the minarch code to minui.   
 
 
 Features from FinUI:
@@ -29,7 +29,7 @@ New features of MyMinUI (RG35XX and MiyooMiniplus only):
       Boxarts must be png 640x480 (same garlic os format) and saved in the "Imgs" folder on each Roms folder. it is suggested to leave the left side of the image dark for better user experience
       it is allowed adding boxarts also for systems not only roms, just add the image named as the folder.
         i.e. if the rom folder is "Doom (DOOM)" then create a png called "Doom (DOOM).png" in the "Doom (DOOM)/Imgs" folder
-      If saves are present in the selected rom the same state selector available in the in game menu (IMHO that is a MinUI awesome feature), the latest save is automatically selected, press X to load it, if x is pressed whiel an empty slot is selected the game starts without recalling state. save state selector is available ONLY for cores running Minarch.
+      If saves are present in the selected rom the same state selector available in the in game menu (IMHO that is a MinUI awesome feature) is shown, the latest save is automatically selected, press X to load it, if X is pressed while an empty slot is selected the game starts without recalling state. save state selector is available ONLY for cores running Minarch.
       In fancy mode You can read the current folder in the top left corner of the display, while scrolling the recent or favorite lists it shows the folder of the currently selected game. 
 
 Some changes under the hood:
