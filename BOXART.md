@@ -11,4 +11,4 @@ this is the resulting outfile.png ready to copied in the Imgs folder:
 
 ![MyMinUI](./github/boxart.png)
 
-Infile.bmp is actually a save state preview taken direclty from the device, state previews are stored in /mnt/sdcard/.userdata/shared/.minui/<EMU_FOLDER>/<gamename>.<ext>.<slot>.bmp
+Infile.bmp is actually a save state preview taken direclty from the device, state previews are stored in /mnt/sdcard/.userdata/shared/.minui/<EMU_FOLDER>/ <gamename> . <ext> . <slot> . bmp
