@@ -1,7 +1,7 @@
 # MyMinUI
 
 MyMinUI is a fork of the latest MinUI, I like MinUI but I also like playing old arcade coin up (thanks to FinUI) and DOOM which were missing so I added them. 
-A missing feature when using MinUI with arcades is that while in the official MinUI's cores usually the name of the rom is enough to identifying a game with arcade the rom naming is quit difficult to decode so boxarts are nearly mandatory to properly identifying a game, that's why I spent a lot of time adding boxarts.
+A missing feature when using MinUI with arcades is that while in the official MinUI's cores usually the name of the rom is enough to identify a game with arcade the rom naming is quit difficult to decode so boxarts are nearly mandatory to properly identifying a game, that's why I spent a lot of time adding boxarts.
 I'm a player that uses a lot savestates, I really can't understand why almost all firmwares available in the retrogaming do not provide a way to select a specific slot with a graphical preview, when I saw for the first time the in game menu of MinUI I immediately felt that that was the way, then I added the minarch code to minui.   
 
 
@@ -38,6 +38,19 @@ Some changes under the hood:
 - the release files are separated and dedicated for each platform (WIP)
 - all cores moved to the same system directory as BASE cores (which should be better for retroarch)
 - all core launchers moved to SDCARD/Emus folders as EXTRAS
+
+
+Install process on RG35XX:
+flash an sdcard with the TF1.img (please follow official MinUI instructions) then unzip the rg35xx release file in the root.
+Don't forget to copy the file dmenu.bin in the misc directory.
+
+Install process on Miyoo Mini Plus:
+format an sdcard in Fat32 then unzip the content of the miyoo mini release file in the root of the sdcard.
+
+Upgrade process (both devices):
+Even if theorically updating an existing MinUI or FinUI would be possible it is recommended to install MyMinUI from scratch.
+To update a previous MyMinUI sdcard just copy the file MinUI.zip file in the root of the sdcard then reboot the device.
+It is usually not needed unzipping the whole release file as if not made carefully You would lose existing roms/bios/saves, etc... in doubt choose merge instead of replace folders.
 
 # MinUI
 
