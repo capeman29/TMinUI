@@ -64,7 +64,19 @@ setup:
 	# ready fresh build
 	rm -rf ./build
 	mkdir -p ./releases
-	cp -R ./skeleton ./build
+	mkdir -p ./build/SYSTEM
+	mkdir -p ./build/EXTRAS/Emus
+	mkdir -p ./build/EXTRAS/Tools
+
+	cp -R ./skeleton/BASE ./build/BASE
+	cp -R ./skeleton/BOOT ./build/BOOT
+	cp -R ./skeleton/SYSTEM/res ./build/SYSTEM/res
+	cp -R ./skeleton/SYSTEM/$(PLATFORM) ./build/SYSTEM/$(PLATFORM)
+	cp -R ./skeleton/EXTRAS/Bios ./build/EXTRAS/Bios
+	cp -R ./skeleton/EXTRAS/Roms ./build/EXTRAS/Roms
+	cp -R ./skeleton/EXTRAS/Saves ./build/EXTRAS/Saves
+	cp -R ./skeleton/EXTRAS/Emus/$(PLATFORM) ./build/EXTRAS/Emus/$(PLATFORM)
+	cp -R ./skeleton/EXTRAS/Tools/$(PLATFORM) ./build/EXTRAS/Tools/$(PLATFORM)
 	
 	# remove authoring detritus
 	cd ./build && find . -type f -name '.keep' -delete
@@ -88,6 +100,7 @@ special:
 	cp -R ./build/BOOT/.tmp_update ./build/BASE/miyoo/app/
 	cp -R ./build/BOOT/.tmp_update ./build/BASE/trimui/app/
 	cp -R ./build/BASE/miyoo ./build/BASE/miyoo354
+	
 
 tidy:
 	# ----------------------------------------------------
@@ -130,6 +143,7 @@ package: tidy
 	rm -rf ./build/EXTRAS
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
+	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
 	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xx rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
 	
 	

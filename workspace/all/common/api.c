@@ -149,6 +149,7 @@ SDL_Surface* GFX_init(int mode) {
 	
 	TTF_Init();
 	font.large 	= TTF_OpenFont(FONT_PATH, SCALE1(FONT_LARGE));
+	font.largeoutline = TTF_OpenFont(FONT_PATH, SCALE1(FONT_LARGE));
 	font.medium = TTF_OpenFont(FONT_PATH, SCALE1(FONT_MEDIUM));
 	font.small 	= TTF_OpenFont(FONT_PATH, SCALE1(FONT_SMALL));
 	font.tiny 	= TTF_OpenFont(FONT_PATH, SCALE1(FONT_TINY));
@@ -157,11 +158,16 @@ SDL_Surface* GFX_init(int mode) {
 	TTF_SetFontStyle(font.medium, TTF_STYLE_BOLD);
 	TTF_SetFontStyle(font.small, TTF_STYLE_BOLD);
 	TTF_SetFontStyle(font.tiny, TTF_STYLE_BOLD);
+	TTF_SetFontStyle(font.largeoutline, TTF_STYLE_BOLD);
+
+	TTF_SetFontOutline(font.largeoutline, 1);
+	
 	
 	return gfx.screen;
 }
 void GFX_quit(void) {
 	TTF_CloseFont(font.large);
+	TTF_CloseFont(font.largeoutline);
 	TTF_CloseFont(font.medium);
 	TTF_CloseFont(font.small);
 	TTF_CloseFont(font.tiny);

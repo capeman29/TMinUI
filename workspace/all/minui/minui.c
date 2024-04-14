@@ -117,6 +117,8 @@ typedef struct Entry {
 	int alpha; // index in parent Directory's alphas Array, which points to the index of an Entry in its entries Array :sweat_smile:
 } Entry;
 
+static int hasEmu(char* emu_name); 
+
 static Entry* Entry_new(char* path, int type) {
 	char display_name[256];
 	getDisplayName(path, display_name);
@@ -214,7 +216,7 @@ static void getUniqueName(Entry* entry, char* out_name) {
 }
 
 static void Directory_index(Directory* self) {
-	int skip_index = exactMatch(FAUX_RECENT_PATH, self->path) || prefixMatch(COLLECTIONS_PATH, self->path); // not alphabetized
+	int skip_index = exactMatch(FAUX_RECENT_PATH, self->path) || exactMatch(FAUX_FAVORITE_PATH, self->path) || prefixMatch(COLLECTIONS_PATH, self->path); // not alphabetized
 	
 	Hash* map = NULL;
 	char map_path[256];
@@ -317,6 +319,7 @@ static Array* getRecents(void);
 static Array* getCollection(char* path);
 static Array* getDiscs(char* path);
 static Array* getEntries(char* path);
+static Array* getFavorites(void);
 
 static Directory* Directory_new(char* path, int selected) {
 	char display_name[256];
@@ -330,6 +333,9 @@ static Directory* Directory_new(char* path, int selected) {
 	}
 	else if (exactMatch(path, FAUX_RECENT_PATH)) {
 		self->entries = getRecents();
+	}
+	else if (exactMatch(path, FAUX_FAVORITE_PATH)) {
+		self->entries = getFavorites();
 	}
 	else if (!exactMatch(path, COLLECTIONS_PATH) && prefixMatch(COLLECTIONS_PATH, path) && suffixMatch(".txt", path)) {
 		self->entries = getCollection(path);
@@ -363,6 +369,53 @@ static void DirectoryArray_free(Array* self) {
 	Array_free(self);
 }
 
+typedef struct Favorite {
+	char* path; // NOTE: this is without the SDCARD_PATH prefix!
+	int available;
+} Favorite;
+
+static Favorite* Favorite_new(char* path) {
+	Favorite* self = malloc(sizeof(Favorite));
+
+	char sd_path[256]; // only need to get emu name
+	sprintf(sd_path, "%s%s", SDCARD_PATH, path);
+
+	char emu_name[256];
+	getEmuName(sd_path, emu_name);
+
+	self->path = strdup(path);
+	self->available = hasEmu(emu_name);
+	return self;
+}
+static void Favorite_free(Favorite* self) {
+	free(self->path);
+	free(self);
+}
+
+static int FavoriteArray_indexOf(Array* self, char* str) {
+	for (int i=0; i<self->count; i++) {
+		Favorite* item = self->items[i];
+		if (exactMatch(item->path, str)) return i;
+	}
+	return -1;
+}
+static void FavoriteArray_free(Array* self) {
+	for (int i=0; i<self->count; i++) {
+		Favorite_free(self->items[i]);
+	}
+	Array_free(self);
+}
+
+static int FavoriteArray_splice(Array* self, int index) {
+	if (index != -1) {
+		for(int i=index; i<self->count-1; i++) {
+			self->items[i] = self->items[i+1];
+		}
+		--self->count;
+	}
+	return  index;
+}
+
 ///////////////////////////////////////
 
 typedef struct Recent {
@@ -373,7 +426,7 @@ typedef struct Recent {
  // yiiikes
 static char* recent_alias = NULL;
 
-static int hasEmu(char* emu_name);
+
 static Recent* Recent_new(char* path, char* alias) {
 	Recent* self = malloc(sizeof(Recent));
 
@@ -413,6 +466,7 @@ static void RecentArray_free(Array* self) {
 static Directory* top;
 static Array* stack; // DirectoryArray
 static Array* recents; // RecentArray
+static Array* favorites; // FavoriteArray
 
 static int quit = 0;
 static int can_resume = 0;
@@ -470,6 +524,38 @@ static void addRecent(char* path, char* alias) {
 		}
 	}
 	saveRecents();
+}
+
+static void saveFavorites(void) {
+	FILE* file = fopen(FAVORITE_PATH, "w");
+	if (file) {
+		for (int i=0; i<favorites->count; i++) {
+			Favorite* favorite = favorites->items[i];
+			fputs(favorite->path, file);
+			putc('\n', file);
+		}
+		fclose(file);
+	}
+}
+static void toggleFavorite(char* path) {
+	//printf("TEST FAV: %s\n",path);
+	path += strlen(SDCARD_PATH); // makes paths platform agnostic
+	//printf("TEST FAV: %s\n",path);
+	int id = FavoriteArray_indexOf(favorites, path);
+	//printf("TEST FAV: %s / ID = %d\n",path,id);
+	if (id==-1) { // add
+		Array_unshift(favorites, Favorite_new(path));
+	}
+	else { // remove
+		FavoriteArray_splice(favorites, id);
+	}
+	saveFavorites();
+}
+
+static int isFavorite(char *path) {
+	path += strlen(SDCARD_PATH); // makes paths platform agnostic
+	int id = FavoriteArray_indexOf(favorites, path);
+	return ++id;
 }
 
 static int hasEmu(char* emu_name) {
@@ -596,7 +682,37 @@ static int hasRecents(void) {
 	
 	StringArray_free(parent_paths);
 	return has>0;
+	//return 1;
 }
+
+static int hasFavorites(void) {
+	int has = 0;
+
+	FILE* file = fopen(FAVORITE_PATH, "r"); // newest at top
+	if (file) {
+		char line[256];
+		while (fgets(line,256,file)!=NULL) {
+			normalizeNewline(line);
+			trimTrailingNewlines(line);
+			if (strlen(line)==0) continue; // skip empty lines
+
+			char sd_path[256];
+			sprintf(sd_path, "%s%s", SDCARD_PATH, line);
+			if (exists(sd_path)) {
+					Favorite* favorite = Favorite_new(line);
+					if (favorite->available) has += 1;
+					Array_push(favorites, favorite);
+			}
+		}
+		fclose(file);
+	}
+
+	saveFavorites();
+
+	//return has>0;
+	return 1; // Always show directory, even if empty.
+}
+
 static int hasCollections(void) {
 	int has = 0;
 	if (!exists(COLLECTIONS_PATH)) return has;
@@ -611,6 +727,7 @@ static int hasCollections(void) {
 	closedir(dh);
 	return has;
 }
+
 static int hasRoms(char* dir_name) {
 	int has = 0;
 	char emu_name[256];
@@ -640,6 +757,7 @@ static Array* getRoot(void) {
 	Array* root = Array_new();
 	
 	if (hasRecents()) Array_push(root, Entry_new(FAUX_RECENT_PATH, ENTRY_DIR));
+	/*if (hasFavorites())*/ Array_push(root, Entry_new(FAUX_FAVORITE_PATH, ENTRY_DIR));
 	
 	Array* entries = Array_new();
 	DIR* dh = opendir(ROMS_PATH);
@@ -768,6 +886,22 @@ static Array* getRecents(void) {
 	}
 	return entries;
 }
+
+static Array* getFavorites(void) {
+	Array* entries = Array_new();
+	for (int i=0; i<favorites->count; i++) {
+		Favorite* favorite = favorites->items[i];
+		if (!favorite->available) continue;
+
+		char sd_path[256];
+		sprintf(sd_path, "%s%s", SDCARD_PATH, favorite->path);
+		int type = suffixMatch(".pak", sd_path) ? ENTRY_PAK : ENTRY_ROM; // ???
+		Array_push(entries, Entry_new(sd_path, type));
+	}
+	return entries;
+}
+
+
 static Array* getCollection(char* path) {
 	Array* entries = Array_new();
 	FILE* file = fopen(path, "r");
@@ -1019,6 +1153,7 @@ static void readyResumePath(char* rom_path, int type) {
 	strcpy(rom_file, tmp);
 	
 	sprintf(slot_path_rom, "%s/.minui/%s/%s", SHARED_USERDATA_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext
+	//sprintf(slot_path_rom, "%s/%s/%s", MYSAVESTATE_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext
 	sprintf(slot_path, "%s.txt", slot_path_rom); // /.userdata/.minui/<EMU>/<romname>.ext.txt
 	
 	can_resume = exists(slot_path);
@@ -1351,12 +1486,14 @@ int drawBoxart(SDL_Surface* _screen, char* bmpPath){
 static void Menu_init(void) {
 	stack = Array_new(); // array of open Directories
 	recents = Array_new();
+	favorites = Array_new();
 
 	openDirectory(SDCARD_PATH, 0);
 	loadLast(); // restore state when available
 }
 static void Menu_quit(void) {
 	RecentArray_free(recents);
+	FavoriteArray_free(favorites);
 	DirectoryArray_free(stack);
 }
 
@@ -1379,7 +1516,7 @@ int main (int argc, char *argv[]) {
 	}
 	
 
-	LOG_info("MinUI\n");
+	LOG_info("MyMinUI\n");
 	InitSettings();
 	
 	SDL_Surface* screen = GFX_init(MODE_MAIN);
@@ -1590,6 +1727,14 @@ int main (int argc, char *argv[]) {
 
 				if (total>0) readyResume(top->entries->items[top->selected]);
 			}
+
+			else if (total>0 && PAD_justPressed(BTN_SELECT)) {
+				Entry* myentry = top->entries->items[top->selected];
+				if (myentry->type == ENTRY_ROM) {
+					toggleFavorite(myentry->path);
+					dirty = 1;
+				}
+			}
 			else if (PAD_justPressed(BTN_B) && stack->count>1) {
 				closeDirectory();
 				total = top->entries->count;
@@ -1652,8 +1797,8 @@ int main (int argc, char *argv[]) {
 					SDL_BlitSurface(commit_txt, NULL, version, &(SDL_Rect){0,SCALE1(VERSION_LINE_HEIGHT)});
 					SDL_BlitSurface(hash_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT)});
 					
-					SDL_BlitSurface(key_txt, NULL, version, &(SDL_Rect){0,SCALE1(VERSION_LINE_HEIGHT*3)});
-					SDL_BlitSurface(val_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT*3)});
+					SDL_BlitSurface(key_txt, NULL, version, &(SDL_Rect){0,SCALE1(VERSION_LINE_HEIGHT*2)});
+					SDL_BlitSurface(val_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT*2)});
 					
 					SDL_FreeSurface(release_txt);
 					SDL_FreeSurface(version_txt);
@@ -1663,12 +1808,12 @@ int main (int argc, char *argv[]) {
 					SDL_FreeSurface(val_txt);
 					SDL_Surface* fixedmode_txt = TTF_RenderUTF8_Blended(font.large, "Mode", COLOR_DARK_TEXT);
 					SDL_Surface* mode_txt = TTF_RenderUTF8_Blended(font.large, modeStr, COLOR_WHITE);
-					SDL_BlitSurface(fixedmode_txt, NULL, version, &(SDL_Rect){0,SCALE1(VERSION_LINE_HEIGHT*2)});
-					SDL_BlitSurface(mode_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT*2)});
+					SDL_BlitSurface(fixedmode_txt, NULL, version, &(SDL_Rect){0,SCALE1(VERSION_LINE_HEIGHT*3)});
+					SDL_BlitSurface(mode_txt, NULL, version, &(SDL_Rect){x,SCALE1(VERSION_LINE_HEIGHT*3)});
 					SDL_FreeSurface(fixedmode_txt);
 					SDL_FreeSurface(mode_txt);
 				//}
-				SDL_BlitSurface(version, NULL, screen, &(SDL_Rect){(screen->w-version->w)/2,(screen->h-version->h)/2});
+				SDL_BlitSurface(version, NULL, screen, &(SDL_Rect){(screen->w-version->w)/2,(screen->h-version->h)/4});
 				
 				// buttons (duped and trimmed from below)
 				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
@@ -1683,50 +1828,57 @@ int main (int argc, char *argv[]) {
 
 
 
-					/*  start entry for boxart and save state preview window*/
-				if (fancy_mode) {  //only when fancy_mode is active
-					Entry* myentry = top->entries->items[top->selected];
-					//if (myentry1->type == ENTRY_ROM) {
-					// current filename path is entry->path
+						/*  start entry for boxart and save state preview window*/
+					if (fancy_mode) {  //only when fancy_mode is active
+						Entry* myentry = top->entries->items[top->selected];
+						//if (myentry1->type == ENTRY_ROM) {
+						// current filename path is entry->path
 
-					char myslot_path[256];
-					char myRomName[256];
-					char myBoxart_path[256];
-					char myEmuName[256];
-					//readyResume(entry);
-					sprintf(myslot_path, "%s.%d.bmp",slot_path_rom, getInt(slot_path));
-					//top->path;
-					getParentFolderName(myentry->path, myEmuName);
-					getDisplayNameParens(myentry->path, myRomName);
-					if ( myentry->type == ENTRY_ROM) {
-						sprintf(myBoxart_path, ROMS_PATH "/%s/Imgs/%s.png", myEmuName , myRomName);
-					} else if ( myentry->type == ENTRY_DIR ) {
-						sprintf(myBoxart_path,  "%s/Imgs/%s.png", myentry->path, myEmuName);
-					} else { //pak
-						sprintf(myBoxart_path, "%s/Imgs/%s.png", myentry->path, myentry->name);
-					}
-					/*
-					printf("\n\nCurrent item name = %s\nCurrent Item path = %s\nCurrent Item Type = %d\nCurrent Item Save present = %d\nCurrent Item Last Save Slot = %d\nCurrent Item Slot bmp file = %s\nCurrent Item boxart Img = %s\n", 
-									myentry->name, myentry->path, myentry->type, can_resume, (can_resume) ? getInt(slot_path) : -1, myslot_path, myBoxart_path);
-					fflush(stdout);
-					*/
-					// the boxart should be entry->path ../Imgs/entry->name.png
+						TTF_SetFontOutline(font.large, 2);
+						TTF_SetFontOutline(font.large, 2);
+						TTF_SetFontOutline(font.large, 2);
+						TTF_SetFontOutline(font.large, 2);
+	
 
-					// print the boxart
-					if (exists(myBoxart_path)){
-						drawBoxart(screen,myBoxart_path);
-					}
-					// end print boxart
-					//print the state slot preview if present
-					if (can_resume && (myentry->type == ENTRY_ROM)) {
-						drawStatePreview(screen, myslot_path, getInt(slot_path));	
-					}
 
-					//}
-					//myentry1 = NULL;
-					GFX_blitHardwareGroup(screen, show_setting);
-					// the slot bmp should be in minui_path/EmuName/entry->name
-					/* end for boxart and save state preview window, now print the text and the buttons */
+						char myslot_path[256];
+						char myRomName[256];
+						char myBoxart_path[256];
+						char myEmuName[256];
+						//readyResume(entry);
+						sprintf(myslot_path, "%s.%d.bmp",slot_path_rom, getInt(slot_path));
+						//top->path;
+						getParentFolderName(myentry->path, myEmuName);
+						getDisplayNameParens(myentry->path, myRomName);
+						if ( myentry->type == ENTRY_ROM) {
+							sprintf(myBoxart_path, ROMS_PATH "/%s/Imgs/%s.png", myEmuName , myRomName);
+						} else if ( myentry->type == ENTRY_DIR ) {
+							sprintf(myBoxart_path,  "%s/Imgs/%s.png", myentry->path, myEmuName);
+						} else { //pak
+							sprintf(myBoxart_path, "%s/Imgs/%s.png", myentry->path, myentry->name);
+						}
+						/*
+						printf("\n\nCurrent item name = %s\nCurrent Item path = %s\nCurrent Item Type = %d\nCurrent Item Save present = %d\nCurrent Item Last Save Slot = %d\nCurrent Item Slot bmp file = %s\nCurrent Item boxart Img = %s\n", 
+										myentry->name, myentry->path, myentry->type, can_resume, (can_resume) ? getInt(slot_path) : -1, myslot_path, myBoxart_path);
+						fflush(stdout);
+						*/
+						// the boxart should be entry->path ../Imgs/entry->name.png
+
+						// print the boxart
+						if (exists(myBoxart_path)){
+							drawBoxart(screen,myBoxart_path);
+						}
+						// end print boxart
+						//print the state slot preview if present
+						if (can_resume && (myentry->type == ENTRY_ROM)) {
+							drawStatePreview(screen, myslot_path, getInt(slot_path));	
+						}
+
+						//}
+						//myentry1 = NULL;
+						GFX_blitHardwareGroup(screen, show_setting);
+						// the slot bmp should be in minui_path/EmuName/entry->name
+						/* end for boxart and save state preview window, now print the text and the buttons */
 				}
 
 					for (int i=top->start,j=0; i<top->end; i++,j++) {
@@ -1736,6 +1888,7 @@ int main (int argc, char *argv[]) {
 
 						int available_width = 0;
 						TTF_Font *_font = font.large;
+						TTF_SetFontOutline(_font, 0);
 						SDL_Color text_color = COLOR_WHITE;
 						available_width = FIXED_WIDTH - SCALE1(PADDING * 2);
 						if (fancy_mode) {
@@ -1751,7 +1904,11 @@ int main (int argc, char *argv[]) {
 						} 
 						if ((i==top->start) && !(fancy_mode) ) available_width -= ow;
 					
-											
+						if (isFavorite(entry->path)) {
+							text_color = COLOR_GOLD;
+						}
+
+						
 						trimSortingMeta(&entry_name);
 					
 						char display_name[256];
@@ -1786,6 +1943,19 @@ int main (int argc, char *argv[]) {
 							GFX_truncateText(_font, entry_name, display_name, available_width, SCALE1(BUTTON_PADDING*2));
 						}
 						SDL_Surface* text = TTF_RenderUTF8_Blended(_font, display_name, text_color);
+						if ((j==selected_row) && (fancy_mode) && (entry->type == ENTRY_ROM)) {  //print the text twice, outline black and body white
+							SDL_Surface* textout = TTF_RenderUTF8_Blended(font.largeoutline, display_name, COLOR_BLACK);
+							SDL_BlitSurface(textout, &(SDL_Rect){
+								0,
+								0,
+								max_width-SCALE1(BUTTON_PADDING*2),
+								textout->h
+							}, screen, &(SDL_Rect){
+								SCALE1(PADDING+BUTTON_PADDING-(PADDING*fancy_mode)),
+								SCALE1(PADDING+(j*(PILL_SIZE-(7*fancy_mode))+((PILL_SIZE-(7*fancy_mode))*fancy_mode)+4))
+							});
+							SDL_FreeSurface(textout);
+						}
 						SDL_BlitSurface(text, &(SDL_Rect){
 							0,
 							0,

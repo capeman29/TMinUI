@@ -91,6 +91,7 @@ typedef struct GFX_Fonts {
 	TTF_Font* medium; 	// single char button label
 	TTF_Font* small; 	// button hint
 	TTF_Font* tiny; 	// multi char button label
+	TTF_Font* largeoutline; // for fancy mode
 } GFX_Fonts;
 extern GFX_Fonts font;
 
