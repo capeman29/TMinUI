@@ -757,7 +757,7 @@ static Array* getRoot(void) {
 	Array* root = Array_new();
 	
 	if (hasRecents()) Array_push(root, Entry_new(FAUX_RECENT_PATH, ENTRY_DIR));
-	/*if (hasFavorites())*/ Array_push(root, Entry_new(FAUX_FAVORITE_PATH, ENTRY_DIR));
+	if (hasFavorites()) Array_push(root, Entry_new(FAUX_FAVORITE_PATH, ENTRY_DIR));
 	
 	Array* entries = Array_new();
 	DIR* dh = opendir(ROMS_PATH);
@@ -1834,13 +1834,6 @@ int main (int argc, char *argv[]) {
 						//if (myentry1->type == ENTRY_ROM) {
 						// current filename path is entry->path
 
-						TTF_SetFontOutline(font.large, 2);
-						TTF_SetFontOutline(font.large, 2);
-						TTF_SetFontOutline(font.large, 2);
-						TTF_SetFontOutline(font.large, 2);
-	
-
-
 						char myslot_path[256];
 						char myRomName[256];
 						char myBoxart_path[256];
@@ -1888,7 +1881,6 @@ int main (int argc, char *argv[]) {
 
 						int available_width = 0;
 						TTF_Font *_font = font.large;
-						TTF_SetFontOutline(_font, 0);
 						SDL_Color text_color = COLOR_WHITE;
 						available_width = FIXED_WIDTH - SCALE1(PADDING * 2);
 						if (fancy_mode) {

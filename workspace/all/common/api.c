@@ -1458,8 +1458,12 @@ void PWR_update(int* _dirty, int* _show_setting, PWR_callback_t before_sleep, PW
 		}
 		checked_charge_at = now;
 	}
-	
-	if (PAD_justReleased(BTN_POWEROFF) || (power_pressed_at && now-power_pressed_at>=50)) {
+	int factor = 1;
+	if (exists(PWR_SLEEP_PATH)){
+		factor=20;
+	}
+	//if (PAD_justReleased(BTN_POWEROFF) || (power_pressed_at && now-power_pressed_at>=50)) {  //50= immediate shutdown, 1000 = shutdown after 1 sec or sleep on quick button press
+	if (PAD_justReleased(BTN_POWEROFF) || (power_pressed_at && now-power_pressed_at>=(50*factor))) {
 		if (before_sleep) {
 			before_sleep();
 		}
