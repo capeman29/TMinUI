@@ -18,6 +18,8 @@
 #include "utils.h"
 #include "scaler.h"
 
+#include "SDL_rotozoom.h"
+
 ///////////////////////////////////////
 
 static SDL_Surface* screen;
@@ -3922,7 +3924,7 @@ static void Menu_loop(void) {
 				});
 				SDL_FreeSurface(text);
 			}
-			
+			/*
 			// slot preview
 			if (selected==ITEM_SAVE || selected==ITEM_LOAD) {
 				#define WINDOW_RADIUS 4 // TODO: this logic belongs in blitRect?
@@ -3966,6 +3968,47 @@ static void Menu_loop(void) {
 				for (int i=0; i<MENU_SLOT_COUNT; i++) {
 					if (i==menu.slot)GFX_blitAsset(ASSET_PAGE, NULL, screen, &(SDL_Rect){ox+SCALE1(i*15),oy});
 					else GFX_blitAsset(ASSET_DOT, NULL, screen, &(SDL_Rect){ox+SCALE1(i*15)+4,oy+SCALE1(2)});
+				}
+			} */
+
+			// my slot preview enlarged to 384x288 for better see 
+			if (selected==ITEM_SAVE || selected==ITEM_LOAD) {
+				#define WINDOW_RADIUS 4 // TODO: this logic belongs in blitRect?
+				#define PAGINATION_HEIGHT 6
+				// unscaled
+				int hw = DEVICE_WIDTH * 3 / 5;
+				int hh = DEVICE_HEIGHT * 3 / 5;
+				int pw = hw + SCALE1(WINDOW_RADIUS*2);
+				int ph = hh + SCALE1(WINDOW_RADIUS*2 + PAGINATION_HEIGHT);
+				ox = DEVICE_WIDTH - pw;
+				oy = (DEVICE_HEIGHT - ph) / 2;
+							
+				// window
+				GFX_blitRect(ASSET_STATE_BG, screen, &(SDL_Rect){ox,oy,pw,ph});
+				ox += SCALE1(WINDOW_RADIUS);
+				oy += SCALE1(WINDOW_RADIUS);
+				
+				if (menu.preview_exists) { // has save, has preview
+					// lotta memory churn here
+					SDL_Surface* bmp = IMG_Load(menu.bmp_path);
+					SDL_Surface* preview = zoomSurface(bmp, (1.0 * hw / bmp->w) , (1.0 * hh / bmp->h), 0);					
+					SDL_BlitSurface(preview, NULL, screen, &(SDL_Rect){ox,oy}); 
+					SDL_FreeSurface(bmp);   
+					SDL_FreeSurface(preview);					
+				}
+				else {
+					SDL_Rect preview_rect = {ox,oy,hw,hh};
+					SDL_FillRect(screen, &preview_rect, 0);
+					if (menu.save_exists) GFX_blitMessage(font.large, "No Preview", screen, &preview_rect);
+					else GFX_blitMessage(font.large, "Empty Slot", screen, &preview_rect);
+				}
+				
+				// pagination
+				ox += (pw-SCALE1(16*MENU_SLOT_COUNT))/2;
+				oy += hh+SCALE1(WINDOW_RADIUS)-SCALE1(PAGINATION_HEIGHT / 2 - 1);
+				for (int i=0; i<MENU_SLOT_COUNT; i++) {
+					if (i==menu.slot)GFX_blitAsset(ASSET_PAGE, NULL, screen, &(SDL_Rect){ox+SCALE1(i*16),oy});
+					else GFX_blitAsset(ASSET_DOT, NULL, screen, &(SDL_Rect){ox+SCALE1(i*16)+4,oy+SCALE1(2)});
 				}
 			}
 	

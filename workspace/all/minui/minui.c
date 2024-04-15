@@ -1418,40 +1418,41 @@ static void loadLast(void) { // call after loading root directory
 
 /* helper functions to draw boxart and savestate preview*/
 int drawStatePreview(SDL_Surface* _screen, char* bmpPath, int stateIndex){
-    #define WINDOW_RADIUS 4 
-
-    int ox = 156;
-	int	oy = 65;
-	int hw = FIXED_WIDTH / 2;
-	int hh = FIXED_HEIGHT / 2;
-// window
-	GFX_blitRect(ASSET_STATE_BG, _screen, &(SDL_Rect){SCALE2(ox-WINDOW_RADIUS,oy-WINDOW_RADIUS),hw+SCALE1(WINDOW_RADIUS*2),hh+SCALE1(WINDOW_RADIUS*3+6)});
+    #define WINDOW_RADIUS 4 // TODO: this logic belongs in blitRect?
+	#define PAGINATION_HEIGHT 6
+	// unscaled
+	int hw = FIXED_WIDTH * 3 / 5;
+	int hh = FIXED_HEIGHT * 3 / 5;
+	int pw = hw + SCALE1(WINDOW_RADIUS*2);
+	int ph = hh + SCALE1(WINDOW_RADIUS*2 + PAGINATION_HEIGHT);
+	int ox = FIXED_WIDTH - pw;
+	int oy = (FIXED_HEIGHT - ph) / 2;
+	GFX_blitRect(ASSET_STATE_BG, _screen, &(SDL_Rect){ox,oy,pw,ph});
+	ox += SCALE1(WINDOW_RADIUS);
+	oy += SCALE1(WINDOW_RADIUS);
 	SDL_Surface* preview = NULL;
 	SDL_Surface* unscaled_preview = IMG_Load(bmpPath);
 	if (!unscaled_preview) {
         //printf("IMG_Load: %s\n", IMG_GetError());
-        SDL_Rect preview = {SCALE2(ox,oy),hw,hh};
+        SDL_Rect preview = {ox,oy,hw,hh};
 		SDL_FillRect(_screen, &preview, 0);
         GFX_blitMessage(font.large, "Empty Slot", _screen, &preview);
     } else {
-		preview = zoomSurface(unscaled_preview, (FIXED_WIDTH / 2.0 / unscaled_preview->w) , (FIXED_HEIGHT / 2.0 / unscaled_preview->h), 0);
+		preview = zoomSurface(unscaled_preview, (1.0 * hw / unscaled_preview->w) , (1.0 * hh / unscaled_preview->h), 0);
 	//	printf("SaveState BMP %s has size is %dx%d\n", bmpPath, unscaled_preview->w, unscaled_preview->h);
 	}
 	
-    SDL_BlitSurface(preview, NULL, _screen, &(SDL_Rect){SCALE2(ox,oy)});    
+    SDL_BlitSurface(preview, NULL, _screen, &(SDL_Rect){ox,oy});    
 	SDL_FreeSurface(preview);
 	SDL_FreeSurface(unscaled_preview);
 
-    // pagination
-	ox += 24;
-	oy += 124;
-	for (int i=0; i<9; i++) {
-		if (i==stateIndex) {
-			GFX_blitAsset(ASSET_PAGE, NULL, _screen, &(SDL_Rect){SCALE2(ox+(i*15),oy)});
-		}
-		else {
-		GFX_blitAsset(ASSET_DOT, NULL, _screen, &(SDL_Rect){SCALE2(ox+(i*15)+4,oy+2)});
-		}
+   // pagination
+   #define MENU_SLOT_COUNT 9
+	ox += (pw-SCALE1(16*MENU_SLOT_COUNT))/2;
+	oy += hh+SCALE1(WINDOW_RADIUS)-SCALE1(PAGINATION_HEIGHT / 2 - 1);
+	for (int i=0; i<MENU_SLOT_COUNT; i++) {
+		if (i==stateIndex) GFX_blitAsset(ASSET_PAGE, NULL, _screen, &(SDL_Rect){ox+SCALE1(i*16),oy});
+		else GFX_blitAsset(ASSET_DOT, NULL, _screen, &(SDL_Rect){ox+SCALE1(i*16)+4,oy+SCALE1(2)});
 	}
     return 1;
 }
@@ -1885,7 +1886,7 @@ int main (int argc, char *argv[]) {
 						available_width = FIXED_WIDTH - SCALE1(PADDING * 2);
 						if (fancy_mode) {
 							_font = font.medium;
-							available_width = FIXED_WIDTH / 2;
+							available_width = FIXED_WIDTH - ( FIXED_WIDTH * 3 / 5);
 							text_color = COLOR_GRAY;
 						}
 						
