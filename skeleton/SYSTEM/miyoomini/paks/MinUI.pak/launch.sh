@@ -49,9 +49,10 @@ mkdir -p "$SHARED_USERDATA_PATH/.minui"
 #######################################
 
 export CPU_SPEED_MENU=504000
+export CPU_SPEED_POWERSAVE=1104000
 export CPU_SPEED_GAME=1296000
 export CPU_SPEED_PERF=1488000
-export CPU_SPEED_MAX=1700000
+export CPU_SPEED_MAX=1800000
 echo userspace > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 overclock.elf $CPU_SPEED_PERF
 
