@@ -487,6 +487,8 @@ static int restore_end = 0;
 #define FANCY_MODE "Fancy (Boxart + State)"
 
 static int fancy_mode = 0;
+static int hide_state = 0;
+static int hide_boxartifstate = 0;
 
 
 ///////////////////////////////////////
@@ -1523,6 +1525,13 @@ int main (int argc, char *argv[]) {
 		sprintf(pwractionstr,"SHUTDOWN");
 	}
 
+	if (exists(HIDE_STATE_PATH)){
+		hide_state = 1;
+	}
+
+	if (exists(HIDE_BOXART_IFSTATE_PATH)){
+		hide_boxartifstate = 1;
+	}
 	LOG_info("MyMinUI\n");
 	InitSettings();
 	
@@ -1863,14 +1872,24 @@ int main (int argc, char *argv[]) {
 						fflush(stdout);
 						*/
 						// the boxart should be entry->path ../Imgs/entry->name.png
+						
+						//check if a save state should be painted
+						int showstate = 0;
+						int showboxart = 1;
+						if (can_resume && (myentry->type == ENTRY_ROM) && (!(hide_state))) {
+							showstate = 1;
+							if (hide_boxartifstate) {
+								showboxart = 0;
+							}
+						} 
 
+						if (exists(myBoxart_path) && (showboxart)){
 						// print the boxart
-						if (exists(myBoxart_path)){
 							drawBoxart(screen,myBoxart_path);
 						}
 						// end print boxart
 						//print the state slot preview if present
-						if (can_resume && (myentry->type == ENTRY_ROM)) {
+						if (showstate) {
 							drawStatePreview(screen, myslot_path, getInt(slot_path));	
 						}
 
