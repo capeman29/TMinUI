@@ -39,6 +39,18 @@ if [ -f "$UPDATE_PATH" ]; then
 	$SYSTEM_PATH/$PLATFORM/bin/install.sh
 fi
 
+SWAPFILE=${SYSTEM_PATH}/${PLATFORM}/myswapfile
+
+if [ -f ${SWAPFILE}.gz ]; then
+#the swapfile does not exists, let's create it
+    rm -rf $SWAPFILE
+    gzip -d ${SWAPFILE}.gz
+    chmod 600 $SWAPFILE
+    mkswap $SWAPFILE
+fi
+swapon $SWAPFILE
+
+
 # or launch (and keep launched)
 LAUNCH_PATH="$SYSTEM_PATH/$PLATFORM/paks/MinUI.pak/launch.sh"
 while [ -f "$LAUNCH_PATH" ] ; do

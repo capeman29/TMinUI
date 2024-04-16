@@ -65,6 +65,9 @@ if [ -f $UPDATE_PATH ]; then
 	$SYSTEM_PATH/bin/install.sh # &> $SDCARD_PATH/install.txt
 fi
 
+
+
+
 ROOTFS_IMAGE=$SYSTEM_PATH/rootfs.ext2
 if [ ! -f $ROOTFS_IMAGE ]; then
 	# fallback to stock demenu.bin, based on dmenu_ln
@@ -100,6 +103,14 @@ done
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin:$PATH
 export LD_LIBRARY_PATH=/usr/lib/:/lib/
 export HOME=$SDCARD_PATH
+
+LOCALFILE=${SYSTEM_PATH}/paks/MinUI.pak/local.sh
+if [ -f ${LOCALFILE} ]; then
+#move to userspace any new boot options such as swapfile
+	chmod +x ${LOCALFILE}
+	${LOCALFILE}
+fi
+
 busybox chroot $ROOTFS_MOUNTPOINT $SYSTEM_PATH/paks/MinUI.pak/launch.sh
 
 umount $ROOTFS_MOUNTPOINT
