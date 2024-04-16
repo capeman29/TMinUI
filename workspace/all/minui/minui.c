@@ -1505,6 +1505,7 @@ int main (int argc, char *argv[]) {
 		
 	char modeStr[256]; 
 	char tmpName[256];
+	
 	sprintf(modeStr, STANDARD_MODE);
 	simple_mode = exists(SIMPLE_MODE_PATH);
 	fancy_mode = exists(FANCY_MODE_PATH);
@@ -1515,7 +1516,12 @@ int main (int argc, char *argv[]) {
 		simple_mode = 0;
 		sprintf(modeStr, FANCY_MODE);
 	}
-	
+	char pwractionstr[256];
+	if (exists(PWR_SLEEP_PATH)){
+		sprintf(pwractionstr,"SLEEP");
+	} else {
+		sprintf(pwractionstr,"SHUTDOWN");
+	}
 
 	LOG_info("MyMinUI\n");
 	InitSettings();
@@ -1818,7 +1824,7 @@ int main (int argc, char *argv[]) {
 				
 				// buttons (duped and trimmed from below)
 				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
-				else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU","SHUTDOWN",  NULL }, 0, screen, 0);
+				else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr,  NULL }, 0, screen, 0);
 				
 				GFX_blitButtonGroup((char*[]){ "UP/DOWN", "MODE", "B","BACK",  NULL }, 0, screen, 1);
 			}
@@ -1986,7 +1992,7 @@ int main (int argc, char *argv[]) {
 				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RESUME",  NULL }, 0, screen, 0);
 				else GFX_blitButtonGroup((char*[]){ 
 					BTN_SLEEP==BTN_POWER?"PWR":"MENU",
-					BTN_SLEEP==BTN_POWER||simple_mode?"SHUTDOWN":"INFO",  
+					BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO",  
 					NULL }, 0, screen, 0);
 			
 				if (total==0) {

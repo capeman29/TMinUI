@@ -26,6 +26,7 @@ static SDL_Surface* screen;
 static int quit;
 static int show_menu;
 static int simple_mode = 0;
+char pwractionstr[256];
 
 enum {
 	SCALE_NATIVE,
@@ -3868,7 +3869,7 @@ static void Menu_loop(void) {
 			SDL_FreeSurface(text);
 			
 			if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
-			else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"POWER":"MENU","SLEEP", NULL }, 0, screen, 0);
+			else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr, NULL }, 0, screen, 0);
 			GFX_blitButtonGroup((char*[]){ "B","BACK", "A","OKAY", NULL }, 1, screen, 1);
 			
 			// list
@@ -4135,6 +4136,13 @@ int main(int argc , char* argv[]) {
 	getEmuName(rom_path, tag_name);
 	
 	LOG_info("rom_path: %s\n", rom_path);
+
+	
+	if (exists(PWR_SLEEP_PATH)){
+		sprintf(pwractionstr,"SLEEP");
+	} else {
+		sprintf(pwractionstr,"SHUTDOWN");
+	}
 
 	screen = GFX_init(MODE_MENU);
 	PAD_init();
