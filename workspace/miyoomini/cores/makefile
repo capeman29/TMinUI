@@ -1,5 +1,5 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
-CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom puae mame2003-plus 
+CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom puae mame2003-plus neocd
 CORES += retroarch
 
 
@@ -71,6 +71,10 @@ retroarch_CORE = retroarch
 puae_REPO = https://github.com/libretro/libretro-uae
 puae_BR = 2.6.1
 puae_CORE = puae2021_libretro.so
+
+neocd_REPO = https://github.com/libretro/neocd_libretro
+neocd_CORE = neocd_libretro.so
+
 ###############################
 
 include ../../all/cores/makefile
