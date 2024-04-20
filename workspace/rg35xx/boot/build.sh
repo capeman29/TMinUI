@@ -2,6 +2,7 @@
 
 TARGET=dmenu.bin
 
+rm -rf output
 mkdir -p output
 # TODO: shouldn't this be skipping 54 bytes (the size of the bitmap format header)?
 if [ ! -f output/installing ]; then

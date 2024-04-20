@@ -74,7 +74,7 @@ setup:
 	cp -R ./skeleton/SYSTEM/$(PLATFORM) ./build/SYSTEM/$(PLATFORM)
 	cp -R ./skeleton/EXTRAS/Bios ./build/EXTRAS/Bios
 	cp -R ./skeleton/EXTRAS/Roms ./build/EXTRAS/Roms
-	cp -R ./skeleton/EXTRAS/Saves ./build/EXTRAS/Saves
+#	cp -R ./skeleton/EXTRAS/Saves ./build/EXTRAS/Saves
 	cp -R ./skeleton/EXTRAS/Emus/$(PLATFORM) ./build/EXTRAS/Emus/$(PLATFORM)
 	cp -R ./skeleton/EXTRAS/Tools/$(PLATFORM) ./build/EXTRAS/Tools/$(PLATFORM)
 	

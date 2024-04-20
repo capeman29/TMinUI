@@ -56,7 +56,7 @@ was_updated() {
 if [ ! -f $FLAG_PATH ] || was_updated; then
 	echo "updating misc partition"
 	mount -o remount,rw /dev/block/actb /misc
-	cp $SYSTEM_PATH/dat/dmenu.bin /misc
+	#cp $SYSTEM_PATH/dat/dmenu.bin /misc
 	cp $SYSTEM_PATH/dat/ramdisk.img /misc
 	
 	# boot logo, only installed, never updated
