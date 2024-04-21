@@ -55,9 +55,9 @@ prboom_CORE = prboom_libretro.so
 retroarch_REPO = https://github.com/libretro/RetroArch
 retroarch_CORE = retroarch
 #retroarch 1.14
-retroarch_HASH = ad89b0c
+#retroarch_HASH = ad89b0c
 #retroarch 1.15
-#retroarch_HASH = 6616b80
+retroarch_HASH = 6616b80
 retroarch_MAKEFILE = Makefile.rg35xx
 
 puae_REPO = https://github.com/libretro/libretro-uae
