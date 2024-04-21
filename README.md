@@ -15,6 +15,7 @@ Features from FinUI:
 - Base and Extras are merged into one Full release
 
 New features of MyMinUI (RG35XX and MiyooMiniplus only):
+- Added HiddenRoms Collection (Press START to hide/unhide a rom)
 - added Retroarch 1.15 as alternative libretro frontend for cores it has the same video filters available on garlicos (WIP).
 - added prboom libretro core (Doom), it works only with retroarch as libretro frontend
 - added puae2021 libretro core (Amiga), not really tested, expect issues, please report
