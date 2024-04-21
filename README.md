@@ -1,7 +1,7 @@
 # MyMinUI
 
 MyMinUI is a fork of the latest MinUI, I like MinUI but I also like playing old arcade coin up (thanks to FinUI) and DOOM which were missing so I added them. 
-A missing feature when using MinUI with arcades is that while in the official MinUI's cores usually the name of the rom is enough to identifying a game with arcade the rom naming is quit difficult to decode so boxarts are nearly mandatory to properly identifying a game, that's why I spent a lot of time adding boxarts.
+A missing feature when using MinUI with arcades is that while in the official MinUI's cores usually the name of the rom is enough to identify a game with arcade the rom naming is quit difficult to decode so boxarts are nearly mandatory to properly identifying a game, that's why I spent a lot of time adding boxarts.
 I'm a player that uses a lot savestates, I really can't understand why almost all firmwares available in the retrogaming do not provide a way to select a specific slot with a graphical preview, when I saw for the first time the in game menu of MinUI I immediately felt that that was the way, then I added the minarch code to minui.   
 
 You can find the latest release here: https://github.com/Turro75/MyMinUI/releases
@@ -15,13 +15,14 @@ Features from FinUI:
 - Base and Extras are merged into one Full release
 
 New features of MyMinUI (RG35XX and MiyooMiniplus only):
-- added Retroarch 1.14 as alternative libretro frontend for cores it has the same video filters available on garlicos (WIP).
+- added Retroarch 1.15 as alternative libretro frontend for cores it has the same video filters available on garlicos (WIP).
 - added prboom libretro core (Doom), it works only with retroarch as libretro frontend
 - added puae2021 libretro core (Amiga), not really tested, expect issues, please report
 - added FinalBurnNeo libretro core, it works surprisingly well on some arcade game which are slow on other OS, use an FBNeo romset as many 0.78 roms (mame2003+) don't work well.
+- added NeoGeo CD core
 - added Overclock Max profile (1.5GHz on rg35xx and 1.8GHz on miyoominiplus)
 - replaced dinguxcommander with the garlicos version (source rg35xx.com) which has more features
-- the power button now performs a shutdown as garlicos 1.4.9 does instead of standby, to restore the MinUI sleep mode behavior just create the file enable-sleep-mode in the folder /mnt/sdcard/.userdata/shared
+- the power button now performs a shutdown as garlicos 1.4.9 does instead of standby, to restore the MinUI sleep mode behavior just create the file enable-sleep-mode in the folder /mnt/sdcard/.userdata/shared (action available under Tools->ToggleSleepMode)
 - to use retroarch instead of minarch just copy to the ROMS/Extras/Emus/xxxx.pak the launch.sh from ROMS/Extras/Emus/Doom.pak then set the right core name and the cpu speed required.
 - added retroarch as Tools
 - added the main menu mode selector to version page, press up/down to change the mode then exit the page to get the new mode activated
@@ -34,6 +35,7 @@ New features of MyMinUI (RG35XX and MiyooMiniplus only):
         i.e. if the rom folder is "Doom (DOOM)" then create a png called "Doom (DOOM).png" in the "Doom (DOOM)/Imgs" folder
       If saves are present in the selected rom the same state selector available in the in game menu (IMHO that is a MinUI awesome feature) is shown, the latest save is automatically selected, press X to load it, if X is pressed while an empty slot is selected the game starts without recalling state. save state selector is available ONLY for cores running Minarch.
       In fancy mode You can read the current folder in the top left corner of the display, while scrolling the recent or favorite lists it shows the folder of the currently selected game. 
+      Under Tools there are 2 toggles to hide saved states and hide the boxart if a savestate is present.
 
 Some changes under the hood:
 - reduced footprint of the docker toolchain from 4.5GB down to 1.5GB.
@@ -41,19 +43,23 @@ Some changes under the hood:
 - the release files are separated and dedicated for each platform (WIP)
 - all cores moved to the same system directory as BASE cores (which should be better for retroarch)
 - all core launchers moved to SDCARD/Emus folders as EXTRAS
+- enhanced install/update process
 
 
 Install process on RG35XX:
 flash an sdcard with the TF1.img (please follow official MinUI instructions) then unzip the rg35xx release file in the root.
 Don't forget to copy the file dmenu.bin in the misc directory.
+Starting from release xxxx it is available an enhanced install script that allows the user to copy directly the release file in the sdcard root, everything is now automated.
 
 Install process on Miyoo Mini Plus:
 format an sdcard in Fat32 then unzip the content of the miyoo mini release file in the root of the sdcard.
+Starting from release xxxx it is available an enhanced install script that allows the user to copy directly the release file in the sdcard root, everything is now automated.
 
 Upgrade process (both devices):
 Even if theorically updating an existing MinUI or FinUI would be possible it is recommended to install MyMinUI from scratch.
 To update a previous MyMinUI sdcard just copy the file MinUI.zip file in the root of the sdcard then reboot the device.
 It is usually not needed unzipping the whole release file as if not made carefully You would lose existing roms/bios/saves, etc... in doubt choose merge instead of replace folders.
+Starting from release xxxx it is available an enhanced updatel script that allows the user to copy directly the release file in the sdcard root, everything is now automated.
 
 # MinUI
 
