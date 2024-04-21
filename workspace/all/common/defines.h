@@ -34,6 +34,9 @@
 #define FAVORITE_PATH SHARED_USERDATA_PATH "/.minui/favorite.txt"
 #define FAUX_FAVORITE_PATH SDCARD_PATH "/Favorites"
 
+#define HIDDEN_PATH SHARED_USERDATA_PATH "/.minui/hidden.txt"
+#define FAUX_HIDDEN_PATH SDCARD_PATH "/HiddenRoms"
+
 #define LAST_PATH "/tmp/last.txt" // transient
 #define CHANGE_DISC_PATH "/tmp/change_disc.txt"
 #define RESUME_SLOT_PATH "/tmp/resume_slot.txt"
