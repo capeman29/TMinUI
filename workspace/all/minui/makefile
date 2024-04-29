@@ -21,7 +21,7 @@ SDL?=SDL
 
 TARGET = minui
 INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/
-SOURCE = $(TARGET).c ../common/scaler.c ../common/utils.c ../common/api.c ../../$(PLATFORM)/platform/platform.c ../common/SDL_rotozoom.c
+SOURCE = $(TARGET).c ../common/scaler.c ../common/utils.c ../common/api.c ../../$(PLATFORM)/platform/platform.c ../common/$(SDL)_rotozoom.c
 
 CC = $(CROSS_COMPILE)gcc
 CFLAGS   = $(ARCH) -fomit-frame-pointer
@@ -37,7 +37,7 @@ all: $(PREFIX)/include/msettings.h
 	mkdir -p build/$(PLATFORM)
 	$(CC) $(SOURCE) -o $(PRODUCT) $(CFLAGS) $(LDFLAGS)
 clean:
-	rm -f $(PRODUCT)
+	rm -rf build/$(PLATFORM)
 
 $(PREFIX)/include/msettings.h:
 	cd /root/workspace/$(PLATFORM)/libmsettings && make

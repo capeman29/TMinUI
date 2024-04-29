@@ -11,8 +11,11 @@
 #include "api.h"
 #include "utils.h"
 
+#if defined(USE_SDL2)
+#include "SDL2_rotozoom.h"
+#else
 #include "SDL_rotozoom.h"
-
+#endif
 ///////////////////////////////////////
 
 typedef struct Array {
@@ -1567,12 +1570,12 @@ int drawStatePreview(SDL_Surface* _screen, char* bmpPath, int stateIndex){
     #define WINDOW_RADIUS 4 // TODO: this logic belongs in blitRect?
 	#define PAGINATION_HEIGHT 6
 	// unscaled
-	int hw = FIXED_WIDTH * 3 / 5;
-	int hh = FIXED_HEIGHT * 3 / 5;
+	int hw = _screen->w * 3 / 5;
+	int hh = _screen->h * 3 / 5;
 	int pw = hw + SCALE1(WINDOW_RADIUS*2);
 	int ph = hh + SCALE1(WINDOW_RADIUS*2 + PAGINATION_HEIGHT);
-	int ox = FIXED_WIDTH - pw;
-	int oy = (FIXED_HEIGHT - ph) / 2;
+	int ox = _screen->w  - pw;
+	int oy = (_screen->h - ph) / 2;
 	GFX_blitRect(ASSET_STATE_BG, _screen, &(SDL_Rect){ox,oy,pw,ph});
 	ox += SCALE1(WINDOW_RADIUS);
 	oy += SCALE1(WINDOW_RADIUS);
@@ -1603,22 +1606,27 @@ int drawStatePreview(SDL_Surface* _screen, char* bmpPath, int stateIndex){
     return 1;
 }
 
-int drawBoxart(SDL_Surface* _screen, char* bmpPath){
+int drawBoxart(SDL_Surface* _screen, char* bmpPath){	
  #define WINDOW_RADIUS 4 
     int ox = 0;
 	int	oy = 0;
-	int hw = FIXED_WIDTH;
-	int hh = FIXED_HEIGHT;
+	int hw = _screen->w ;
+	int hh = _screen->h ;
 // window
 	GFX_blitRect(ASSET_STATE_BG, _screen, &(SDL_Rect){ox,oy,hw,hh});
-
-	SDL_Surface* boxart = IMG_Load(bmpPath);
-	if (!boxart) {
+	SDL_Surface* unscaled_boxart = IMG_Load(bmpPath);
+	SDL_Surface* boxart = NULL;
+	printf("origimg %dx%d scaled to %dx%d\n", unscaled_boxart->w,unscaled_boxart->h, hw, hh);
+	if (!unscaled_boxart) {
         printf("IMG_Load: %s\n", IMG_GetError());
         SDL_Rect boxart = {SCALE2(ox,oy),hw,hh};
 		SDL_FillRect(_screen, &boxart, 0);
-    }
-	SDL_BlitSurface(boxart, NULL, _screen, &(SDL_Rect){SCALE2(ox,oy)});
+    } else {
+		//resize image to fit current screen size 
+		boxart = zoomSurface(unscaled_boxart, (1.0 * hw / unscaled_boxart->w) , (1.0 * hh / unscaled_boxart->h), 0);
+	}
+	SDL_BlitSurface(boxart, NULL, _screen, &(SDL_Rect){ox,oy});
+	SDL_FreeSurface(unscaled_boxart);
 	SDL_FreeSurface(boxart);
 	return 1;
 }
@@ -1926,7 +1934,7 @@ int main (int argc, char *argv[]) {
 			int ox;
 			int oy;
 			int ow = GFX_blitHardwareGroup(screen, show_setting);
-			
+
 			if (show_version) {
 				//if (!version) {
 					char release[256];
@@ -2068,17 +2076,17 @@ int main (int argc, char *argv[]) {
 						int available_width = 0;
 						TTF_Font *_font = font.large;
 						SDL_Color text_color = COLOR_WHITE;
-						available_width = FIXED_WIDTH - SCALE1(PADDING * 2);
+						available_width = screen->w  - SCALE1(PADDING * 2);
 						if (fancy_mode) {
 							_font = font.medium;
-							available_width = FIXED_WIDTH - ( FIXED_WIDTH * 3 / 5);
+							available_width = screen->w - ( screen->w  * 3 / 5);
 							text_color = COLOR_GRAY;
 						}
 						
 						if ((j==selected_row) && (fancy_mode)) {
 							text_color = COLOR_WHITE;
 							_font = font.large;
-							available_width = FIXED_WIDTH - SCALE1(PADDING * 2);				
+							available_width = screen->w  - SCALE1(PADDING * 2);				
 						} 
 						if ((i==top->start) && !(fancy_mode) ) available_width -= ow;
 					

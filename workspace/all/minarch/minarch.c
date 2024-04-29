@@ -18,7 +18,13 @@
 #include "utils.h"
 #include "scaler.h"
 
+#include <sys/sysinfo.h>
+
+#if defined(USE_SDL2)
+#include "SDL2_rotozoom.h"
+#else
 #include "SDL_rotozoom.h"
+#endif
 
 ///////////////////////////////////////
 
