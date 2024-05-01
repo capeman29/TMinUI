@@ -34,6 +34,8 @@ static int show_menu;
 static int simple_mode = 0;
 char pwractionstr[256];
 
+int fancy_mode;
+
 enum {
 	SCALE_NATIVE,
 	SCALE_ASPECT,
@@ -1465,6 +1467,7 @@ static void Menu_afterSleep(void);
 
 static void Menu_saveState(void);
 static void Menu_loadState(void);
+static void Menu_makeboxart(void);
 
 static uint32_t buttons = 0; // RETRO_DEVICE_ID_JOYPAD_* buttons
 static int ignore_menu = 0;
@@ -2512,6 +2515,7 @@ enum {
 	ITEM_SAVE,
 	ITEM_LOAD,
 	ITEM_OPTS,
+	//ITEM_BOXART,
 	ITEM_QUIT,
 };
 
@@ -2521,6 +2525,7 @@ enum {
 	STATUS_LOAD = 11,
 	STATUS_OPTS = 23,
 	STATUS_DISC = 24,
+	//STATUS_BOXART = 25,
 	STATUS_QUIT = 30,
 	STATUS_RESET= 31,
 };
@@ -2553,9 +2558,54 @@ static struct {
 		[ITEM_SAVE] = "Save",
 		[ITEM_LOAD] = "Load",
 		[ITEM_OPTS] = "Options",
+	//	[ITEM_BOXART] = "Make Boxart",
 		[ITEM_QUIT] = "Quit",
 	}
 };
+
+#define BGRADIENT RES_PATH"/BlackGradient.png"
+
+int makeBoxart(SDL_Surface *image, char *filename) {
+	char dirpath[256];
+	char tmp[256];
+	char cmd1[512];
+	getParentFolderName(game.path,tmp);
+	sprintf(dirpath, ROMS_PATH "/%s/Imgs",tmp);
+	LOG_info("#####baxart2 name###### = %s\n", dirpath);
+    sprintf(cmd1,"mkdir -p \"%s\"",dirpath); 
+	system(cmd1);
+	cmd1[0]='\0';
+    SDL_Surface *mysurface = SDL_CreateRGBSurface(0,640,480,16,0,0,0,0);
+    //SDL_Surface *unscaled_myimg = IMG_Load(BACKGROUND);
+    if (image == NULL){
+        LOG_info("errore nel caricare l'immagine sfondo");
+        return -1;
+    }
+    SDL_Surface *blackgradient = IMG_Load(BGRADIENT);
+    if (blackgradient == NULL){
+        LOG_info("IMG_Load: %s\n", IMG_GetError());
+        return -1;    
+    }
+    SDL_Surface *scaled_myimg = zoomSurface(image, (1.0 * 480 / image->w) , (1.0 * 360 / image->h), 0);    
+    SDL_BlitSurface(scaled_myimg,NULL,mysurface,&(SDL_Rect){160,60}); 
+    SDL_SetColorKey(blackgradient, SDL_TRUE, SDL_MapRGB(blackgradient->format, 0, 0, 0)); // enable color key (transparency)
+    SDL_BlitSurface(blackgradient,NULL,mysurface,NULL);
+    SDL_FreeSurface(blackgradient);
+    SDL_RWops* out = SDL_RWFromFile(filename, "wb");
+    SDL_SaveBMP_RW(mysurface, out, 1); 
+    //SDL_BlitSurface(mysurface,NULL,screen,NULL); 
+    SDL_FreeSurface(scaled_myimg); 
+    //SDL_FreeSurface(unscaled_myimg);
+    SDL_FreeSurface(mysurface);
+
+	
+    sprintf(cmd1,"bmp2png.elf -X \"%s\" && rm \"%s.bak\"", filename, filename);
+    system(cmd1);
+    return 1;
+}
+
+
+
 
 void Menu_init(void) {
 	menu.overlay = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_AUTO);
@@ -2668,7 +2718,7 @@ static int Menu_message(char* message, char** pairs) {
 		
 		if (dirty) {
 			GFX_clear(screen);
-			GFX_blitMessage(font.medium, message, screen, &(SDL_Rect){0,SCALE1(PADDING),screen->w,screen->h-SCALE1(PILL_SIZE+PADDING)});
+			GFX_blitMessage(font.medium, message, screen, &(SDL_Rect){0,SCALE1((PADDING - (PADDING*fancy_mode))),screen->w,screen->h-SCALE1(PILL_SIZE+(PADDING - (PADDING*fancy_mode)))});
 			GFX_blitButtonGroup(pairs, 0, screen, 1);
 			GFX_flip(screen);
 			dirty = 0;
@@ -2680,7 +2730,7 @@ static int Menu_message(char* message, char** pairs) {
 }
 
 #define OPTION_PADDING 8
-#define MAX_VISIBLE_OPTIONS 7
+#define MAX_VISIBLE_OPTIONS 6
 static int Menu_options(MenuList* list);
 
 static int MenuList_freeItems(MenuList* list, int i) {
@@ -3213,11 +3263,11 @@ static int Menu_options(MenuList* list) {
 						if (w>mw) mw = w;
 					}
 					// cache the result
-					list->max_width = mw = MIN(mw, screen->w - SCALE1(PADDING *2));
+					list->max_width = mw = MIN(mw, screen->w - SCALE1((PADDING - (PADDING*fancy_mode)) *2));
 				}
 				
 				int ox = (screen->w - mw) / 2;
-				int oy = SCALE1(PADDING + PILL_SIZE);
+				int oy = SCALE1(PADDING  + PILL_SIZE);
 				int selected_row = selected - start;
 				for (int i=start,j=0; i<end; i++,j++) {
 					MenuItem* item = &items[i];
@@ -3250,11 +3300,11 @@ static int Menu_options(MenuList* list) {
 			}
 			else if (type==MENU_FIXED) {
 				// NOTE: no need to calculate max width
-				int mw = screen->w - SCALE1(PADDING*2);
+				int mw = screen->w - SCALE1((PADDING - (PADDING*fancy_mode))*2);
 				// int lw,rw;
 				// lw = rw = mw / 2;
 				int ox,oy;
-				ox = oy = SCALE1(PADDING);
+				ox = oy = SCALE1((PADDING - (PADDING*fancy_mode)));
 				oy += SCALE1(PILL_SIZE);
 				
 				int selected_row = selected - start;
@@ -3334,11 +3384,11 @@ static int Menu_options(MenuList* list) {
 					}
 					fflush(stdout);
 					// cache the result
-					list->max_width = mw = MIN(mw, screen->w - SCALE1(PADDING *2));
+					list->max_width = mw = MIN(mw, screen->w - SCALE1((PADDING - (PADDING*fancy_mode)) *2));
 				}
 				
 				int ox = (screen->w - mw) / 2;
-				int oy = SCALE1(PADDING + PILL_SIZE);
+				int oy = SCALE1((PADDING - (PADDING*fancy_mode)) + PILL_SIZE);
 				int selected_row = selected - start;
 				for (int i=start,j=0; i<end; i++,j++) {
 					MenuItem* item = &items[i];
@@ -3393,8 +3443,8 @@ static int Menu_options(MenuList* list) {
 				#define SCROLL_HEIGHT 4
 				int ox = (screen->w - SCALE1(SCROLL_WIDTH))/2;
 				int oy = SCALE1((PILL_SIZE - SCROLL_HEIGHT) / 2);
-				if (start>0) GFX_blitAsset(ASSET_SCROLL_UP,   NULL, screen, &(SDL_Rect){ox, SCALE1(PADDING) + oy});
-				if (end<count) GFX_blitAsset(ASSET_SCROLL_DOWN, NULL, screen, &(SDL_Rect){ox, screen->h - SCALE1(PADDING + PILL_SIZE + BUTTON_SIZE) + oy});
+				if (start>0) GFX_blitAsset(ASSET_SCROLL_UP,   NULL, screen, &(SDL_Rect){ox, SCALE1((PADDING - (PADDING*fancy_mode))) + oy});
+				if (end<count) GFX_blitAsset(ASSET_SCROLL_DOWN, NULL, screen, &(SDL_Rect){ox, screen->h - SCALE1((PADDING - (PADDING*fancy_mode)) + PILL_SIZE + BUTTON_SIZE) + oy});
 			}
 			
 			if (!desc && list->desc) desc = list->desc;
@@ -3404,7 +3454,7 @@ static int Menu_options(MenuList* list) {
 				GFX_sizeText(font.tiny, desc, SCALE1(12), &w,&h);
 				GFX_blitText(font.tiny, desc, SCALE1(12), COLOR_WHITE, screen, &(SDL_Rect){
 					(screen->w - w) / 2,
-					screen->h - SCALE1(PADDING) - h,
+					screen->h - SCALE1((PADDING - (PADDING*fancy_mode))) - h,
 					w,h
 				});
 			}
@@ -3631,6 +3681,24 @@ static void Menu_loadState(void) {
 	State_read();
 }
 
+static void Menu_makeboxart(void) {
+	SDL_Surface* bitmap = menu.bitmap;
+	if (!bitmap) bitmap = SDL_CreateRGBSurfaceFrom(renderer.src, renderer.true_w, renderer.true_h, FIXED_DEPTH, renderer.src_p, RGBA_MASK_565);
+	char myEmuName[256];
+	char myRomName[256];
+	char bmppath[512];
+	//strcpy(dirname1,game.path);
+	//getParentFolderName(dirname1,dirname2);
+	//LOG_info("#####game.path###### = %s/Imgs\n", game.path);
+	getParentFolderName(game.path, myEmuName);
+	getDisplayNameParens(game.path, myRomName);
+	sprintf(bmppath, ROMS_PATH "/%s/Imgs/%s.png", myEmuName , myRomName);
+	LOG_info("#####boxart name###### = %s\n", bmppath);
+	makeBoxart(bitmap,bmppath);
+
+	if (bitmap!=menu.bitmap) SDL_FreeSurface(bitmap);
+}
+
 static char* getAlias(char* path, char* alias) {
 	LOG_info("alias path: %s\n", path);
 	char* tmp;
@@ -3655,7 +3723,7 @@ static char* getAlias(char* path, char* alias) {
 				trimTrailingNewlines(line);
 				if (strlen(line)==0) continue; // skip empty lines
 			
-				tmp = strchr(line,'\t');
+				tmp = strchr(line,'#');
 				if (tmp) {
 					tmp[0] = '\0';
 					char* key = line;
@@ -3776,6 +3844,10 @@ static void Menu_loop(void) {
 			Menu_updateState();
 		}
 		
+		if (PAD_justPressed(BTN_Y)) {
+			Menu_makeboxart();		
+		}
+
 		if (PAD_justPressed(BTN_B) || (BTN_WAKE!=BTN_MENU && PAD_tappedMenu(now))) {
 			status = STATUS_CONT;
 			show_menu = 0;
@@ -3806,6 +3878,12 @@ static void Menu_loop(void) {
 					show_menu = 0;
 				}
 				break;
+			/*	case ITEM_BOXART: {
+					Menu_makeboxart();
+					status = STATUS_BOXART;
+					show_menu = 1;
+				}
+				break;*/
 				case ITEM_OPTS: {
 					if (simple_mode) {
 						core.reset();
@@ -3849,7 +3927,7 @@ static void Menu_loop(void) {
 
 			int ox, oy;
 			int ow = GFX_blitHardwareGroup(screen, show_setting);
-			int max_width = screen->w - SCALE1(PADDING * 2) - ow;
+			int max_width = screen->w - SCALE1((PADDING - (PADDING*fancy_mode)) * 2) - ow;
 			
 			char display_name[256];
 			int text_width = GFX_truncateText(font.large, rom_name, display_name, max_width, SCALE1(BUTTON_PADDING*2));
@@ -3858,8 +3936,8 @@ static void Menu_loop(void) {
 			SDL_Surface* text;
 			text = TTF_RenderUTF8_Blended(font.large, display_name, COLOR_WHITE);
 			GFX_blitPill(ASSET_BLACK_PILL, screen, &(SDL_Rect){
-				SCALE1(PADDING),
-				SCALE1(PADDING),
+				SCALE1((PADDING - (PADDING*fancy_mode))),
+				SCALE1((PADDING - (PADDING*fancy_mode))),
 				max_width,
 				SCALE1(PILL_SIZE)
 			});
@@ -3869,17 +3947,17 @@ static void Menu_loop(void) {
 				max_width-SCALE1(BUTTON_PADDING*2),
 				text->h
 			}, screen, &(SDL_Rect){
-				SCALE1(PADDING+BUTTON_PADDING),
-				SCALE1(PADDING+4)
+				SCALE1((PADDING - (PADDING*fancy_mode))+BUTTON_PADDING),
+				SCALE1((PADDING - (PADDING*fancy_mode))+4)
 			});
 			SDL_FreeSurface(text);
 			
 			if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
-			else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr, NULL }, 0, screen, 0);
+			else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr, "Y","BOXART", NULL }, 0, screen, 0);
 			GFX_blitButtonGroup((char*[]){ "B","BACK", "A","OKAY", NULL }, 1, screen, 1);
 			
 			// list
-			oy = (((DEVICE_HEIGHT / FIXED_SCALE) - PADDING * 2) - (MENU_ITEM_COUNT * PILL_SIZE)) / 2;
+			oy = (((DEVICE_HEIGHT / FIXED_SCALE) - ((PADDING - (PADDING*fancy_mode))* 2)) - (MENU_ITEM_COUNT * PILL_SIZE)) / 2;
 			for (int i=0; i<MENU_ITEM_COUNT; i++) {
 				char* item = menu.items[i];
 				SDL_Color text_color = COLOR_WHITE;
@@ -3888,15 +3966,15 @@ static void Menu_loop(void) {
 					// disc change
 					if (menu.total_discs>1 && i==ITEM_CONT) {				
 						GFX_blitPill(ASSET_DARK_GRAY_PILL, screen, &(SDL_Rect){
-							SCALE1(PADDING),
-							SCALE1(oy + PADDING),
-							screen->w - SCALE1(PADDING * 2),
+							SCALE1((PADDING - (PADDING*fancy_mode))),
+							SCALE1(oy + (PADDING - (PADDING*fancy_mode))),
+							screen->w - SCALE1((PADDING - (PADDING*fancy_mode)) * 2),
 							SCALE1(PILL_SIZE)
 						});
 						text = TTF_RenderUTF8_Blended(font.large, disc_name, COLOR_WHITE);
 						SDL_BlitSurface(text, NULL, screen, &(SDL_Rect){
-							screen->w - SCALE1(PADDING + BUTTON_PADDING) - text->w,
-							SCALE1(oy + PADDING + 4)
+							screen->w - SCALE1((PADDING - (PADDING*fancy_mode)) + BUTTON_PADDING) - text->w,
+							SCALE1(oy + (PADDING - (PADDING*fancy_mode)) + 4)
 						});
 						SDL_FreeSurface(text);
 					}
@@ -3906,8 +3984,8 @@ static void Menu_loop(void) {
 					
 					// pill
 					GFX_blitPill(ASSET_WHITE_PILL, screen, &(SDL_Rect){
-						SCALE1(PADDING),
-						SCALE1(oy + PADDING + (i * PILL_SIZE)),
+						SCALE1((PADDING - (PADDING*fancy_mode))),
+						SCALE1(oy + (PADDING - (PADDING*fancy_mode)) + (i * PILL_SIZE)),
 						ow,
 						SCALE1(PILL_SIZE)
 					});
@@ -3917,8 +3995,8 @@ static void Menu_loop(void) {
 					// shadow
 					text = TTF_RenderUTF8_Blended(font.large, item, COLOR_BLACK);
 					SDL_BlitSurface(text, NULL, screen, &(SDL_Rect){
-						SCALE1(2 + PADDING + BUTTON_PADDING),
-						SCALE1(1 + PADDING + oy + (i * PILL_SIZE) + 4)
+						SCALE1(2 + (PADDING - (PADDING*fancy_mode)) + BUTTON_PADDING),
+						SCALE1(1 + (PADDING - (PADDING*fancy_mode)) + oy + (i * PILL_SIZE) + 4)
 					});
 					SDL_FreeSurface(text);
 				}
@@ -3926,8 +4004,8 @@ static void Menu_loop(void) {
 				// text
 				text = TTF_RenderUTF8_Blended(font.large, item, text_color);
 				SDL_BlitSurface(text, NULL, screen, &(SDL_Rect){
-					SCALE1(PADDING + BUTTON_PADDING),
-					SCALE1(oy + PADDING + (i * PILL_SIZE) + 4)
+					SCALE1((PADDING - (PADDING*fancy_mode)) + BUTTON_PADDING),
+					SCALE1(oy + (PADDING - (PADDING*fancy_mode)) + (i * PILL_SIZE) + 4)
 				});
 				SDL_FreeSurface(text);
 			}
@@ -4136,6 +4214,8 @@ int main(int argc , char* argv[]) {
 	char core_path[MAX_PATH];
 	char rom_path[MAX_PATH]; 
 	char tag_name[MAX_PATH];
+
+	fancy_mode = exists(FANCY_MODE_PATH);
 	
 	strcpy(core_path, argv[1]);
 	strcpy(rom_path, argv[2]);
@@ -4147,7 +4227,7 @@ int main(int argc , char* argv[]) {
 	if (exists(PWR_SLEEP_PATH)){
 		sprintf(pwractionstr,"SLEEP");
 	} else {
-		sprintf(pwractionstr,"SHUTDOWN");
+		sprintf(pwractionstr,"OFF");
 	}
 
 	screen = GFX_init(MODE_MENU);

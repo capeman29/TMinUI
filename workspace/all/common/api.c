@@ -20,6 +20,8 @@
 
 ///////////////////////////////
 
+int fancy_mode;
+
 void LOG_note(int level, const char* fmt, ...) {
 	char buf[1024] = {0};
 	va_list args;
@@ -698,8 +700,8 @@ int GFX_blitHardwareGroup(SDL_Surface* dst, int show_setting) {
 	
 	if (show_setting && !GetHDMI()) {
 		ow = SCALE1(PILL_SIZE + SETTINGS_WIDTH + 10 + 4);
-		ox = dst->w - SCALE1(PADDING) - ow;
-		oy = SCALE1(PADDING);
+		ox = dst->w - SCALE1((PADDING - (PADDING*fancy_mode))) - ow;
+		oy = SCALE1((PADDING - (PADDING*fancy_mode)));
 		GFX_blitPill(gfx.mode==MODE_MAIN ? ASSET_DARK_GRAY_PILL : ASSET_BLACK_PILL, dst, &(SDL_Rect){
 			ox,
 			oy,
@@ -750,8 +752,8 @@ int GFX_blitHardwareGroup(SDL_Surface* dst, int show_setting) {
 		ow = SCALE1(PILL_SIZE);
 		if (show_wifi) ow += ww;
 
-		ox = dst->w - SCALE1(PADDING) - ow;
-		oy = SCALE1(PADDING);
+		ox = dst->w - SCALE1((PADDING - (PADDING*fancy_mode))) - ow;
+		oy = SCALE1((PADDING - (PADDING*fancy_mode)));
 		GFX_blitPill(gfx.mode==MODE_MAIN ? ASSET_DARK_GRAY_PILL : ASSET_BLACK_PILL, dst, &(SDL_Rect){
 			ox,
 			oy,
@@ -800,8 +802,8 @@ int GFX_blitButtonGroup(char** pairs, int primary, SDL_Surface* dst, int align_r
 	int w = 0; // individual button dimension
 	int h = 0; // hints index
 	ow = 0; // full pill width
-	ox = align_right ? dst->w - SCALE1(PADDING) : SCALE1(PADDING);
-	oy = dst->h - SCALE1(PADDING + PILL_SIZE);
+	ox = align_right ? dst->w - SCALE1((PADDING - (PADDING*fancy_mode))) : SCALE1((PADDING - (PADDING*fancy_mode)));
+	oy = dst->h - SCALE1((PADDING - (PADDING*fancy_mode)) + PILL_SIZE);
 	
 	for (int i=0; i<2; i++) {
 		if (!pairs[i*2]) break;

@@ -131,6 +131,9 @@ enum {
 	MODE_MENU,
 };
 
+extern int fancy_mode;
+
+
 SDL_Surface* GFX_init(int mode);
 #define GFX_resize PLAT_resizeVideo // (int w, int h, int pitch);
 #define GFX_setScaleClip PLAT_setVideoScaleClip // (int x, int y, int width, int height)

@@ -546,7 +546,7 @@ static int restore_end = 0;
 #define SIMPLE_MODE "Simple (no Setting)"
 #define FANCY_MODE "Fancy (Boxart + State)"
 
-static int fancy_mode = 0;
+int fancy_mode = 0;
 static int hide_state = 0;
 static int hide_boxartifstate = 0;
 
@@ -2076,7 +2076,7 @@ int main (int argc, char *argv[]) {
 						int available_width = 0;
 						TTF_Font *_font = font.large;
 						SDL_Color text_color = COLOR_WHITE;
-						available_width = screen->w  - SCALE1(PADDING * 2);
+						available_width = screen->w  - SCALE1((PADDING - (PADDING*fancy_mode)) * 2);
 						if (fancy_mode) {
 							_font = font.medium;
 							available_width = screen->w - ( screen->w  * 3 / 5);
@@ -2086,7 +2086,7 @@ int main (int argc, char *argv[]) {
 						if ((j==selected_row) && (fancy_mode)) {
 							text_color = COLOR_WHITE;
 							_font = font.large;
-							available_width = screen->w  - SCALE1(PADDING * 2);				
+							available_width = screen->w  - SCALE1((PADDING - (PADDING*fancy_mode)) * 2);				
 						} 
 						if ((i==top->start) && !(fancy_mode) ) available_width -= ow;
 					
@@ -2102,8 +2102,8 @@ int main (int argc, char *argv[]) {
 						int max_width = MIN(available_width, text_width);
 						if ((j==selected_row) && !(fancy_mode)) {
 							GFX_blitPill(ASSET_WHITE_PILL, screen, &(SDL_Rect){
-								SCALE1(PADDING),
-								SCALE1(PADDING+(j*PILL_SIZE)),
+								SCALE1((PADDING - (PADDING*fancy_mode))),
+								SCALE1((PADDING - (PADDING*fancy_mode))+(j*PILL_SIZE)),
 								max_width,
 								SCALE1(PILL_SIZE)
 							});
@@ -2122,8 +2122,8 @@ int main (int argc, char *argv[]) {
 							}, screen, &(SDL_Rect){
 								//SCALE1(PADDING+BUTTON_PADDING),
 								//SCALE1(PADDING+(j*PILL_SIZE)+4)
-								SCALE1(PADDING+BUTTON_PADDING-(PADDING*fancy_mode)),
-								SCALE1(PADDING+(j*(PILL_SIZE-(7*fancy_mode)))+((PILL_SIZE-(7*fancy_mode))*fancy_mode)+4)
+								SCALE1((PADDING - (PADDING*fancy_mode))+BUTTON_PADDING-(PADDING*fancy_mode)),
+								SCALE1((PADDING - (PADDING*fancy_mode))+(j*(PILL_SIZE-(5*fancy_mode)))+((PILL_SIZE-(5*fancy_mode))*fancy_mode)+4)
 							});
 						
 							GFX_truncateText(_font, entry_name, display_name, available_width, SCALE1(BUTTON_PADDING*2));
@@ -2137,8 +2137,8 @@ int main (int argc, char *argv[]) {
 								max_width-SCALE1(BUTTON_PADDING*2),
 								textout->h
 							}, screen, &(SDL_Rect){
-								SCALE1(PADDING+BUTTON_PADDING-(PADDING*fancy_mode)),
-								SCALE1(PADDING+(j*(PILL_SIZE-(7*fancy_mode))+((PILL_SIZE-(7*fancy_mode))*fancy_mode)+4))
+								SCALE1((PADDING - (PADDING*fancy_mode))+BUTTON_PADDING-(PADDING*fancy_mode)),
+								SCALE1((PADDING - (PADDING*fancy_mode))+(j*(PILL_SIZE-(5*fancy_mode))+((PILL_SIZE-(5*fancy_mode))*fancy_mode)+4))
 							});
 							SDL_FreeSurface(textout);
 						}
@@ -2148,8 +2148,8 @@ int main (int argc, char *argv[]) {
 							max_width-SCALE1(BUTTON_PADDING*2),
 							text->h
 						}, screen, &(SDL_Rect){
-							SCALE1(PADDING+BUTTON_PADDING-(PADDING*fancy_mode)),
-							SCALE1(PADDING+(j*(PILL_SIZE-(7*fancy_mode))+((PILL_SIZE-(7*fancy_mode))*fancy_mode)+4))
+							SCALE1((PADDING - (PADDING*fancy_mode))+BUTTON_PADDING-(PADDING*fancy_mode)),
+							SCALE1((PADDING - (PADDING*fancy_mode))+(j*(PILL_SIZE-(5*fancy_mode))+((PILL_SIZE-(5*fancy_mode))*fancy_mode)+4))
 						});
 						SDL_FreeSurface(text);
 						}

@@ -137,7 +137,7 @@ void getDisplayNameParens(const char* in_name, char* out_name) {
     tmp[1] = '\0';
 }
 
-
+//get the name of the parent directory with parentesys
 void getParentFolderName(const char* in_name, char* out_name) { // NOTE: both char arrays need to be MAX_PATH length!
 	char* tmp;
 	strcpy(out_name, in_name);

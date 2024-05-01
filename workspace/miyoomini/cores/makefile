@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom puae mame2003-plus neocd
-CORES += retroarch
+CORES += retroarch bmp2png
 
 
 ###############################
@@ -74,6 +74,11 @@ puae_CORE = puae2021_libretro.so
 
 neocd_REPO = https://github.com/libretro/neocd_libretro
 neocd_CORE = neocd_libretro.so
+
+
+bmp2png_REPO = https://github.com/Turro75/bmp2png
+bmp2png_CORE = bmp2png
+###############################
 
 ###############################
 
