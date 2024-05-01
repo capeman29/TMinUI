@@ -15,6 +15,10 @@ Features from FinUI:
 - Base and Extras are merged into one Full release
 
 New features of MyMinUI (RG35XX and MiyooMiniplus only):
+- improved update/install process which allows to copy directly the release file in the sdcard root, be aware that this overwrites all existing files (but it keeps bios, roms, saves, etc..)
+  the original install/update process is still working (just in case You edited some launch.sh file).
+- minarch : added the ability to make a boxart using the current screenshot, it overwrites the current boxart if exists. 
+- added the bmp2png utility for future boxart related tools (not needed for devices wich use SDL2 such as rgb30)
 - Added HiddenRoms Collection (Press START to hide/unhide a rom)
 - added Retroarch 1.15 as alternative libretro frontend for cores it has the same video filters available on garlicos (WIP).
 - added prboom libretro core (Doom), it works only with retroarch as libretro frontend
@@ -37,6 +41,7 @@ New features of MyMinUI (RG35XX and MiyooMiniplus only):
       If saves are present in the selected rom the same state selector available in the in game menu (IMHO that is a MinUI awesome feature) is shown, the latest save is automatically selected, press X to load it, if X is pressed while an empty slot is selected the game starts without recalling state. save state selector is available ONLY for cores running Minarch.
       In fancy mode You can read the current folder in the top left corner of the display, while scrolling the recent or favorite lists it shows the folder of the currently selected game. 
       Under Tools there are 2 toggles to hide saved states and hide the boxart if a savestate is present.
+
 
 Some changes under the hood:
 - reduced footprint of the docker toolchain from 4.5GB down to 1.5GB.
