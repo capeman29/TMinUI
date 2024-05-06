@@ -75,7 +75,6 @@ puae_CORE = puae2021_libretro.so
 neocd_REPO = https://github.com/libretro/neocd_libretro
 neocd_CORE = neocd_libretro.so
 
-
 bmp2png_REPO = https://github.com/Turro75/bmp2png
 bmp2png_CORE = bmp2png
 ###############################

@@ -46,6 +46,7 @@ system:
 	cp ./workspace/all/clock/build/$(PLATFORM)/clock.elf ./build/EXTRAS/Tools/$(PLATFORM)/Clock.pak/
 	cp ./workspace/all/minput/build/$(PLATFORM)/minput.elf ./build/EXTRAS/Tools/$(PLATFORM)/Input.pak/
 	cp ./workspace/all/clear_recent/build/$(PLATFORM)/clear_recent.elf "./build/EXTRAS/Tools/$(PLATFORM)/Clear Recently Played.pak/"
+	cp ./workspace/all/convertboxart/build/$(PLATFORM)/convertboxart.elf "./build/EXTRAS/Tools/$(PLATFORM)/Convert BoxArt.pak/"
 
 cores:
 	cp ./workspace/$(PLATFORM)/cores/output/* ./build/SYSTEM/$(PLATFORM)/cores/

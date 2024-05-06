@@ -23,6 +23,7 @@ all:
 	cd ./all/clock/ && make
 	cd ./all/minput/ && make
 	cd ./all/clear_recent/ && make
+	cd ./all/convertboxart/ && make
 
 	cd ./$(PLATFORM)/cores && make
 	cd ./$(PLATFORM) && make
@@ -33,3 +34,4 @@ clean:
 	cd ./all/minui/ && make clean
 	cd ./all/minarch/ && make clean
 	cd ./$(PLATFORM) && make clean
+	cd ./all/convertboxart/ && make clean
