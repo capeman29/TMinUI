@@ -13,10 +13,10 @@ this is the resulting outfile.png ready to copied in the Imgs folder:
 
 The example Infile.bmp is actually a save state preview taken direclty from the device, state previews are stored in /mnt/sdcard/.userdata/shared/.minui/<EMU_FOLDER>/\<gamename\>.\<ext\>.\<slot\>.bmp
 
-MyMinUI add 2 more ways to get a boxart/game preview directly on the device:
+#MyMinUI add 2 more ways to get a boxart/game preview directly on the device:
 
 In menu game select "make Boxart" to create a boxart of the current game screen
-In "Tools/Convert Boxart" You can batch converting the images from a directory with a specific format.
+In "Tools/Convert Boxart" You can batch converting the images (png and bmp format only) from a directory with a specific format.
 Currently the source directory is fixed in code, just copy the images You want to convert in the folder "/mnt/sdcard/Tools/${PLATFORM}/Convert Boxart.pak/srcimgdir" all converted images are stored in 
 "/mnt/sdcard/Tools/${PLATFORM}/Convert Boxart.pak/srcimgdir/outdir", the outdir is auto created if not existing.
 
@@ -40,14 +40,15 @@ SW and SH define the specific device resolution, for most devices is 640x480
 
 these values define the target box position and size where the image (or the screenshot) will be fitted, looking at the screen the top left corner is BX=0,BY=0 while the bottom rigth corner is BX=640,BY=480.
 
-//the aspect may be 0 which means ASPECT which preserves the original aspect ratio of the e image (or the screenshot) by filling the target box
-
+    //the aspect may be 0 which means ASPECT which preserves the original aspect ratio of the e image (or the screenshot) by filling the target box
     //ASPECT = 0
     //the aspect may be 1 which means NATIVE which preserves the original image (or the screenshot) size and aspect ratio placing it in the middle of the target box,
         if the original size is bigger than target box then ASPECT rule is applied   
     //ASPECT = 1
     //the aspect may be 2 which means FULL which resizes the image (or the screenshot) to full fit the target box ignoring original aspect ratio    
     ASPECT = 2
+
+and last it can be defined a gradient file to add transparency effect to the resulting image
 
     //the gradient is a png file with transparency set which is applied to the image, define a full path file name or NONE to skip this step 
     GRADIENT = /mnt/sdcard/Tools/rg35xx/Convert BoxArt.pak/BlackGradient.png
