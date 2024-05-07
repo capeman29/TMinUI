@@ -26,15 +26,13 @@ there are 2 different config files to set the boxart result.
 
 both have the same parameters:
 
-    //screen pixels size 
-    
+    //screen pixels size     
     SW = 640
     SH = 480
 
 SW and SH define the specific device resolution, for most devices is 640x480
 
-    //BX, BY, BW, BH define the target box where to place the image, BX and BY define the position of the top left corner of the box, BW and BH define the width and the height of the target box
-    
+    //BX, BY, BW, BH define the target box where to place the image, BX and BY define the position of the top left corner of the box, BW and BH define the width and the height of the target box    
     BX = 160
     BY = 60
     BW = 480
@@ -45,16 +43,13 @@ these values define the target box position and size where the image (or the scr
 //the aspect may be 0 which means ASPECT which preserves the original aspect ratio of the e image (or the screenshot) by filling the target box
 
     //ASPECT = 0
-    //the aspect may be 1 which means NATIVE which preserves the original image (or the screenshot) size and aspect ratio placing it in the middle of the target box, if the original size is bigger than target box then ASPECT rule is applied
-    
+    //the aspect may be 1 which means NATIVE which preserves the original image (or the screenshot) size and aspect ratio placing it in the middle of the target box,
+        if the original size is bigger than target box then ASPECT rule is applied   
     //ASPECT = 1
-    //the aspect may be 2 which means FULL which resizes the image (or the screenshot) to full fit the target box ignoring original aspect ratio
-    
+    //the aspect may be 2 which means FULL which resizes the image (or the screenshot) to full fit the target box ignoring original aspect ratio    
     ASPECT = 2
 
-
     //the gradient is a png file with transparency set which is applied to the image, define a full path file name or NONE to skip this step 
-    
     GRADIENT = /mnt/sdcard/Tools/rg35xx/Convert BoxArt.pak/BlackGradient.png
     //GRADIENT = NONE
 
