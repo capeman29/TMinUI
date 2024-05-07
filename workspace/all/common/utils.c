@@ -183,6 +183,93 @@ void getDisplayParentFolderName(const char* in_name, char* out_name) { // NOTE: 
 	}
 }
 
+char *ltrim(char *s)
+{
+    while(isspace(*s)) s++;
+    return s;
+}
+
+char *rtrim(char *s)
+{
+    char* back = s + strlen(s);
+    while(isspace(*--back));
+    *(back+1) = '\0';
+    return s;
+}
+
+char *trim(char *s)
+{
+    return rtrim(ltrim(s)); 
+}
+
+
+int readBoxartcfg(char * filecfg){
+	//read BOXART_CFGFILE then fill the struct woth all read data
+	FILE *config = fopen(filecfg,"r");
+    //LOG_info("Opening CFG file %s\n", BOXART_CFGFILE);
+    char *mygradient;
+    if (config) {
+		char * pch;
+		char parametri[512];
+        //LOG_info("Reading CFG file %s\n", BOXART_CFGFILE);
+        while (fgets(parametri, sizeof(parametri), config)) {
+            char tmpstr[20];
+                if (strncmp(parametri,"BX =",4) == 0){
+                pch = strtok (parametri,"=");
+                pch = strtok (NULL, "=");
+                boxartdata.bX = strtol(pch,NULL,10);
+                //LOG_info("BX = %d\n", boxartdata.bX);
+                }
+            if (strncmp(parametri,"BY =",4) == 0){
+                pch = strtok (parametri,"=");
+                pch = strtok (NULL, "=");
+                boxartdata.bY = strtol(pch,NULL,10);
+                //LOG_info("BY = %d\n", boxartdata.bY);
+                }
+            if (strncmp(parametri,"BW =",4) == 0){
+                pch = strtok (parametri,"=");
+                pch = strtok (NULL, "=");
+                boxartdata.bW = strtol(pch,NULL,10);
+                //LOG_info("BW = %d\n", boxartdata.bW);
+                }
+            if (strncmp(parametri,"BH =",4) == 0){
+                pch = strtok (parametri,"=");
+                pch = strtok (NULL, "=");
+                boxartdata.bH = strtol(pch,NULL,10);
+                //LOG_info("BH = %d\n", boxartdata.bH);
+                }
+            if (strncmp(parametri,"SW =",4) == 0){
+                pch = strtok (parametri,"=");
+                pch = strtok (NULL, "=");
+                boxartdata.sW = strtol(pch,NULL,10);
+                //LOG_info("SW = %d\n", boxartdata.sW);
+                }
+            if (strncmp(parametri,"SH =",4) == 0){
+                pch = strtok (parametri,"=");
+                pch = strtok (NULL, "=");
+                boxartdata.sH = strtol(pch,NULL,10);
+                //LOG_info("SH = %d\n", boxartdata.sH);
+                }
+            if (strncmp(parametri,"ASPECT =",8) == 0){
+                pch = strtok (parametri,"=");
+                pch = strtok (NULL, "=");
+                boxartdata.aspect = strtol(pch,NULL,10);
+                //LOG_info("ASPECT = %d\n", boxartdata.aspect);
+                }
+            if (strncmp(parametri,"GRADIENT = ",11) == 0){
+                pch = strtok (parametri,"=");
+                pch = strtok (NULL, "=");
+				mygradient = trim(pch);
+                sprintf(boxartdata.gradient,"%s", mygradient);
+                //LOG_info("GRADIENT = #%s#\n",(boxartdata.gradient);
+                }            
+        }
+        fclose(config);
+		return 1;
+    }
+	return -1;
+}
+
 
 // end boxarts
 

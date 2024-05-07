@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+
 int prefixMatch(char* pre, char* str);
 int suffixMatch(char* suf, char* str);
 int exactMatch(char* str1, char* str2);
@@ -15,11 +16,28 @@ void getEmuPath(char* emu_name, char* pak_path);
 void getDisplayNameParens(const char* in_name, char* out_name);
 void getParentFolderName(const char* in_name, char* out_name);
 void getDisplayParentFolderName(const char* in_name, char* out_name);
+int readBoxartcfg(char *);
 // end boxarts
 
 void normalizeNewline(char* line);
 void trimTrailingNewlines(char* line);
 void trimSortingMeta(char** str);
+char *trim(char *s);
+
+enum Aspect { ASPECT, NATIVE, FULL};
+
+struct _BoxartData {
+    int sW;
+    int sH;
+    int bX;
+    int bY;
+    int bW;
+    int bH;
+    enum Aspect aspect;
+    char gradient[256];
+};
+
+struct _BoxartData boxartdata;
 
 int exists(char* path);
 void touch(char* path);

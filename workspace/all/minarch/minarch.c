@@ -2507,7 +2507,7 @@ void Core_close(void) {
 
 ///////////////////////////////////////
 
-#define MENU_ITEM_COUNT 5
+#define MENU_ITEM_COUNT 6
 #define MENU_SLOT_COUNT 8
 
 enum {
@@ -2515,7 +2515,7 @@ enum {
 	ITEM_SAVE,
 	ITEM_LOAD,
 	ITEM_OPTS,
-	//ITEM_BOXART,
+	ITEM_BOXART,
 	ITEM_QUIT,
 };
 
@@ -2525,7 +2525,7 @@ enum {
 	STATUS_LOAD = 11,
 	STATUS_OPTS = 23,
 	STATUS_DISC = 24,
-	//STATUS_BOXART = 25,
+	STATUS_BOXART = 25,
 	STATUS_QUIT = 30,
 	STATUS_RESET= 31,
 };
@@ -2558,7 +2558,7 @@ static struct {
 		[ITEM_SAVE] = "Save",
 		[ITEM_LOAD] = "Load",
 		[ITEM_OPTS] = "Options",
-	//	[ITEM_BOXART] = "Make Boxart",
+		[ITEM_BOXART] = "Make Boxart",
 		[ITEM_QUIT] = "Quit",
 	}
 };
@@ -2566,6 +2566,7 @@ static struct {
 #define BGRADIENT RES_PATH"/BlackGradient.png"
 
 int makeBoxart(SDL_Surface *image, char *filename) {
+	readBoxartcfg(GAMEBOXART_CFGFILE);
 	char dirpath[256];
 	char tmp[256];
 	char cmd1[512];
@@ -2575,22 +2576,80 @@ int makeBoxart(SDL_Surface *image, char *filename) {
     sprintf(cmd1,"mkdir -p \"%s\"",dirpath); 
 	system(cmd1);
 	cmd1[0]='\0';
-    SDL_Surface *mysurface = SDL_CreateRGBSurface(0,640,480,16,0,0,0,0);
+    SDL_Surface *mysurface = SDL_CreateRGBSurface(0,boxartdata.sW,boxartdata.sH,16,0,0,0,0);
     //SDL_Surface *unscaled_myimg = IMG_Load(BACKGROUND);
     if (image == NULL){
         LOG_info("errore nel caricare l'immagine sfondo");
         return -1;
     }
-    SDL_Surface *blackgradient = IMG_Load(BGRADIENT);
-    if (blackgradient == NULL){
-        LOG_info("IMG_Load: %s\n", IMG_GetError());
-        return -1;    
+	double xfactr, yfactr;
+    double myaspect = 1.0 * image->w / image->h; 
+    int localX = boxartdata.bX;
+    int localY = boxartdata.bY; 
+    switch (boxartdata.aspect) {
+        case ASPECT: 
+            LOG_info("ASPECT = ASPECT\n");
+            //first calculate othe original aspectratio
+            if (myaspect > 1.0){
+                //the W is bigger than H
+                    //resize to fit W
+                    xfactr = 1.0 * boxartdata.bW / image->w;
+                    yfactr = xfactr; 
+                    localY += (boxartdata.bH - (image->h * yfactr))/2;
+            } else { //image is higher than wider
+                    //resize to fit H
+                    yfactr = 1.0 * boxartdata.bH / image->h;
+                    xfactr = yfactr; 
+                    localX += (boxartdata.bW - (image->w * xfactr))/2;
+            }
+            break;
+        case NATIVE: 
+            LOG_info("ASPECT = NATIVE\n");
+            if ((boxartdata.bW > image->w) && (boxartdata.bH > image->h)){
+                //image is smaller than target box
+                xfactr = 1.0;
+                yfactr = 1.0; 
+                //change x y to place the image in the center of the target box
+                localX += (boxartdata.bW - image->w)/2;
+                localY += (boxartdata.bH - image->h)/2;
+            } else {
+                //image is bigger than target box so apply ASPECT rule
+                if (myaspect > 1.0){
+                    //the W is bigger than H
+                        //resize to fit W
+                        xfactr = 1.0 * boxartdata.sW / image->w;
+                        yfactr = xfactr; 
+                        localY += (boxartdata.bH - (image->h * yfactr))/2;
+                } else { //image is higher than wider
+                        //resize to fit H
+                        yfactr = 1.0 * boxartdata.bH / image->h;
+                        xfactr = yfactr; 
+                        localX += (boxartdata.bW - (image->w * xfactr))/2;
+                }
+            }            
+            break;
+        case FULL: 
+            //fill target box by shrinking/streching the original image
+            LOG_info("ASPECT = FULL\n");
+            xfactr = 1.0 * boxartdata.bW / image->w;
+            yfactr = 1.0 * boxartdata.bH / image->h; 
+            break;
     }
-    SDL_Surface *scaled_myimg = zoomSurface(image, (1.0 * 480 / image->w) , (1.0 * 360 / image->h), 0);    
-    SDL_BlitSurface(scaled_myimg,NULL,mysurface,&(SDL_Rect){160,60}); 
-    SDL_SetColorKey(blackgradient, SDL_TRUE, SDL_MapRGB(blackgradient->format, 0, 0, 0)); // enable color key (transparency)
-    SDL_BlitSurface(blackgradient,NULL,mysurface,NULL);
-    SDL_FreeSurface(blackgradient);
+    SDL_Surface *scaled_myimg = zoomSurface(image, xfactr , yfactr, 0);
+    SDL_BlitSurface(scaled_myimg,NULL,mysurface,&(SDL_Rect){localX,localY});
+
+	if (strncmp(boxartdata.gradient,"NONE",4) != 0){
+        SDL_Surface *blackgradient = IMG_Load(boxartdata.gradient);
+        if (blackgradient == NULL){
+            LOG_info("Failed loading Gradient: %s\n", IMG_GetError());
+            return -1;  
+        } 
+        SDL_SetColorKey(blackgradient, SDL_TRUE, SDL_MapRGB(blackgradient->format, 0, 0, 0)); // enable color key (transparency)
+        SDL_BlitSurface(blackgradient,NULL,mysurface,NULL);
+        SDL_FreeSurface(blackgradient);
+    }
+
+
     SDL_RWops* out = SDL_RWFromFile(filename, "wb");
     SDL_SaveBMP_RW(mysurface, out, 1); 
     //SDL_BlitSurface(mysurface,NULL,screen,NULL); 
@@ -3878,12 +3937,12 @@ static void Menu_loop(void) {
 					show_menu = 0;
 				}
 				break;
-			/*	case ITEM_BOXART: {
+				case ITEM_BOXART: {
 					Menu_makeboxart();
 					status = STATUS_BOXART;
 					show_menu = 1;
 				}
-				break;*/
+				break;
 				case ITEM_OPTS: {
 					if (simple_mode) {
 						core.reset();
