@@ -1,4 +1,4 @@
-Command line on PC to convert any image to a good boxart for MyMinUI
+# Command line on PC to convert any image to a good boxart for MyMinUI
 needs ImageMagick 
 
 this is infile.bmp:
@@ -13,7 +13,7 @@ this is the resulting outfile.png ready to copied in the Imgs folder:
 
 The example Infile.bmp is actually a save state preview taken direclty from the device, state previews are stored in /mnt/sdcard/.userdata/shared/.minui/<EMU_FOLDER>/\<gamename\>.\<ext\>.\<slot\>.bmp
 
-#MyMinUI add 2 more ways to get a boxart/game preview directly on the device:
+# MyMinUI add 2 more ways to get a boxart/game preview directly on the device:
 
 In menu game select "make Boxart" to create a boxart of the current game screen
 In "Tools/Convert Boxart" You can batch converting the images (png and bmp format only) from a directory with a specific format.
