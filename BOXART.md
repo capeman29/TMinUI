@@ -27,6 +27,7 @@ there are 2 different config files to set the boxart result.
 both have the same parameters:
 
 //screen pixels size 
+
 SW = 640
 SH = 480
 
