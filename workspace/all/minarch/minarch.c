@@ -2507,7 +2507,7 @@ void Core_close(void) {
 
 ///////////////////////////////////////
 
-#define MENU_ITEM_COUNT 6
+#define MENU_ITEM_COUNT 5
 #define MENU_SLOT_COUNT 8
 
 enum {
@@ -2515,7 +2515,7 @@ enum {
 	ITEM_SAVE,
 	ITEM_LOAD,
 	ITEM_OPTS,
-	ITEM_BOXART,
+	//ITEM_BOXART,
 	ITEM_QUIT,
 };
 
@@ -2525,7 +2525,7 @@ enum {
 	STATUS_LOAD = 11,
 	STATUS_OPTS = 23,
 	STATUS_DISC = 24,
-	STATUS_BOXART = 25,
+	//STATUS_BOXART = 25,
 	STATUS_QUIT = 30,
 	STATUS_RESET= 31,
 };
@@ -2558,12 +2558,10 @@ static struct {
 		[ITEM_SAVE] = "Save",
 		[ITEM_LOAD] = "Load",
 		[ITEM_OPTS] = "Options",
-		[ITEM_BOXART] = "Make Boxart",
+		//[ITEM_BOXART] = "Make Boxart",
 		[ITEM_QUIT] = "Quit",
 	}
 };
-
-#define BGRADIENT RES_PATH"/BlackGradient.png"
 
 int makeBoxart(SDL_Surface *image, char *filename) {
 	readBoxartcfg(GAMEBOXART_CFGFILE);
@@ -3937,12 +3935,12 @@ static void Menu_loop(void) {
 					show_menu = 0;
 				}
 				break;
-				case ITEM_BOXART: {
+				/*case ITEM_BOXART: {
 					Menu_makeboxart();
 					status = STATUS_BOXART;
 					show_menu = 1;
 				}
-				break;
+				break;*/
 				case ITEM_OPTS: {
 					if (simple_mode) {
 						core.reset();
