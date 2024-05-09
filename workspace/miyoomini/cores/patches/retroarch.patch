@@ -46,16 +46,4 @@ index ccecab6..bc3d9e4 100644
  INCLUDE_DIRS = -I$(GCW0_INC_DIR)
  LIBRARY_DIRS = -L$(GCW0_LIB_DIR)
  DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
-diff --git a/runloop.c b/runloop.c
-index 846fbab..3ba937e 100644
---- a/runloop.c
-+++ b/runloop.c
-@@ -7214,7 +7214,7 @@ bool runloop_get_savestate_path(char *path, size_t len, int state_slot)
-    if (string_is_empty(name_savestate))
-       return false;
- 
--   if (state_slot > 0)
-+   if (state_slot >= 0)
-       snprintf(path, len, "%s%d",  name_savestate, state_slot);
-    else if (state_slot < 0)
-       fill_pathname_join_delim(path, name_savestate, "auto", '.', len);
+

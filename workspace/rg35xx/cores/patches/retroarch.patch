@@ -250,16 +250,4 @@ index 543fe5b630..600bd015ff 100644
  #if defined(HAVE_LIBSHAKE)
  /* 5 ms period == 200 Hz
   * > Meissner's Corpuscle registers this
-diff --git a/runloop.c b/runloop.c
-index 1567c22424..74b1475e86 100644
---- a/runloop.c
-+++ b/runloop.c
-@@ -7204,7 +7204,7 @@ bool runloop_get_savestate_path(char *path, size_t len, int state_slot)
-    if (string_is_empty(name_savestate))
-       return false;
- 
--   if (state_slot > 0)
-+   if (state_slot >= 0)
-       snprintf(path, len, "%s%d",  name_savestate, state_slot);
-    else if (state_slot < 0)
-       fill_pathname_join_delim(path, name_savestate, "auto", '.', len);
+
