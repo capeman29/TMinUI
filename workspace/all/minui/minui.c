@@ -1298,12 +1298,12 @@ static void readyResumePath(char* rom_path, int type) {
 	getEmuName(path, emu_name);
 	
 	char rom_file[256];
-	tmp = strrchr(path, '/') + 1;
-	strcpy(rom_file, tmp);
-	
-	sprintf(slot_path_rom, "%s/.minui/%s/%s", SHARED_USERDATA_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext
+	//tmp = strrchr(path, '/') + 1;
+	//strcpy(rom_file, tmp);
+	getDisplayName(path,rom_file);
+	sprintf(slot_path, "%s/.minui/%s/%s.txt", SHARED_USERDATA_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>
 	//sprintf(slot_path_rom, "%s/%s/%s", MYSAVESTATE_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext
-	sprintf(slot_path, "%s.txt", slot_path_rom); // /.userdata/.minui/<EMU>/<romname>.ext.txt
+	//sprintf(slot_path, "%s.txt", slot_path_rom); // /.userdata/.minui/<EMU>/<romname>.ext.txt
 	
 	can_resume = exists(slot_path);
 }
@@ -1405,7 +1405,7 @@ static void openRom(char* path, char* last) {
 			}
 		}
 	}
-	else putInt(RESUME_SLOT_PATH,8); // resume hidden default state
+	else putInt(RESUME_SLOT_PATH,AUTO_RESUME_SLOT); // resume hidden default state
 	
 	char emu_path[256];
 	getEmuPath(emu_name, emu_path);
@@ -1596,12 +1596,12 @@ int drawStatePreview(SDL_Surface* _screen, char* bmpPath, int stateIndex){
 	SDL_FreeSurface(unscaled_preview);
 
    // pagination
-   #define MENU_SLOT_COUNT 9
+   #define MENU_SLOT_COUNT 8
 	ox += (pw-SCALE1(16*MENU_SLOT_COUNT))/2;
 	oy += hh+SCALE1(WINDOW_RADIUS)-SCALE1(PAGINATION_HEIGHT / 2 - 1);
-	for (int i=0; i<MENU_SLOT_COUNT; i++) {
-		if (i==stateIndex) GFX_blitAsset(ASSET_PAGE, NULL, _screen, &(SDL_Rect){ox+SCALE1(i*16),oy});
-		else GFX_blitAsset(ASSET_DOT, NULL, _screen, &(SDL_Rect){ox+SCALE1(i*16)+4,oy+SCALE1(2)});
+	for (int i=1; i<MENU_SLOT_COUNT+1; i++) {
+		if (i==stateIndex) GFX_blitAsset(ASSET_PAGE, NULL, _screen, &(SDL_Rect){ox+SCALE1((i-1)*16),oy});
+		else GFX_blitAsset(ASSET_DOT, NULL, _screen, &(SDL_Rect){ox+SCALE1((i-1)*16)+4,oy+SCALE1(2)});
 	}
     return 1;
 }
@@ -1803,7 +1803,7 @@ int main (int argc, char *argv[]) {
 					if (myentry->type == ENTRY_ROM){
 						if (can_resume) {
 							int curSaveIndex = getInt(slot_path);
-							curSaveIndex = curSaveIndex == 0 ? 8 : curSaveIndex-1;
+							curSaveIndex = curSaveIndex < 2  ? 8 : curSaveIndex-1;
 							putInt(slot_path,curSaveIndex);
 							dirty = 1;
 						}
@@ -1815,7 +1815,7 @@ int main (int argc, char *argv[]) {
 					if (myentry->type == ENTRY_ROM){
 						if (can_resume) {
 							int curSaveIndex = getInt(slot_path);
-							curSaveIndex = curSaveIndex == 8 ? 0 : curSaveIndex+1;
+							curSaveIndex = curSaveIndex > 7 ? 1 : curSaveIndex+1;
 							putInt(slot_path,curSaveIndex);
 							dirty = 1;
 						}
@@ -2022,8 +2022,20 @@ int main (int argc, char *argv[]) {
 						char myRomName[256];
 						char myBoxart_path[256];
 						char myEmuName[256];
+						int myslotint;
 						//readyResume(entry);
-						sprintf(myslot_path, "%s.%d.bmp",slot_path_rom, getInt(slot_path));
+						if (myentry->type == ENTRY_ROM){
+							getStatePath(myentry->path,slot_path_rom);
+							//sprintf(slot_path_rom, MYSAVESTATE_PATH "/MAME/States");
+							myslotint = getInt(slot_path);
+							if (myslotint){
+								sprintf(myslot_path, "%s/%s.state%d.png",slot_path_rom, myentry->name, myslotint);
+							} else {
+								sprintf(myslot_path, "%s/%s.state.png",slot_path_rom,myentry->name);
+							}
+						}
+						
+						
 						//top->path;
 						getParentFolderName(myentry->path, myEmuName);
 						getDisplayNameParens(myentry->path, myRomName);
@@ -2058,7 +2070,7 @@ int main (int argc, char *argv[]) {
 						// end print boxart
 						//print the state slot preview if present
 						if (showstate) {
-							drawStatePreview(screen, myslot_path, getInt(slot_path));	
+							drawStatePreview(screen, myslot_path, myslotint);	
 						}
 
 						//}

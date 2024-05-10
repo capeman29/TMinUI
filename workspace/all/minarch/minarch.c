@@ -190,6 +190,7 @@ static int Zip_inflate(FILE* zip, FILE* dst, size_t size) { // compressed
 static struct Game {
 	char path[MAX_PATH];
 	char name[MAX_PATH]; // TODO: rename to basename?
+	char basename[MAX_PATH];
 	char m3u_path[MAX_PATH];
 	char tmp_path[MAX_PATH]; // location of unzipped file
 	void* data;
@@ -201,8 +202,11 @@ static void Game_open(char* path) {
 	memset(&game, 0, sizeof(game));
 	
 	strcpy((char*)game.path, path);
+	//LOG_info("Game.path = %s\n", game.path);
 	strcpy((char*)game.name, strrchr(path, '/')+1);
-	
+	//LOG_info("Game.name = %s\n", game.name);
+	getDisplayName(game.name,game.basename);
+	//LOG_info("Game.basename = %s\n", game.basename);
 	// if we have a zip file
 	if (suffixMatch(".zip", game.path)) {
 		LOG_info("is zip file\n");
@@ -485,7 +489,11 @@ static void RTC_write(void) {
 
 static int state_slot = 0;
 static void State_getPath(char* filename) {
-	sprintf(filename, "%s/%s.st%i", core.states_dir, game.name, state_slot);
+	if (state_slot == 0){
+		sprintf(filename, "%s/%s.state", core.states_dir, game.basename);
+	} else {
+	sprintf(filename, "%s/%s.state%i", core.states_dir, game.basename, state_slot);
+	}
 }
 static void State_read(void) { // from picoarch
 	size_t state_size = core.serialize_size();
@@ -2439,7 +2447,8 @@ void Core_open(const char* core_path, const char* tag_name) {
 	LOG_info("core: %s version: %s tag: %s (valid_extensions: %s need_fullpath: %i)\n", core.name, core.version, core.tag, info.valid_extensions, info.need_fullpath);
 	
 	sprintf((char*)core.config_dir, USERDATA_PATH "/%s-%s", core.tag, core.name);
-	sprintf((char*)core.states_dir, SHARED_USERDATA_PATH "/%s-%s", core.tag, core.name);
+	//sprintf((char*)core.states_dir, SHARED_USERDATA_PATH "/%s-%s", core.tag, core.name);
+	sprintf((char*)core.states_dir, MYSAVESTATE_PATH "/%s/States", core.tag);
 	sprintf((char*)core.saves_dir, SDCARD_PATH "/Saves/%s", core.tag);
 	sprintf((char*)core.bios_dir, SDCARD_PATH "/Bios/%s", core.tag);
 	
@@ -2656,8 +2665,7 @@ int makeBoxart(SDL_Surface *image, char *filename) {
     SDL_FreeSurface(mysurface);
 
 	
-    sprintf(cmd1,"bmp2png.elf -X \"%s\" && rm \"%s.bak\"", filename, filename);
-    system(cmd1);
+   bmp2png(filename);
     return 1;
 }
 
@@ -2674,7 +2682,7 @@ void Menu_init(void) {
 	sprintf(menu.minui_dir, SHARED_USERDATA_PATH "/.minui/%s", emu_name);
 	mkdir(menu.minui_dir, 0755);
 
-	sprintf(menu.slot_path, "%s/%s.txt", menu.minui_dir, game.name);
+	sprintf(menu.slot_path, "%s/%s.txt", menu.minui_dir, game.basename);
 	
 	if (simple_mode) menu.items[ITEM_OPTS] = "Reset";
 	
@@ -3666,7 +3674,7 @@ static void Menu_scale(SDL_Surface* src, SDL_Surface* dst) {
 
 static void Menu_initState(void) {
 	if (exists(menu.slot_path)) menu.slot = getInt(menu.slot_path);
-	if (menu.slot==8) menu.slot = 0;
+	if (menu.slot==0) menu.slot = 1;
 	
 	menu.save_exists = 0;
 	menu.preview_exists = 0;
@@ -3681,9 +3689,16 @@ static void Menu_updateState(void) {
 	State_getPath(save_path);
 
 	state_slot = last_slot;
+	char slotstr[5];
+	if (menu.slot==0){
+		sprintf(slotstr,".");
+	} else {
+		sprintf(slotstr,"%d.",menu.slot);
+	}
 
-	sprintf(menu.bmp_path, "%s/%s.%d.bmp", menu.minui_dir, game.name, menu.slot);
-	sprintf(menu.txt_path, "%s/%s.%d.txt", menu.minui_dir, game.name, menu.slot);
+	//sprintf(menu.bmp_path, "%s/%s.state%spng", menu.minui_dir, game.basename, slotstr);
+	sprintf(menu.bmp_path, "%s/%s.state%spng", core.states_dir, game.basename, slotstr);
+	sprintf(menu.txt_path, "%s/%s%stxt", menu.minui_dir, game.basename, slotstr);
 	
 	menu.save_exists = exists(save_path);
 	menu.preview_exists = menu.save_exists && exists(menu.bmp_path);
@@ -3705,6 +3720,7 @@ static void Menu_saveState(void) {
 	if (!bitmap) bitmap = SDL_CreateRGBSurfaceFrom(renderer.src, renderer.true_w, renderer.true_h, FIXED_DEPTH, renderer.src_p, RGBA_MASK_565);
 	SDL_RWops* out = SDL_RWFromFile(menu.bmp_path, "wb");
 	SDL_SaveBMP_RW(bitmap, out, 1);
+	bmp2png(menu.bmp_path);
 	
 	// LOG_info("%s %ix%i\n", menu.bmp_path, bitmap->w,bitmap->h);
 	
@@ -3879,7 +3895,7 @@ static void Menu_loop(void) {
 			}
 			else if (selected==ITEM_SAVE || selected==ITEM_LOAD) {
 				menu.slot -= 1;
-				if (menu.slot<0) menu.slot += MENU_SLOT_COUNT;
+				if (menu.slot<1) menu.slot += MENU_SLOT_COUNT;
 				dirty = 1;
 			}
 		}
@@ -3892,7 +3908,7 @@ static void Menu_loop(void) {
 			}
 			else if (selected==ITEM_SAVE || selected==ITEM_LOAD) {
 				menu.slot += 1;
-				if (menu.slot>=MENU_SLOT_COUNT) menu.slot -= MENU_SLOT_COUNT;
+				if (menu.slot>MENU_SLOT_COUNT) menu.slot -= MENU_SLOT_COUNT;
 				dirty = 1;
 			}
 		}
@@ -4148,9 +4164,9 @@ static void Menu_loop(void) {
 				// pagination
 				ox += (pw-SCALE1(16*MENU_SLOT_COUNT))/2;
 				oy += hh+SCALE1(WINDOW_RADIUS)-SCALE1(PAGINATION_HEIGHT / 2 - 1);
-				for (int i=0; i<MENU_SLOT_COUNT; i++) {
-					if (i==menu.slot)GFX_blitAsset(ASSET_PAGE, NULL, screen, &(SDL_Rect){ox+SCALE1(i*16),oy});
-					else GFX_blitAsset(ASSET_DOT, NULL, screen, &(SDL_Rect){ox+SCALE1(i*16)+4,oy+SCALE1(2)});
+				for (int i=1; i<MENU_SLOT_COUNT+1; i++) {
+					if (i==menu.slot)GFX_blitAsset(ASSET_PAGE, NULL, screen, &(SDL_Rect){ox+SCALE1((i-1)*16),oy});
+					else GFX_blitAsset(ASSET_DOT, NULL, screen, &(SDL_Rect){ox+SCALE1((i-1)*16)+4,oy+SCALE1(2)});
 				}
 			}
 	
