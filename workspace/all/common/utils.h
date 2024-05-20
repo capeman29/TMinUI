@@ -19,6 +19,7 @@ void getDisplayParentFolderName(const char* in_name, char* out_name);
 int readBoxartcfg(char *);
 void bmp2png(char * filename);
 void getStatePath(char * gamepath, char* statepath);
+int canResume(char * rompath);
 // end boxarts
 
 void normalizeNewline(char* line);

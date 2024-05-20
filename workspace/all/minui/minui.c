@@ -531,6 +531,7 @@ static Array* hiddens; // HiddenArray
 static int quit = 0;
 static int can_resume = 0;
 static int should_resume = 0; // set to 1 on BTN_RESUME but only if can_resume==1
+static int last_selected_slot = 0;
 static int simple_mode = 0;
 static char slot_path[256];
 static char slot_path_rom[256];
@@ -1305,7 +1306,10 @@ static void readyResumePath(char* rom_path, int type) {
 	//sprintf(slot_path_rom, "%s/%s/%s", MYSAVESTATE_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext
 	//sprintf(slot_path, "%s.txt", slot_path_rom); // /.userdata/.minui/<EMU>/<romname>.ext.txt
 	
-	can_resume = exists(slot_path);
+	//can_resume = exists(slot_path);
+	last_selected_slot = canResume(path);
+	if (last_selected_slot) can_resume = 1;
+
 }
 static void readyResume(Entry* entry) {
 	readyResumePath(entry->path, entry->type);
@@ -1341,7 +1345,7 @@ static int autoResume(void) {
 	// putFile(LAST_PATH, FAUX_RECENT_PATH); // saveLast() will crash here because top is NULL
 	
 	char cmd[256];
-	sprintf(cmd, "'%s' '%s'", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path));
+	sprintf(cmd, "'%s' '%s' %d", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), AUTO_RESUME_SLOT);
 	putInt(RESUME_SLOT_PATH, AUTO_RESUME_SLOT);
 	queueNext(cmd);
 	return 1;
@@ -1364,6 +1368,7 @@ static void openRom(char* path, char* last) {
 	
 	char sd_path[256];
 	strcpy(sd_path, path);
+	int loadslot=-1;
 	
 	char m3u_path[256];
 	int has_m3u = hasM3u(sd_path, m3u_path);
@@ -1383,6 +1388,7 @@ static void openRom(char* path, char* last) {
 		getFile(slot_path, slot, 16);
 		putFile(RESUME_SLOT_PATH, slot);
 		should_resume = 0;
+		loadslot=last_selected_slot;
 
 		if (has_m3u) {
 			char rom_file[256];
@@ -1405,8 +1411,9 @@ static void openRom(char* path, char* last) {
 			}
 		}
 	}
-	else putInt(RESUME_SLOT_PATH,AUTO_RESUME_SLOT); // resume hidden default state
-	
+	//else
+	 //putInt(RESUME_SLOT_PATH,AUTO_RESUME_SLOT); // resume hidden default state
+	// loadslot=-1;	
 	char emu_path[256];
 	getEmuPath(emu_name, emu_path);
 	
@@ -1416,7 +1423,7 @@ static void openRom(char* path, char* last) {
 	saveLast(last==NULL ? sd_path : last);
 	
 	char cmd[256];
-	sprintf(cmd, "'%s' '%s'", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path));
+	sprintf(cmd, "'%s' '%s' %d", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), loadslot);
 	queueNext(cmd);
 }
 static void openDirectory(char* path, int auto_launch) {
@@ -1661,6 +1668,7 @@ int main (int argc, char *argv[]) {
 		
 	char modeStr[256]; 
 	char tmpName[256];
+	int itemnotchanged = 0;
 	
 	sprintf(modeStr, STANDARD_MODE);
 	simple_mode = exists(SIMPLE_MODE_PATH);
@@ -1764,6 +1772,7 @@ int main (int argc, char *argv[]) {
 			}
 			else if (total>0) {
 				if (PAD_justRepeated(BTN_UP)) {
+					itemnotchanged = 0;
 					if (selected==0 && !PAD_justPressed(BTN_UP)) {
 						// stop at top
 					}
@@ -1782,6 +1791,7 @@ int main (int argc, char *argv[]) {
 					}
 				}
 				else if (PAD_justRepeated(BTN_DOWN)) {
+					itemnotchanged = 0;
 					if (selected==total-1 && !PAD_justPressed(BTN_DOWN)) {
 						// stop at bottom
 					}
@@ -1802,9 +1812,12 @@ int main (int argc, char *argv[]) {
 					Entry *myentry = top->entries->items[top->selected];
 					if (myentry->type == ENTRY_ROM){
 						if (can_resume) {
-							int curSaveIndex = getInt(slot_path);
+							//int curSaveIndex = getInt(slot_path);
+							int curSaveIndex = last_selected_slot;
 							curSaveIndex = curSaveIndex < 2  ? 8 : curSaveIndex-1;
-							putInt(slot_path,curSaveIndex);
+							last_selected_slot = curSaveIndex;
+							itemnotchanged = 1;
+							//putInt(slot_path,curSaveIndex);
 							dirty = 1;
 						}
 					}
@@ -1814,15 +1827,19 @@ int main (int argc, char *argv[]) {
 					Entry *myentry = top->entries->items[top->selected];
 					if (myentry->type == ENTRY_ROM){
 						if (can_resume) {
-							int curSaveIndex = getInt(slot_path);
+							//int curSaveIndex = getInt(slot_path);
+							int curSaveIndex = last_selected_slot;
 							curSaveIndex = curSaveIndex > 7 ? 1 : curSaveIndex+1;
-							putInt(slot_path,curSaveIndex);
+							//putInt(slot_path,curSaveIndex);
+							last_selected_slot = curSaveIndex;
+							itemnotchanged = 1;
 							dirty = 1;
 						}
 					}
 					myentry = NULL;
 				}
 				if (PAD_justRepeated(BTN_L2)) {
+					itemnotchanged = 0;
 					selected -= ( MAIN_ROW_COUNT + fancy_mode );
 					if (selected<0) {
 						selected = 0;
@@ -1836,6 +1853,7 @@ int main (int argc, char *argv[]) {
 					}
 				}
 				else if (PAD_justRepeated(BTN_R2)) {
+					itemnotchanged = 0;
 					selected += ( MAIN_ROW_COUNT + fancy_mode );
 					if (selected>=total) {
 						selected = total-1;
@@ -1852,6 +1870,7 @@ int main (int argc, char *argv[]) {
 			}
 		
 			if (PAD_justRepeated(BTN_L1) && !PAD_isPressed(BTN_R1) && !PWR_ignoreSettingInput(BTN_L1, show_setting)) { // previous alpha
+				itemnotchanged = 0;
 				Entry* entry = top->entries->items[selected];
 				int i = entry->alpha-1;
 				if (i>=0) {
@@ -1865,6 +1884,7 @@ int main (int argc, char *argv[]) {
 				}
 			}
 			else if (PAD_justRepeated(BTN_R1) && !PAD_isPressed(BTN_L1) && !PWR_ignoreSettingInput(BTN_R1, show_setting)) { // next alpha
+				itemnotchanged = 0;
 				Entry* entry = top->entries->items[selected];
 				int i = entry->alpha+1;
 				if (i<top->alphas->count) {
@@ -1883,7 +1903,7 @@ int main (int argc, char *argv[]) {
 				dirty = 1;
 			}
 	
-			if (dirty && total>0) readyResume(top->entries->items[top->selected]);
+			if (dirty && total>0 && (!itemnotchanged)) readyResume(top->entries->items[top->selected]);
 
 			if (total>0 && can_resume && PAD_justReleased(BTN_RESUME)) {
 				should_resume = 1;
@@ -2027,7 +2047,9 @@ int main (int argc, char *argv[]) {
 						if (myentry->type == ENTRY_ROM){
 							getStatePath(myentry->path,slot_path_rom);
 							//sprintf(slot_path_rom, MYSAVESTATE_PATH "/MAME/States");
-							myslotint = getInt(slot_path);
+
+							//myslotint = getInt(slot_path);
+							myslotint = last_selected_slot;
 							if (myslotint){
 								sprintf(myslot_path, "%s/%s.state%d.png",slot_path_rom, myentry->name, myslotint);
 							} else {

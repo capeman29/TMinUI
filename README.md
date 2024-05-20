@@ -15,6 +15,8 @@ Features from FinUI:
 - Base and Extras are merged into one Full release
 
 New features of MyMinUI (RG35XX and MiyooMiniplus only):
+- not my work but it turned out that the work done by XQuader releasing drastic (Nintendo DS emulator)for Minui fo RG35XX OG is perfectly working even on MyMinUI for RG35XX OG. In the future I'll investigate if I can add it also on MiyooMiniPlus.
+- The Drastic work inspired me to solve the SDL2 compilation in the toolchain, as a result I found a way to run native pico8, ok no wifi so splore is  but it works.
 - RG35XX Only (at the moment): added support for native Pico8, just copy Your licensed copy of pico8_dyn and pico8.dat in the folder /mnt/sdcard/Emus/rg35xx/P8N.pak/pico8-native 
 - RG35XX Only (at the moment): added pico8 splore as tool
 - improved update/install process which allows to copy directly the release file in the sdcard root, be aware that this overwrites all existing files (but it keeps bios, roms, saves, etc..)

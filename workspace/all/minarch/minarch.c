@@ -583,12 +583,13 @@ static void State_autosave(void) {
 	State_write();
 	state_slot = last_state_slot;
 }
-static void State_resume(void) {
-	if (!exists(RESUME_SLOT_PATH)) return;
-	
+static void State_resume(int _resume_slot) {
+	//if (!exists(RESUME_SLOT_PATH)) return;
+	if (_resume_slot==-1) return;
 	int last_state_slot = state_slot;
-	state_slot = getInt(RESUME_SLOT_PATH);
-	unlink(RESUME_SLOT_PATH);
+	state_slot = _resume_slot;
+	//state_slot = getInt(RESUME_SLOT_PATH);
+	//unlink(RESUME_SLOT_PATH);
 	State_read();
 	state_slot = last_state_slot;
 }
@@ -4287,11 +4288,13 @@ int main(int argc , char* argv[]) {
 	char core_path[MAX_PATH];
 	char rom_path[MAX_PATH]; 
 	char tag_name[MAX_PATH];
+	int resume_slot;
 
 	fancy_mode = exists(FANCY_MODE_PATH);
 	
 	strcpy(core_path, argv[1]);
 	strcpy(rom_path, argv[2]);
+	resume_slot=strtol(argv[3],NULL,10);
 	getEmuName(rom_path, tag_name);
 	
 	LOG_info("rom_path: %s\n", rom_path);
@@ -4347,7 +4350,8 @@ int main(int argc , char* argv[]) {
 	SND_init(core.sample_rate, core.fps);
 	InitSettings(); // after we initialize audio
 	Menu_init();
-	State_resume();
+	State_resume(resume_slot);
+	resume_slot=-1;
 	Menu_initState(); // make ready for state shortcuts
 	
 	PWR_warn(1);
