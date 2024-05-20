@@ -15,6 +15,8 @@ Features from FinUI:
 - Base and Extras are merged into one Full release
 
 New features of MyMinUI (RG35XX and MiyooMiniplus only):
+- RG35XX Only (at the moment): added support for native Pico8, just copy Your licensed copy of pico8_dyn and pico8.dat in the folder /mnt/sdcard/Emus/rg35xx/P8N.pak/pico8-native 
+- RG35XX Only (at the moment): added pico8 splore as tool
 - improved update/install process which allows to copy directly the release file in the sdcard root, be aware that this overwrites all existing files (but it keeps bios, roms, saves, etc..)
   the original install/update process is still working (just in case You edited some launch.sh file).
 - minarch : added the ability to make a boxart using the current screenshot, it overwrites the current boxart if exists. 

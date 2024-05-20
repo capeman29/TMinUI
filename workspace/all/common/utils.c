@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include "defines.h"
 #include "utils.h"
+#include "api.h"
 
 ///////////////////////////////////////
 
@@ -29,6 +30,23 @@ int hide(char* file_name) {
 	if (file_name[0]=='.' || suffixMatch(".disabled", file_name) || exactMatch("map.txt", file_name)) result = 1;
 	if (file_name[0] == 'I' && file_name[1] == 'm' && file_name[2] == 'g' && file_name[3] == 's' && file_name[4] == 0) result = 1; 
 	return result;
+}
+
+void bmp2png(char * filename){
+	char cmd[512];
+    sprintf(cmd,"bmp2png.elf -X \"%s\" && rm \"%s.bak\"", filename, filename);
+    system(cmd);
+}
+
+void getStatePath(char * gamepath, char* statepath){
+//problem, given the full rom path how to retrieve the core used at the time of state creation? minarch knows the core but minui don't.
+//solution 1 -> parse the lauch.sh to get the core name from the line EMU_TAG=xxxxx 
+//solution 2 -> actually it is pointless knowing also the used core as the emuname (i.e. MAME instead of MAME-mame2003plus) is unique and always uses that core.
+
+//go for solution2 by changing also the minarch behavior
+char emuname[256];
+getEmuName(gamepath, emuname);
+sprintf(statepath, MYSAVESTATE_PATH "/%s/States",emuname);
 }
 
 void getDisplayName(const char* in_name, char* out_name) {
@@ -69,6 +87,7 @@ void getDisplayName(const char* in_name, char* out_name) {
     while(tmp>out_name && isspace((unsigned char)*tmp)) tmp--;
     tmp[1] = '\0';
 }
+
 void getEmuName(const char* in_name, char* out_name) { // NOTE: both char arrays need to be MAX_PATH length!
 	char* tmp;
 	strcpy(out_name, in_name);

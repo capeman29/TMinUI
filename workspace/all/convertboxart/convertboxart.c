@@ -202,8 +202,6 @@ int makeBoxart(char *infilename, char *outfilename, struct _BoxartData mydata) {
     SDL_FreeSurface(scaled_myimg); 
     SDL_FreeSurface(mysurface);
     SDL_FreeSurface(image);
-    char cmd[512];
-    sprintf(cmd,"bmp2png.elf -X \"%s\" && rm \"%s.bak\"", outfilename, outfilename);
-    system(cmd);
+    bmp2png(outfilename);
     return 1;
 }
