@@ -1343,9 +1343,10 @@ static int autoResume(void) {
 	if (!exists(emu_path)) return 0;
 	
 	// putFile(LAST_PATH, FAUX_RECENT_PATH); // saveLast() will crash here because top is NULL
-	
+	char _romname[256];
+	getDisplayName(path,_romname);
 	char cmd[256];
-	sprintf(cmd, "'%s' '%s' %d", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), AUTO_RESUME_SLOT);
+	sprintf(cmd, "'%s' '%s' %d '%s/%s/States/%s.state' ", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), AUTO_RESUME_SLOT, MYSAVESTATE_PATH, emu_name,_romname );
 	putInt(RESUME_SLOT_PATH, AUTO_RESUME_SLOT);
 	queueNext(cmd);
 	return 1;
@@ -1422,8 +1423,12 @@ static void openRom(char* path, char* last) {
 	addRecent(recent_path, recent_alias); // yiiikes
 	saveLast(last==NULL ? sd_path : last);
 	
-	char cmd[256];
-	sprintf(cmd, "'%s' '%s' %d", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), loadslot);
+	char statepath[256];
+	char _romname[256];
+	getDisplayName(sd_path,_romname);
+	getStatePath(sd_path, statepath);
+	char cmd[512];
+	sprintf(cmd, "'%s' '%s' %d '%s/%s.state%d'", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), loadslot, statepath,_romname,loadslot );
 	queueNext(cmd);
 }
 static void openDirectory(char* path, int auto_launch) {
