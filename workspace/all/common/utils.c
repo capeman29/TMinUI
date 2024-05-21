@@ -6,6 +6,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include "defines.h"
 #include "utils.h"
 #include "api.h"
@@ -39,14 +40,41 @@ void bmp2png(char * filename){
 }
 
 void getStatePath(char * gamepath, char* statepath){
-//problem, given the full rom path how to retrieve the core used at the time of state creation? minarch knows the core but minui don't.
-//solution 1 -> parse the lauch.sh to get the core name from the line EMU_TAG=xxxxx 
-//solution 2 -> actually it is pointless knowing also the used core as the emuname (i.e. MAME instead of MAME-mame2003plus) is unique and always uses that core.
+	//problem, given the full rom path how to retrieve the core used at the time of state creation? minarch knows the core but minui don't.
+	//solution 1 -> parse the lauch.sh to get the core name from the line EMU_TAG=xxxxx 
+	//solution 2 -> actually it is pointless knowing also the used core as the emuname (i.e. MAME instead of MAME-mame2003plus) is unique and always uses that core.
 
-//go for solution2 by changing also the minarch behavior
-char emuname[256];
-getEmuName(gamepath, emuname);
-sprintf(statepath, MYSAVESTATE_PATH "/%s/States",emuname);
+	//go for solution2 by changing also the minarch behavior
+	char emuname[256];
+	getEmuName(gamepath, emuname);
+	sprintf(statepath, MYSAVESTATE_PATH "/%s/States",emuname);
+}
+
+int canResume(char * gamepath){
+	//check if exists at least one saved state for the currently selected items then return the slot number
+	// the target is removing the need of the file slot_path
+	char statepath[256];
+	char checkpath[256];
+	struct stat buffer;
+	//char checkpath2[256];
+	char romname[256];
+	getStatePath(gamepath,statepath);
+	getDisplayName(gamepath,romname);
+	//ok now checkpath contains the full path of the state file to check if exists regardless of the slotnumber.
+	int result = 0;
+	uint64_t latest = 0;
+	for (int i=1;i<9;i++){
+		sprintf(checkpath,"%s/%s.state%d",statepath,romname,i);
+		if (exists(checkpath)){
+			//ok the saved state exists, check how old it is.
+			stat(checkpath,&buffer);
+				if (buffer.st_mtime > latest){
+					latest=buffer.st_mtime;
+					result = i;
+				}
+		}
+	} 
+	return result;
 }
 
 void getDisplayName(const char* in_name, char* out_name) {
