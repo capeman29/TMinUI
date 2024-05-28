@@ -46,4 +46,19 @@ index ccecab6..bc3d9e4 100644
  INCLUDE_DIRS = -I$(GCW0_INC_DIR)
  LIBRARY_DIRS = -L$(GCW0_LIB_DIR)
  DEFINES := -DRARCH_INTERNAL -D_FILE_OFFSET_BITS=64 -UHAVE_STATIC_DUMMY
-
+diff --git a/input/drivers_joypad/sdl_miyoomini_joypad.c b/input/drivers_joypad/sdl_miyoomini_joypad.c
+index 0528946..651a404 100644
+--- a/input/drivers_joypad/sdl_miyoomini_joypad.c
++++ b/input/drivers_joypad/sdl_miyoomini_joypad.c
+@@ -38,9 +38,9 @@
+ /* Vibration time at 100% vibration strength */
+ #define SDL_MIYOOMINI_RUMBLE_MS   200
+ 
+-/* Uncomment if you want the MENU button to be used exclusively for MENU
++// Uncomment if you want the MENU button to be used exclusively for MENU
+ #define SDL_MIYOOMINI_HAS_MENU_TOGGLE
+-*/
++//
+ /* Miyoomini input map to keyboard keys */
+ #define SDL_MIYOOMINI_SDLK_X      SDLK_LSHIFT
+ #define SDL_MIYOOMINI_SDLK_A      SDLK_SPACE
