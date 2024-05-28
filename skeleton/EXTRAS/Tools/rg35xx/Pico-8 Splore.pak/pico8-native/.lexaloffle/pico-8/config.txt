@@ -30,7 +30,7 @@ foreground_sleep_ms 5 // number of milliseconds to sleep each frame. Try 10 to c
 
 background_sleep_ms 10 // number of milliseconds to sleep each frame when running in the background
 
-sessions 833 // number of times program has been run
+sessions 836 // number of times program has been run
 
 // (scancode) hold this key down and left-click to simulate right-click
 rmb_key 0 // 0 for none  226 for LALT
@@ -46,7 +46,7 @@ read_controllers_in_background 0
 // :: Audio Settings (use "volume" for PICO-8)
 
 sound_volume 160 // 0..256
-music_volume 256 // 0..256
+music_volume 160 // 0..256
 
 
 // :: usually 1024. Try 2048 if you get choppy sound
@@ -56,7 +56,7 @@ mix_buffer_size 1024
 
 // :: map scancodes. Format: 44=47,80=89,..  (scancode a, scancode b -- when press a, generates b)
 // run the program with -scancodes to determine which scancodes to use
-map_scancodes 
+map_scancodes 44=29,224=27,225=41,118=20,41=228,8=21
 
 
 use_wget 0 // (Linux) 1 to use wget for downloads instead of libcurl (must be installed)
@@ -72,11 +72,11 @@ volume 160
 
 
 // Location of pico-8's root folder
-root_path /mnt/sdcard/Emus/rg35xx/P8N.pak/pico8-native/.lexaloffle/pico-8/carts/
+root_path /mnt/sdcard/Roms/Pico-8 (P8)/
 
 
 // Location of cartridge save data
-cdata_path /mnt/sdcard/Emus/rg35xx/P8N.pak/pico8-native/.lexaloffle/pico-8/cdata/
+cdata_path /mnt/sdcard/Tools/rg35xx/Pico-8 Splore.pak/pico8-native/.lexaloffle/pico-8/cdata/
 
 
 // Specify which player index joystick control begins at (0..7)
@@ -89,7 +89,7 @@ merge_joysticks 0
 
 
 // Custom keyboard scancodes for buttons. player0 0..6, player1 0..5, menu_button, player2 0..5, player3 0..5
-button_keys 0 0 0 0 224 44 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+button_keys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
 
 // Play notes as they are plotted in frequency mode
 live_notes 0

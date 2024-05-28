@@ -32,6 +32,7 @@ else
 fi
 export IS_PLUS
 export PLATFORM="miyoomini"
+export PATH=/mnt/SDCARD/.system/miyoomini/bin:$PATH
 export SDCARD_PATH="/mnt/SDCARD"
 export BIOS_PATH="$SDCARD_PATH/Bios"
 export SAVES_PATH="$SDCARD_PATH/Saves"
@@ -52,7 +53,11 @@ export CPU_SPEED_MENU=504000
 export CPU_SPEED_POWERSAVE=1104000
 export CPU_SPEED_GAME=1296000
 export CPU_SPEED_PERF=1488000
-export CPU_SPEED_MAX=1800000
+if $IS_PLUS; then
+    export CPU_SPEED_MAX=1800000
+else
+    export CPU_SPEED_MAX=1700000
+fi
 echo userspace > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
 overclock.elf $CPU_SPEED_PERF
 
@@ -72,8 +77,8 @@ export PATH=$SYSTEM_PATH/bin:$PATH
 #######################################
 
 if $IS_PLUS; then
-	/customer/app/audioserver -60 & # &> $SDCARD_PATH/audioserver.txt &
-	export LD_PRELOAD=/customer/lib/libpadsp.so
+/customer/app/audioserver -60 & #> $SDCARD_PATH/audioserver.txt &
+export LD_PRELOAD=/customer/lib/libpadsp.so
 else
 	if [ -f /customer/lib/libpadsp.so ]; then
 	    LD_PRELOAD=as_preload.so audioserver.mod &
@@ -124,7 +129,7 @@ EXEC_PATH=/tmp/minui_exec
 NEXT_PATH="/tmp/next"
 touch "$EXEC_PATH"  && sync
 while [ -f "$EXEC_PATH" ]; do
-	overclock.elf $CPU_SPEED_PERF
+	overclock.elf $CPU_SPEED_MENU
 	minui.elf &> $LOGS_PATH/minui.txt
 	
 	echo `date +'%F %T'` > "$DATETIME_PATH"
@@ -140,7 +145,7 @@ while [ -f "$EXEC_PATH" ]; do
 		fi
 		
 		echo `date +'%F %T'` > "$DATETIME_PATH"
-		overclock.elf $CPU_SPEED_PERF
+		overclock.elf $CPU_SPEED_MENU
 		sync
 	fi
 done

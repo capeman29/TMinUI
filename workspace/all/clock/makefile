@@ -24,7 +24,7 @@ INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/
 SOURCE = $(TARGET).c ../common/utils.c ../common/api.c ../common/scaler.c ../../$(PLATFORM)/platform/platform.c
 
 CC = $(CROSS_COMPILE)gcc
-CFLAGS   = $(ARCH) -fomit-frame-pointer
+CFLAGS   = $(MYARCH) -fomit-frame-pointer
 CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL)  -Ofast 
 LDFLAGS	 = -ldl $(LIBS) -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz
 LDFLAGS +=  -lmsettings

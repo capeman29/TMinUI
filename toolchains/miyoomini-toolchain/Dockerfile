@@ -14,6 +14,7 @@ RUN apt-get -y update && apt-get -y install \
 	cpio \
 	git \
 	libncurses5-dev \
+	automake \
 	make \
 	rsync \
 	scons \
@@ -21,6 +22,8 @@ RUN apt-get -y update && apt-get -y install \
 	unzip \
 	wget \
 	zip \
+	libjson-c-dev \
+	mc \
   && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /root/workspace

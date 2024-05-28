@@ -6,7 +6,7 @@ TARGET = batmon
 PRODUCT = $(TARGET).elf
 
 CC = $(CROSS_COMPILE)gcc
-CFLAGS   = -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve 
+CFLAGS   = $(MYARCH)
 LDFLAGS	 = -lSDL -lSDL_image -lpthread
 
 all:

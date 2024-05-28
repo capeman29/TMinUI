@@ -24,7 +24,7 @@ INCDIR = -I. -I../common/ -I../../$(PLATFORM)/platform/
 SOURCE =   $(TARGET).c ../common/utils.c ../common/api.c ../common/scaler.c ../common/$(SDL)_Rotozoom.c ../../$(PLATFORM)/platform/platform.c
 
 CC = $(CROSS_COMPILE)gcc
-CFLAGS   = $(ARCH) -fomit-frame-pointer
+CFLAGS   = $(MYARCH) -fomit-frame-pointer
 CFLAGS  += $(INCDIR) -DPLATFORM=\"$(PLATFORM)\" -DUSE_$(SDL)  -O2 
 LDFLAGS	 = -ldl $(LIBS) -l$(SDL) -l$(SDL)_image -l$(SDL)_ttf -lpthread -lm -lz -lpng
 LDFLAGS +=  -lmsettings
