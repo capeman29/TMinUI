@@ -6,15 +6,13 @@ I'm a player that uses a lot savestates, I really can't understand why almost al
 
 You can find the latest release here: https://github.com/Turro75/MyMinUI/releases
 
-
-
 ## Features from FinUI:
 - Add Favorites Collections (Press SELECT to toggle a rom)
 - Clear "Recently Played"
 - Additional emulators (MAME2003-PLUS)
 - Base and Extras are merged into one Full release
 
-New features of MyMinUI (RG35XX and MiyooMiniplus only):
+# New features of MyMinUI (RG35XX and MiyooMiniplus only):
 
 ## release 02/06/2024
 - RG35XX: not my work but it turned out that the work done by XQuader releasing drastic 1.2.1 (standalone Nintendo DS emulator) for Minui for RG35XX OG is working even on MyMinUI for RG35XX OG.  here https://boosty.to/xquader/posts/b9bfd9b4-5a37-48a6-8bc7-3d8aa48a5953?share=post_link You can download the minui file, just unpack it in the Emus directory.
@@ -44,6 +42,9 @@ It looks like the Miyoomini version is more effective on controls side, I've not
   /mnt/sdcard/FBN/states/nbajam.stateX.png (where X is the slot number 1 to 8)
   
   please note that the slot 0 should not be used anymore be aware of this on retroarch as You can still select it. Also note that the file extension has been removed from state file, this is to copy what retroarch does so it will be easier updating it in the future myminui releases.   
+
+  - added the file _map.txt under arcade and finalburnneo roms folders, rename them as map.txt to get the real name of the arcade name in place of the rom file name, please note that this takes a lot of time every time You enter the folder in case of big collection of roms (> than 4secs for 1000 rom files) because it is not cached so it's your choice, I don't use it but many asked for it. It also breaks the states preview logic, I'll fix this in future releases. 
+  it is a plain txt file in case You want to edit it. it is based on the arcade-rom-name.txt available in onionos. 
 
 
 ## release 01/05/2024
