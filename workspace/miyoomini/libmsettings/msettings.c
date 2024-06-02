@@ -8,7 +8,7 @@
 #include <dlfcn.h>
 #include <string.h>
 
-#include <mi_ao.h>
+//#include <mi_ao.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
 #include <linux/i2c.h>
@@ -144,8 +144,8 @@ void InitSettings(void) {
 	}
 	printf("brightness: %i\nspeaker: %i\n", settings->brightness, settings->speaker);
 
-	MI_AO_Enable(0);
-	MI_AO_EnableChn(0,0);
+	//MI_AO_Enable(0);
+	//MI_AO_EnableChn(0,0);
 	SetVolume(GetVolume());
 	SetBrightness(GetBrightness());
 }
@@ -176,7 +176,8 @@ int GetVolume(void) { // 0-20
 }
 void SetVolume(int value) {
 	int raw = -60 + value * 3;
-	SetRawVolume(raw);
+	//SetRawVolume(raw);
+	mySetVolume(raw);
 	settings->speaker = value;
 	SaveSettings();
 }
@@ -201,13 +202,16 @@ static void setMute(int flag) {
 }
 
 void SetRawVolume(int val) {
-	int old; MI_AO_GetVolume(0, &old);
+/*	int old; 
+	MI_AO_GetVolume(0, &old);
 	// printf("SetRawVolume(%i) // %i\n", val,old); fflush(stdout);
 	if (old!=val) {
 			 if (val==-60) setMute(1);
 		else if (old==-60) setMute(0);
 	}
 	MI_AO_SetVolume(0,val);
+*/
+	mySetVolume(val);
 }
 
 int GetJack(void) {
@@ -222,4 +226,43 @@ int GetHDMI(void) {
 }
 void SetHDMI(int value) {
 	// buh
+}
+
+int myGetVolume(void){
+	return -20;
+}
+
+void mySetVolume(int val){ //{-60 ... 0dB}
+	int old;
+	FILE *pf;
+	char command[256];
+	char output[64];
+	sprintf(command,"awk \'/LineOut/ {if (!printed) {gsub(\",\", \"\", $8); print $8; printed=1}}\' /proc/mi_modules/mi_ao/mi_ao0");
+	pf = popen(command,"r");
+
+       if(!pf){
+         fprintf(stderr, "Could not open pipe for output.\n");
+         return;
+       }
+
+       // Grab data from process execution
+    fgets(output, 64 , pf);
+
+       // Print grabbed data to the screen.
+    //fprintf(stdout, "-%s-\n",);
+
+    if (pclose(pf) != 0)
+        fprintf(stderr," Error: Failed to close command stream \n");
+	old = atoi(output);
+
+	if (old!=val) {	
+			 if (val==-60) setMute(1);
+		else if (old==-60) setMute(0);
+	}
+	int fd = open("/proc/mi_modules/mi_ao/mi_ao0",O_WRONLY);
+	if (fd>=0) {
+		dprintf(fd,"set_ao_volume 0 %d",val);
+		dprintf(fd,"set_ao_volume 1 %d",val);
+		close(fd);
+	}
 }
