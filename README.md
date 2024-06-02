@@ -32,9 +32,18 @@ It looks like the Miyoomini version is more effective on controls side, I've not
  Many cores available in OnionOS (get them in the file retroarch.7z present in the download release of OnionOS) are working even in rg35xx. Unfortunately most of them aren't working with minarch (Shauninman already said that missing cores are missing for good reasons), now it is easier to create a pak (please read pak.md for details) which run the core with retroarch without loosing the save state preview selection feature.
  the folder DOOM.pak is a working example just replace prboom with the name of the test core and set the cpu overclock You need at the beginning of the file, that's it. Atari cores are working in this way.
  - For users who want to use old states, they must be moved and renamed, for instance nbajam running on finalburnneo states were previously stored:
+
   preview) in /mnt/sdcard/.userdata/shared/.minui/FBN/nbajam.zip.X.bmp  (where X is the slot number 0 to 7)
+ 
   state) in /mnt/sdcard/.userdata/shared/FBN-fbneo/nbajam.zip.stX (where X is the slot number 0 to 7)
-  now the files are stored in /mnt/sdcard/FBN/states/nbajam.stateX and /mnt/sdcard/FBN/states/nbajam.stateX.png (where X is the slot number 1 to 8), please note that the slot 0 should not be used anymore be aware of this on retroarch as You can still select it. Also note that the file extension has been removed from state file, this is to copy what retroarch does so it will be easier updating it in the future myminui releases.   
+ 
+  now the files are stored in 
+  
+  /mnt/sdcard/FBN/states/nbajam.stateX 
+  and 
+  /mnt/sdcard/FBN/states/nbajam.stateX.png (where X is the slot number 1 to 8)
+  
+  please note that the slot 0 should not be used anymore be aware of this on retroarch as You can still select it. Also note that the file extension has been removed from state file, this is to copy what retroarch does so it will be easier updating it in the future myminui releases.   
 
 
 ## release 01/05/2024
