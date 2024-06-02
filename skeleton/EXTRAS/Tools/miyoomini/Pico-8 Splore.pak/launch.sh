@@ -27,7 +27,7 @@ wait_for_device() {
             return 1
         fi
     done
-    keymon.elf &
+   # keymon.elf &
 }
 
 
@@ -51,7 +51,7 @@ export EGL_VIDEODRIVER=mmiyoo
 
 #audioserver must be killed to let sdl2 taking control of audio 
 curvol=$(get_curvol)
-killall -9 keymon.elf
+#killall -9 keymon.elf
 killall -9 audioserver
 sleep 0.2
 set_snd_level "${curvol}" &
@@ -61,7 +61,7 @@ HOME="$progdir" \
 ./pico8_dyn -v -splore -root_path "${romdir}" &> $thisdir/log.txt
 
 #restart audioserver and keymon for other process
-killall -9 keymon.elf
+#killall -9 keymon.elf
 sleep 0.1
 /customer/app/audioserver -60 &
 wait_for_device &

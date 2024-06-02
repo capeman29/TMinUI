@@ -16,7 +16,8 @@ SYSROOT     := $(shell $(CC) --print-sysroot)
 
 INCLUDEDIR = $(SYSROOT)/usr/include
 CFLAGS = -I$(INCLUDEDIR)
-LDFLAGS = -lcam_os_wrapper -lmi_sys -lmi_ao -ldl -lrt -s
+#LDFLAGS = -lcam_os_wrapper -lmi_sys -lmi_ao -ldl -lrt -s
+LDFLAGS = -lcam_os_wrapper -lmi_sys -ldl -lrt -s
 
 OPTM=-Ofast
 

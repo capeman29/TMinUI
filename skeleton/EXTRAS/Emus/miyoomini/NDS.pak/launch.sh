@@ -73,7 +73,7 @@ wait_for_device() {
             return 1
         fi
     done
-    keymon.elf &
+    #keymon.elf &
 }
 
 
@@ -86,9 +86,9 @@ set_snd_level() {
 }
 
 curvol=$(get_curvol)
-killall -9 keymon.elf
+#killall -9 keymon.elf
 killall -9 audioserver
-sleep 0.3
+sleep 0.2
 set_snd_level "${curvol}" &
 
 ./drastic "$1"
@@ -104,7 +104,7 @@ if [ "$USE_752x560_RES" == "1" ]; then
     fbset -g 640 480 640 960 32
 fi
 
-killall -9 keymon.elf
+#killall -9 keymon.elf
 sleep 0.2
 /customer/app/audioserver -60 &
 wait_for_device &

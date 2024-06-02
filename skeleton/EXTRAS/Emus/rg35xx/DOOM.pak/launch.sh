@@ -15,6 +15,7 @@ EMU_TAG=$(basename "$(dirname "$0")" .pak)
 ROM="$1"
 mkdir -p "$BIOS_PATH/$EMU_TAG"
 mkdir -p "$SAVES_PATH/$EMU_TAG"
+mkdir -p "$SAVES_PATH/$EMU_TAG/States"
 mkdir -p "${USERDATA_PATH}/${EMU_TAG}-${EMU_EXE}"
 mkdir -p "${SHARED_USERDATA_PATH}/${EMU_TAG}-${EMU_EXE}"
 
