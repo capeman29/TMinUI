@@ -1346,7 +1346,7 @@ static int autoResume(void) {
 	char _romname[256];
 	getDisplayName(path,_romname);
 	char cmd[256];
-	sprintf(cmd, "'%s' '%s' %d '%s/%s/States/%s.state' ", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), AUTO_RESUME_SLOT, MYSAVESTATE_PATH, emu_name,_romname );
+	sprintf(cmd, "'%s' '%s' %d '%s/%s/States/%s.state' ", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), AUTO_RESUME_SLOT, MYSAVESTATE_PATH, escapeSingleQuotes(emu_name),escapeSingleQuotes(_romname) );
 	putInt(RESUME_SLOT_PATH, AUTO_RESUME_SLOT);
 	queueNext(cmd);
 	return 1;
@@ -1428,7 +1428,7 @@ static void openRom(char* path, char* last) {
 	getDisplayName(sd_path,_romname);
 	getStatePath(sd_path, statepath);
 	char cmd[512];
-	sprintf(cmd, "'%s' '%s' %d '%s/%s.state%d'", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), loadslot, statepath,_romname,loadslot );
+	sprintf(cmd, "'%s' '%s' %d '%s/%s.state%d'", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), loadslot, escapeSingleQuotes(statepath), escapeSingleQuotes(_romname),loadslot );
 	queueNext(cmd);
 }
 static void openDirectory(char* path, int auto_launch) {
