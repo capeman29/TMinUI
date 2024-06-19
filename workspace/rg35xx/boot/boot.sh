@@ -6,7 +6,7 @@ TF1_PATH=/mnt/mmc # ROMS partition
 TF2_PATH=/mnt/sdcard
 SDCARD_PATH=$TF1_PATH
 SYSTEM_DIR=/.system
-SYSTEM_FRAG=$SYSTEM_DIR/rg35xx
+SYSTEM_FRAG=${SYSTEM_DIR}/rg35xx
 UPDATE_FRAG=/MinUI.zip
 SYSTEM_PATH=${SDCARD_PATH}${SYSTEM_FRAG}
 UPDATE_PATH=${SDCARD_PATH}${UPDATE_FRAG}
@@ -61,16 +61,16 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	busybox tail -n +$CUT "$0" | busybox uudecode -o /tmp/data
 	busybox unzip -o /tmp/data -d /tmp
 	busybox fbset -g 640 480 640 480 16
-	dd if=/tmp/$ACTION of=/dev/fb0
+	dd if=/tmp/${ACTION} of=/dev/fb0
 	sync
 
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
     busybox unzip -o $NEWFILE -d $SDCARD_PATH #&>> $LOGFILE
 	sync
 	#remove useless dirs for rg35xx
-    rm -rf $SDCARD_PATH/miyoo
-	rm -rf $SDCARD_PATH/miyoo354
-	rm -rf $SDCARD_PATH/trimui
+    rm -rf ${SDCARD_PATH}/miyoo
+	rm -rf ${SDCARD_PATH}/miyoo354
+	rm -rf ${SDCARD_PATH}/trimui
 	
 	rm -rf $NEWFILE
 	sync
@@ -106,16 +106,17 @@ if [ -f $UPDATE_PATH ]; then
 	sync
 
 	#check if is a real update
-	NEWMD5 = $(md5 $UPDATE_PATH | busybox cut -d" " -f0)
-	OLDMD5 = $(cat $OLDMD5_PATH)
+	NEWMD5=$(md5 ${UPDATE_PATH} | busybox cut -d" " -f0)
+	OLDMD5=$(cat ${OLDMD5_PATH})
 	UPDATED=0
-	if [ "$NEWMD5" != "$OLDMD5" ]; then
+	if [ "${NEWMD5}" != "${OLDMD5}" ]; then
 		#real update, proceed
 		UPDATED=1
 		echo $NEWMD5 > $OLDMD5_PATH
+		busybox unzip -o $UPDATE_PATH -d $SDCARD_PATH
 	fi
-	busybox unzip -o $UPDATE_PATH -d $SDCARD_PATH
-	rm -rf $SDCARD_PATH/.tmp_update
+	
+	rm -rf ${SDCARD_PATH}/.tmp_update
 	rm -rf $UPDATE_PATH
 	sync
 	
@@ -132,7 +133,7 @@ if [ -f $UPDATE_PATH ]; then
 	fi
 	# the updated system finishes the install/update
 	if [ $UPDATED -eq 1 ]; then
-		$SYSTEM_PATH/bin/install.sh  #&>> $LOGFILE
+		${SYSTEM_PATH}/bin/install.sh  #&>> $LOGFILE
 	fi
 	
 fi
@@ -171,14 +172,14 @@ mkdir $ROOTFS_MOUNTPOINT/mnt/mmc
 mkdir $ROOTFS_MOUNTPOINT/mnt/sdcard
 for f in dev dev/pts proc sys mnt/mmc mnt/sdcard # tmp doesn't work for some reason?
 do
-	mount -o bind /$f $ROOTFS_MOUNTPOINT/$f
+	mount -o bind /$f ${ROOTFS_MOUNTPOINT}/$f
 done
 
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin:$PATH
 export LD_LIBRARY_PATH=/usr/lib/:/lib/
 export HOME=$SDCARD_PATH
 
-busybox chroot $ROOTFS_MOUNTPOINT $SYSTEM_PATH/paks/MinUI.pak/launch.sh
+busybox chroot $ROOTFS_MOUNTPOINT ${SYSTEM_PATH}/paks/MinUI.pak/launch.sh
 
 umount $ROOTFS_MOUNTPOINT
 busybox losetup --detach $LOOPDEVICE
