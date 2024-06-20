@@ -56,7 +56,20 @@ int main(int argc , char* argv[]) {
 	int select_cursor = 0;
 	int show_24hour = exists(USERDATA_PATH "/show_24hour");
 	
-	time_t t = time(NULL);
+	time_t t;
+	//for some unknown reasons the MM+ doesn't get the current rtc time with time(NULL) but the time restarts at last shutdown instant.
+	// on rg35xx instead time(NULL) reports the current rtc, the code below is to ensure to get the time_t by reading the epoch value from rtc file in sys filesystem.
+	// now MM+ acts like rg35xx
+	if (exists("/sys/class/rtc/rtc0/since_epoch")) {	 
+		FILE *file = fopen("/sys/class/rtc/rtc0/since_epoch", "r");
+		if (file!=NULL) {
+			fscanf(file, "%ld", &t);
+			fclose(file);
+		}
+	} else {
+		t = time(NULL);
+	}
+
 	struct tm tm = *localtime(&t);
 	
 	int32_t day_selected = tm.tm_mday;
