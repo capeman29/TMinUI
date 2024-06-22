@@ -126,6 +126,12 @@ int main(int argc, char* argv[]) {
 	if (errno != 0 || *p != '\0' || arg > INT_MAX || arg < INT_MIN); // buh
 	else clk = arg;
 	
+	if (! exists("/customer/app/axp_test")){
+		//it is a miyoo mini (not plus)
+		if (clk >= 1700000){
+			clk = 1700000;
+		}
+	}
 	for (int i=0; cpu_clocks[i]; i++) {
 		int cpu_clock = cpu_clocks[i];
 		if (clk>=cpu_clock) {
