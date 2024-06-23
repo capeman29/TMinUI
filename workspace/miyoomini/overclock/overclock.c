@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
 	if (errno != 0 || *p != '\0' || arg > INT_MAX || arg < INT_MIN); // buh
 	else clk = arg;
 	
-	if (! exists("/customer/app/axp_test")){
+	if (! access("/customer/app/axp_test", F_OK)){
 		//it is a miyoo mini (not plus)
 		if (clk >= 1700000){
 			clk = 1700000;
