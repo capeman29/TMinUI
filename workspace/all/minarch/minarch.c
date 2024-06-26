@@ -203,6 +203,7 @@ static int Zip_inflate(FILE* zip, FILE* dst, size_t size) { // compressed
 static struct Game {
 	char path[MAX_PATH];
 	char name[MAX_PATH]; // TODO: rename to basename?
+	char fullname[MAX_PATH];
 	char basename[MAX_PATH];
 	char m3u_path[MAX_PATH];
 	char tmp_path[MAX_PATH]; // location of unzipped file
@@ -219,6 +220,7 @@ static void Game_open(char* path) {
 	strcpy((char*)game.name, strrchr(path, '/')+1);
 	//LOG_info("Game.name = %s\n", game.name);
 	getDisplayName(game.name,game.basename);
+	getDisplayNameParens(game.name,game.fullname);
 	//LOG_info("Game.basename = %s\n", game.basename);
 	// if we have a zip file
 	if (suffixMatch(".zip", game.path)) {
@@ -503,9 +505,9 @@ static void RTC_write(void) {
 static int state_slot = 0;
 static void State_getPath(char* filename) {
 	if (state_slot == 0){
-		sprintf(filename, "%s/%s.state", core.states_dir, game.basename);
+		sprintf(filename, "%s/%s.state", core.states_dir, game.fullname);
 	} else {
-	sprintf(filename, "%s/%s.state%i", core.states_dir, game.basename, state_slot);
+	sprintf(filename, "%s/%s.state%i", core.states_dir, game.fullname, state_slot);
 	}
 }
 static void State_read(void) { // from picoarch
@@ -2774,7 +2776,7 @@ void Menu_init(void) {
 	sprintf(menu.minui_dir, SHARED_USERDATA_PATH "/.minui/%s", emu_name);
 	mkdir(menu.minui_dir, 0755);
 
-	sprintf(menu.slot_path, "%s/%s.txt", menu.minui_dir, game.basename);
+	sprintf(menu.slot_path, "%s/%s.txt", menu.minui_dir, game.fullname);
 	
 	if (simple_mode) menu.items[ITEM_OPTS] = "Reset";
 	
@@ -3789,8 +3791,8 @@ static void Menu_updateState(void) {
 	}
 
 	//sprintf(menu.bmp_path, "%s/%s.state%spng", menu.minui_dir, game.basename, slotstr);
-	sprintf(menu.bmp_path, "%s/%s.state%spng", core.states_dir, game.basename, slotstr);
-	sprintf(menu.txt_path, "%s/%s%stxt", menu.minui_dir, game.basename, slotstr);
+	sprintf(menu.bmp_path, "%s/%s.state%spng", core.states_dir, game.fullname, slotstr);
+	sprintf(menu.txt_path, "%s/%s%stxt", menu.minui_dir, game.fullname, slotstr);
 	
 	menu.save_exists = exists(save_path);
 	menu.preview_exists = menu.save_exists && exists(menu.bmp_path);
@@ -4416,7 +4418,7 @@ int main(int argc , char* argv[]) {
 
 	
 	if (exists(PWR_SLEEP_PATH)){
-		sprintf(pwractionstr,"SLEEP");
+		sprintf(pwractionstr,"SLP");
 	} else {
 		sprintf(pwractionstr,"OFF");
 	}

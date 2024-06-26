@@ -30,6 +30,7 @@
 #define AUTO_RESUME_SLOT 0
 #define TOOLBOXART_CFGFILE SDCARD_PATH "/Tools/" THISPLATFORM "/Convert BoxArt.pak/toolboxart.cfg"
 #define GAMEBOXART_CFGFILE SDCARD_PATH "/Tools/" THISPLATFORM "/Convert BoxArt.pak/gameboxart.cfg"
+#define AUTO_RESUME_MODIFIER_PATH SHARED_USERDATA_PATH "/.minui/auto_resume_modifier.txt"
 
 #define FAUX_RECENT_PATH SDCARD_PATH "/Recently Played"
 #define COLLECTIONS_PATH SDCARD_PATH "/Collections"

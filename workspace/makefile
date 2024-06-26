@@ -18,6 +18,8 @@ all:
 	cd ./$(PLATFORM)/libmsettings && make
 	cd ./$(PLATFORM) && make early # eg. other libs
 	cd ./$(PLATFORM)/keymon && make
+	cd ./$(PLATFORM)/cores && make
+	cd ./$(PLATFORM) && make
 	cd ./all/minui/ && make
 	cd ./all/minarch/ && make
 	cd ./all/clock/ && make
@@ -25,13 +27,15 @@ all:
 	cd ./all/clear_recent/ && make
 	cd ./all/convertboxart/ && make
 
-	cd ./$(PLATFORM)/cores && make
-	cd ./$(PLATFORM) && make
-
 clean:
 	cd ./$(PLATFORM)/libmsettings && make clean
 	cd ./$(PLATFORM)/keymon && make clean
+	cd ./$(PLATFORM) && make clean
+	cd ./$(PLATFORM)/cores && make clean
 	cd ./all/minui/ && make clean
 	cd ./all/minarch/ && make clean
-	cd ./$(PLATFORM) && make clean
+	cd ./all/clock/ && make clean
+	cd ./all/minput/ && make clean
+	cd ./all/clear_recent/ && make clean
 	cd ./all/convertboxart/ && make clean
+

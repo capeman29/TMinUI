@@ -24,6 +24,8 @@ typedef struct Array {
 	void** items;
 } Array;
 
+static int selected_modifier;
+
 static Array* Array_new(void) {
 	Array* self = malloc(sizeof(Array));
 	self->count = 0;
@@ -115,6 +117,7 @@ enum EntryType {
 typedef struct Entry {
 	char* path;
 	char* name;
+	char* fullname;
 	char* unique;
 	int type;
 	int alpha; // index in parent Directory's alphas Array, which points to the index of an Entry in its entries Array :sweat_smile:
@@ -810,7 +813,7 @@ static int isHidden(char * parentpath, char *path) {
 	parentpath += strlen(SDCARD_PATH); // makes paths platform agnostic
 	sprintf(fullpath,"%s/%s", parentpath, path);	
 	int id = HiddenArray_indexOf(hiddens, fullpath);
-	printf("check if %s is hidden = %d\n", fullpath, id);
+	//printf("check if %s is hidden = %d\n", fullpath, id);
 	return ++id;
 }
 
@@ -1301,7 +1304,7 @@ static void readyResumePath(char* rom_path, int type) {
 	char rom_file[256];
 	//tmp = strrchr(path, '/') + 1;
 	//strcpy(rom_file, tmp);
-	getDisplayName(path,rom_file);
+	getDisplayNameParens(path,rom_file);
 	sprintf(slot_path, "%s/.minui/%s/%s.txt", SHARED_USERDATA_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>
 	//sprintf(slot_path_rom, "%s/%s/%s", MYSAVESTATE_PATH, emu_name, rom_file); // /.userdata/shared/.minui/<EMU>/<romname>.ext
 	//sprintf(slot_path, "%s.txt", slot_path_rom); // /.userdata/.minui/<EMU>/<romname>.ext.txt
@@ -1320,14 +1323,16 @@ static void loadLast(void);
 
 static int autoResume(void) {
 	// NOTE: bypasses recents
-
 	if (!exists(AUTO_RESUME_PATH)) return 0;
 	
 	char path[256];
 	getFile(AUTO_RESUME_PATH, path, 256);
 	unlink(AUTO_RESUME_PATH);
 	sync();
-	
+	if (exists(AUTO_RESUME_MODIFIER_PATH)){
+		selected_modifier = 1;
+		unlink(AUTO_RESUME_MODIFIER_PATH);
+	}
 	// make sure rom still exists
 	char sd_path[256];
 	sprintf(sd_path, "%s%s", SDCARD_PATH, path);
@@ -1344,10 +1349,11 @@ static int autoResume(void) {
 	
 	// putFile(LAST_PATH, FAUX_RECENT_PATH); // saveLast() will crash here because top is NULL
 	char _romname[256];
-	getDisplayName(path,_romname);
+	getDisplayNameParens(path,_romname);
 	char cmd[256];
-	sprintf(cmd, "'%s' '%s' %d '%s/%s/States/%s.state' ", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), AUTO_RESUME_SLOT, MYSAVESTATE_PATH, escapeSingleQuotes(emu_name),escapeSingleQuotes(_romname) );
+	sprintf(cmd, "'%s' '%s' %d '%s/%s/States/%s.state' %d ", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), AUTO_RESUME_SLOT, MYSAVESTATE_PATH, escapeSingleQuotes(emu_name),escapeSingleQuotes(_romname), selected_modifier );
 	putInt(RESUME_SLOT_PATH, AUTO_RESUME_SLOT);
+	selected_modifier = 0;
 	queueNext(cmd);
 	return 1;
 }
@@ -1365,8 +1371,7 @@ static void openPak(char* path) {
 	queueNext(cmd);
 }
 static void openRom(char* path, char* last) {
-	LOG_info("openRom(%s,%s)\n", path, last);
-	
+	LOG_info("openRom(%s,%s)\nSELECT = %d\n", path, last, selected_modifier);
 	char sd_path[256];
 	strcpy(sd_path, path);
 	int loadslot=-1;
@@ -1425,12 +1430,14 @@ static void openRom(char* path, char* last) {
 	
 	char statepath[256];
 	char _romname[256];
-	getDisplayName(sd_path,_romname);
+	getDisplayNameParens(sd_path,_romname);
 	getStatePath(sd_path, statepath);
 	char cmd[512];
-	sprintf(cmd, "'%s' '%s' %d '%s/%s.state%d'", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), loadslot, escapeSingleQuotes(statepath), escapeSingleQuotes(_romname),loadslot );
+	sprintf(cmd, "'%s' '%s' %d '%s/%s.state%d' %d ", escapeSingleQuotes(emu_path), escapeSingleQuotes(sd_path), loadslot, escapeSingleQuotes(statepath), escapeSingleQuotes(_romname),loadslot, selected_modifier);
+	selected_modifier = 0;
 	queueNext(cmd);
 }
+
 static void openDirectory(char* path, int auto_launch) {
 	char auto_path[256];
 	if (hasCue(path, auto_path) && auto_launch) {
@@ -1628,7 +1635,7 @@ int drawBoxart(SDL_Surface* _screen, char* bmpPath){
 	GFX_blitRect(ASSET_STATE_BG, _screen, &(SDL_Rect){ox,oy,hw,hh});
 	SDL_Surface* unscaled_boxart = IMG_Load(bmpPath);
 	SDL_Surface* boxart = NULL;
-	printf("origimg %dx%d scaled to %dx%d\n", unscaled_boxart->w,unscaled_boxart->h, hw, hh);
+	//printf("origimg %dx%d scaled to %dx%d\n", unscaled_boxart->w,unscaled_boxart->h, hw, hh);
 	if (!unscaled_boxart) {
         printf("IMG_Load: %s\n", IMG_GetError());
         SDL_Rect boxart = {SCALE2(ox,oy),hw,hh};
@@ -1669,8 +1676,9 @@ static void Menu_quit(void) {
 ///////////////////////////////////////
 
 int main (int argc, char *argv[]) {
+	selected_modifier = 0;	
 	if (autoResume()) return 0; // nothing to do	
-		
+	
 	char modeStr[256]; 
 	char tmpName[256];
 	int itemnotchanged = 0;
@@ -1687,9 +1695,9 @@ int main (int argc, char *argv[]) {
 	}
 	char pwractionstr[256];
 	if (exists(PWR_SLEEP_PATH)){
-		sprintf(pwractionstr,"SLEEP");
+		sprintf(pwractionstr,"SLP");
 	} else {
-		sprintf(pwractionstr,"SHUTDOWN");
+		sprintf(pwractionstr,"OFF");
 	}
 
 	if (exists(HIDE_STATE_PATH)){
@@ -1910,12 +1918,22 @@ int main (int argc, char *argv[]) {
 	
 			if (dirty && total>0 && (!itemnotchanged)) readyResume(top->entries->items[top->selected]);
 
+			if (PAD_justPressed(BTN_SELECT)){
+				selected_modifier = 1;
+				dirty = 1;
+				//printf("\nisPressed SELECT\n");
+			}
+			if (PAD_justReleased(BTN_SELECT)){
+				selected_modifier = 0;
+				dirty = 1;
+				//printf("\nisReleased SELECT\n");
+			}
+			
 			if (total>0 && can_resume && PAD_justReleased(BTN_RESUME)) {
 				should_resume = 1;
 				Entry_open(top->entries->items[top->selected]);
 				dirty = 1;
-			}
-			else if (total>0 && PAD_justPressed(BTN_A)) {
+			} else if (total>0 && PAD_justPressed(BTN_A)) {
 				Entry_open(top->entries->items[top->selected]);
 				total = top->entries->count;
 				dirty = 1;
@@ -1923,28 +1941,37 @@ int main (int argc, char *argv[]) {
 				if (total>0) readyResume(top->entries->items[top->selected]);
 			}
 
-			else if (total>0 && PAD_justPressed(BTN_SELECT)) {
+
+			/*else if (total>0 && PAD_justPressed(BTN_SELECT)) {
 				Entry* myentry = top->entries->items[top->selected];
 				if (myentry->type == ENTRY_ROM) {
 					toggleFavorite(myentry->path);
 					quit = 1;
 				}
-			}
+			}*/
 			else if (total>0 && PAD_justPressed(BTN_START)) {
-				Entry* myentry = top->entries->items[top->selected];
-				if (myentry->type == ENTRY_ROM) {
-					toggleHidden(myentry->path);
-					if (selected>0) {
-						selected--;
-					} else {
-						selected=0;
+				if (selected_modifier){
+					//SELECT pressed so toggle Hidden
+					Entry* myentry = top->entries->items[top->selected];
+					if (myentry->type == ENTRY_ROM) {
+						toggleHidden(myentry->path);
+						if (selected>0) {
+							selected--;
+						} else {
+							selected=0;
+						}
+						dirty = 1;
+						//quit = 1;
 					}
-					dirty = 1;
-					//quit = 1;
-				}
-			}
-
-			else if (PAD_justPressed(BTN_B) && stack->count>1) {
+				} else { 
+					//SELECT NOT PRESSED so toggle Favorites
+					Entry* myentry = top->entries->items[top->selected];
+					if (myentry->type == ENTRY_ROM) {
+						toggleFavorite(myentry->path);
+						quit = 1;
+					}
+				}				
+			} else if (PAD_justPressed(BTN_B) && stack->count>1) {
 				closeDirectory();
 				total = top->entries->count;
 				dirty = 1;
@@ -2047,19 +2074,21 @@ int main (int argc, char *argv[]) {
 						char myRomName[256];
 						char myBoxart_path[256];
 						char myEmuName[256];
+						char myslot_name[256];
 						int myslotint;
 						//readyResume(entry);
 						if (myentry->type == ENTRY_ROM){
 							getStatePath(myentry->path,slot_path_rom);
 							//sprintf(slot_path_rom, MYSAVESTATE_PATH "/MAME/States");
-
+							getDisplayNameParens(myentry->path,myslot_name);
 							//myslotint = getInt(slot_path);
 							myslotint = last_selected_slot;
 							if (myslotint){
-								sprintf(myslot_path, "%s/%s.state%d.png",slot_path_rom, myentry->name, myslotint);
+								sprintf(myslot_path, "%s/%s.state%d.png",slot_path_rom, myslot_name, myslotint);
 							} else {
-								sprintf(myslot_path, "%s/%s.state.png",slot_path_rom,myentry->name);
+								sprintf(myslot_path, "%s/%s.state.png",slot_path_rom,myslot_name);
 							}
+							LOG_info("CIAO\n\n\n\n\n\n%s\n\n\n\n\n\n\n\n",myslot_name);
 						}
 						
 						
@@ -2215,12 +2244,20 @@ int main (int argc, char *argv[]) {
 			
 				// buttons
 				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
-				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RESUME",  NULL }, 0, screen, 0);
-				else GFX_blitButtonGroup((char*[]){ 
-					BTN_SLEEP==BTN_POWER?"PWR":"MENU",
-					BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO",  
-					NULL }, 0, screen, 0);
-			
+				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RSM","START",selected_modifier?"HIDE":"FAV",  NULL }, 0, screen, 0);
+				else {
+					if (stack->count>1){
+						GFX_blitButtonGroup((char*[]){ 
+						BTN_SLEEP==BTN_POWER?"PWR":"MENU",
+						BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO", "START", (selected_modifier?"HIDE":"FAV"), 
+						NULL }, 0, screen, 0);
+					} else { 
+						GFX_blitButtonGroup((char*[]){ 
+						BTN_SLEEP==BTN_POWER?"PWR":"MENU",
+						BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO",  
+						NULL }, 0, screen, 0);	
+					}
+				}
 				if (total==0) {
 					if (stack->count>1) {
 						GFX_blitButtonGroup((char*[]){ "B","BACK",  NULL }, 0, screen, 1);
@@ -2228,7 +2265,7 @@ int main (int argc, char *argv[]) {
 				}
 				else {
 					if (stack->count>1) {
-						GFX_blitButtonGroup((char*[]){ "B","BACK", "A","OPEN", NULL }, 1, screen, 1);
+						GFX_blitButtonGroup((char*[]){ "B","BACK", "A",selected_modifier?"RUN2":"RUN", NULL }, 1, screen, 1);
 					}
 					else {
 						GFX_blitButtonGroup((char*[]){ "A","OPEN", NULL }, 0, screen, 1);

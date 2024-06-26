@@ -59,7 +59,7 @@ int canResume(char * gamepath){
 	//char checkpath2[256];
 	char romname[256];
 	getStatePath(gamepath,statepath);
-	getDisplayName(gamepath,romname);
+	getDisplayNameParens(gamepath,romname);
 	//ok now checkpath contains the full path of the state file to check if exists regardless of the slotnumber.
 	int result = 0;
 	uint64_t latest = 0;
