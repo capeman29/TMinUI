@@ -1,10 +1,10 @@
 #!/bin/sh
 
 # enable all CPU cores
-echo 0xf > /sys/devices/system/cpu/autoplug/plug_mask
-echo 1 > /sys/devices/system/cpu/cpu1/online
-echo 1 > /sys/devices/system/cpu/cpu2/online
-echo 1 > /sys/devices/system/cpu/cpu3/online
+#echo 0xf > /sys/devices/system/cpu/autoplug/plug_mask
+#echo 1 > /sys/devices/system/cpu/cpu1/online
+#echo 1 > /sys/devices/system/cpu/cpu2/online
+#echo 1 > /sys/devices/system/cpu/cpu3/online
 
 progdir="${SDCARD_PATH}/Tools/${PLATFORM}/Pico-8 Splore.pak/pico8-native"
 thisdir=$(dirname "$0")
@@ -24,9 +24,9 @@ HOME="${progdir}" \
 ./pico8_dyn -v -run "${1}"  >> "${thisdir}/log.txt" 2>&1
 
 # restore default CPU cores state
-echo 0x0 > /sys/devices/system/cpu/autoplug/plug_mask
-echo 0 > /sys/devices/system/cpu/cpu1/online
-echo 0 > /sys/devices/system/cpu/cpu2/online
-echo 0 > /sys/devices/system/cpu/cpu3/online
+#echo 0x0 > /sys/devices/system/cpu/autoplug/plug_mask
+#echo 0 > /sys/devices/system/cpu/cpu1/online
+#echo 0 > /sys/devices/system/cpu/cpu2/online
+#echo 0 > /sys/devices/system/cpu/cpu3/online
 
 overclock.elf $CPU_SPEED_MENU
