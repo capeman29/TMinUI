@@ -14,6 +14,48 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI (RG35XX and MiyooMiniplus only):
 
+## release 27/06/2024
+
+# New features:
+
+- minarch: add thread video setting (taken as is from MinUI)
+- MiyooMini(+): added lumon.cfg to make screen settings adjustable, values are read at boot.
+- Added toggle tool to switch dpad left-right and L2-R2 behavior, if the toggle is active:
+   Dpad Left and Right select saved states while L2-R2 seek pages otherwise
+   Dpad Left and Right seek pages as standard minui, L2-R2 select saved states
+- little change of button mapping.
+   SELECT previously were used to toggle a game in the favorite list, now it acts as alternate function for other buttons:
+   START -> toggle currently selected rom Favorite. / SELECT+START -> hide currently selected rom
+   A -> RUN current rom with default libretro frontend / SELECT+A -> RUN2 current rom with alternative libretro frontend
+   X -> RUN selected state of current rom with default libretro frontend / SELECT+X -> RUN2 selected state of current rom with
+   alternative libretro frontend
+- Reworked launch.sh under Emus folders.
+    moved most part of the shell script under bin so all launch.sh under Emus can behave the same way and are easier to maintain.
+    launch.sh on each Emus folder now allows selecting RUN and RUN2 libretro frontend so the user can select which libretro frontend is
+    launched when pressing A (RUN) or SELECT+A (RUN2).
+Thanks to this feature the user can quickly run a game with minarch or retroarch. Not 100% of the cases but many times a saved state
+created under minarch can be launched in retroarch and viceversa. Not made extensive tests but for instance a save state of a gb
+game with colorization active does not run in retroarch if the same colorization is not set and so on.
+At the moment all cores are set as RUN=minarch and RUN2=retroarch, only DOOM has minarch and retroarch swapped.
+All standalone emulator kept their own launch.sh, both RUN and RUN2 do the same in this case.
+
+For those who want adding cores not supported by MyMinUI can now use the precompiled cores available here:
+miyoomini(+) https://buildbot.libretro.com/nightly/dingux/miyoo-arm32/latest/
+rg35xx OG https://buildbot.libretro.com/nightly/linux/armv7-neon-hf/latest/
+in case minarch is not able to run the new core they can easily move to retroarch.
+
+# Fixes:
+
+- Fix for romfile with ' in the name previously not running
+- Fix: rg35xx install/update process by a fixed /misc/dmenu.bin
+- Fix: miyoomini rtc not updated at boot
+- Fix: overclock max 1.7GHz on MM and 1.8GHz on MM+
+- Fix: saved state files now include parenthesys in the name to copy what retroarch does.
+Special note if previous saved states are now missing:
+Previously save state removed parts of the filename enclosed by parenthesys, now those part are preserved as retroarch does.
+i.e. Tekken 3 (USA).zip create save state file named Tekken 3 (USA).stateX and Tekken 3 (USA).stateX.png with previous releases the saved state file were named Tekken 3.stateX and Tekken 3.stateX.png simply rename old states to recover them.
+
+
 ## release 02/06/2024
 - RG35XX: not my work but it turned out that the work done by XQuader releasing drastic 1.2.1 (standalone Nintendo DS emulator) for Minui for RG35XX OG is working even on MyMinUI for RG35XX OG.  here https://boosty.to/xquader/posts/b9bfd9b4-5a37-48a6-8bc7-3d8aa48a5953?share=post_link You can download the minui file, just unpack it in the Emus directory.
 - Miyoomini: here https://github.com/steward-fu/nds/releases/tag/v1.8 You can download the miyoomini version of drastic (made by Steward for OnionOS), unpack it in the Emus/miyoomini/NDS.pak/drastic folder. I created a launch.sh ready to run it.
