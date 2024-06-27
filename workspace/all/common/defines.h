@@ -25,6 +25,7 @@
 #define FANCY_MODE_PATH SHARED_USERDATA_PATH "/enable-fancy-mode"
 #define PWR_SLEEP_PATH SHARED_USERDATA_PATH "/enable-sleep-mode"
 #define HIDE_STATE_PATH SHARED_USERDATA_PATH "/hide-state"
+#define PAGE_SEEK_TRIGGERS SHARED_USERDATA_PATH "/enable-seek-triggers"
 #define HIDE_BOXART_IFSTATE_PATH SHARED_USERDATA_PATH "/hide-boxart-ifstate"
 #define AUTO_RESUME_PATH SHARED_USERDATA_PATH "/.minui/auto_resume.txt"
 #define AUTO_RESUME_SLOT 0

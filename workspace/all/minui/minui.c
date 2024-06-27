@@ -1682,6 +1682,17 @@ int main (int argc, char *argv[]) {
 	char modeStr[256]; 
 	char tmpName[256];
 	int itemnotchanged = 0;
+	int page_seek_plus = BTN_RIGHT;
+	int page_seek_minus = BTN_LEFT;
+	int state_left = BTN_L2;
+	int state_right = BTN_R2;
+
+	if (exists(PAGE_SEEK_TRIGGERS)){
+		page_seek_plus = BTN_R2;
+		page_seek_minus = BTN_L2;
+		state_left = BTN_LEFT;
+		state_right = BTN_RIGHT;
+	}
 	
 	sprintf(modeStr, STANDARD_MODE);
 	simple_mode = exists(SIMPLE_MODE_PATH);
@@ -1821,7 +1832,7 @@ int main (int argc, char *argv[]) {
 						}
 					}
 				}
-				if (PAD_justPressed(BTN_LEFT)) {
+				if (PAD_justPressed(state_left)) {
 					Entry *myentry = top->entries->items[top->selected];
 					if (myentry->type == ENTRY_ROM){
 						if (can_resume) {
@@ -1836,7 +1847,7 @@ int main (int argc, char *argv[]) {
 					}
 					myentry=NULL;
 				}
-				if (PAD_justPressed(BTN_RIGHT)) {
+				if (PAD_justPressed(state_right)) {
 					Entry *myentry = top->entries->items[top->selected];
 					if (myentry->type == ENTRY_ROM){
 						if (can_resume) {
@@ -1851,7 +1862,7 @@ int main (int argc, char *argv[]) {
 					}
 					myentry = NULL;
 				}
-				if (PAD_justRepeated(BTN_L2)) {
+				if (PAD_justRepeated(page_seek_minus)) {
 					itemnotchanged = 0;
 					selected -= ( MAIN_ROW_COUNT + fancy_mode );
 					if (selected<0) {
@@ -1865,7 +1876,7 @@ int main (int argc, char *argv[]) {
 						top->end = top->start + ( MAIN_ROW_COUNT + fancy_mode );
 					}
 				}
-				else if (PAD_justRepeated(BTN_R2)) {
+				else if (PAD_justRepeated(page_seek_plus)) {
 					itemnotchanged = 0;
 					selected += ( MAIN_ROW_COUNT + fancy_mode );
 					if (selected>=total) {
