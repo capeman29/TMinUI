@@ -31,7 +31,7 @@ enum Aspect aspect;
 
 
 
-int makeBoxart(char *, char *, struct _BoxartData);
+int makeBoxart(char *, char *, myBoxartData);
 
 int
 filter(const struct dirent *name)
@@ -52,8 +52,8 @@ int main(int argc, char* argv[]) {
 
     struct dirent **namelist;
     int n;
-
-    readBoxartcfg(TOOLBOXART_CFGFILE);
+    myBoxartData boxartdata;
+    readBoxartcfg(TOOLBOXART_CFGFILE, &boxartdata);
     
     //char cmd[512];
     //sprintf(cmd,"cp \"/mnt/sdcard/Tools/imgdir/PSorig.png\" " MYINPUT);
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-int makeBoxart(char *infilename, char *outfilename, struct _BoxartData mydata) {
+int makeBoxart(char *infilename, char *outfilename, myBoxartData mydata) {
     SDL_Surface *image = IMG_Load(infilename);
     SDL_Surface *mysurface = SDL_CreateRGBSurface(0, mydata.sW , mydata.sH ,16,0,0,0,0);
     //SDL_Surface *unscaled_myimg = IMG_Load(BACKGROUND);

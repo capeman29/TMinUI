@@ -1996,7 +1996,7 @@ int main (int argc, char *argv[]) {
 			
 			int ox;
 			int oy;
-			int ow = GFX_blitHardwareGroup(screen, show_setting);
+			int ow = GFX_blitHardwareGroup(screen, show_setting, fancy_mode);
 
 			if (show_version) {
 				//if (!version) {
@@ -2063,10 +2063,10 @@ int main (int argc, char *argv[]) {
 				SDL_BlitSurface(version, NULL, screen, &(SDL_Rect){(screen->w-version->w)/2,(screen->h-version->h)/4});
 				
 				// buttons (duped and trimmed from below)
-				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
-				else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr,  NULL }, 0, screen, 0);
+				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting, fancy_mode);
+				else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr,  NULL }, 0, screen, 0, fancy_mode);
 				
-				GFX_blitButtonGroup((char*[]){ "UP/DOWN", "MODE", "B","BACK",  NULL }, 0, screen, 1);
+				GFX_blitButtonGroup((char*[]){ "UP/DOWN", "MODE", "B","BACK",  NULL }, 0, screen, 1, fancy_mode);
 			}
 			else {
 				// list
@@ -2142,7 +2142,7 @@ int main (int argc, char *argv[]) {
 
 						//}
 						//myentry1 = NULL;
-						GFX_blitHardwareGroup(screen, show_setting);
+						GFX_blitHardwareGroup(screen, show_setting, fancy_mode);
 						// the slot bmp should be in minui_path/EmuName/entry->name
 						/* end for boxart and save state preview window, now print the text and the buttons */
 				}
@@ -2254,32 +2254,32 @@ int main (int argc, char *argv[]) {
 				}
 			
 				// buttons
-				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
-				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RSM","START",selected_modifier?"HIDE":"FAV",  NULL }, 0, screen, 0);
+				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting, fancy_mode);
+				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RSM","START",selected_modifier?"HIDE":"FAV",  NULL }, 0, screen, 0, fancy_mode);
 				else {
 					if (stack->count>1){
 						GFX_blitButtonGroup((char*[]){ 
 						BTN_SLEEP==BTN_POWER?"PWR":"MENU",
 						BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO", "START", (selected_modifier?"HIDE":"FAV"), 
-						NULL }, 0, screen, 0);
+						NULL }, 0, screen, 0, fancy_mode);
 					} else { 
 						GFX_blitButtonGroup((char*[]){ 
 						BTN_SLEEP==BTN_POWER?"PWR":"MENU",
 						BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO",  
-						NULL }, 0, screen, 0);	
+						NULL }, 0, screen, 0, fancy_mode);	
 					}
 				}
 				if (total==0) {
 					if (stack->count>1) {
-						GFX_blitButtonGroup((char*[]){ "B","BACK",  NULL }, 0, screen, 1);
+						GFX_blitButtonGroup((char*[]){ "B","BACK",  NULL }, 0, screen, 1, fancy_mode);
 					}
 				}
 				else {
 					if (stack->count>1) {
-						GFX_blitButtonGroup((char*[]){ "B","BACK", "A",selected_modifier?"RUN2":"RUN", NULL }, 1, screen, 1);
+						GFX_blitButtonGroup((char*[]){ "B","BACK", "A",selected_modifier?"RUN2":"RUN", NULL }, 1, screen, 1, fancy_mode);
 					}
 					else {
-						GFX_blitButtonGroup((char*[]){ "A","OPEN", NULL }, 0, screen, 1);
+						GFX_blitButtonGroup((char*[]){ "A","OPEN", NULL }, 0, screen, 1, fancy_mode);
 					}
 				}
 			}

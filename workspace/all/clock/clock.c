@@ -19,6 +19,8 @@ enum {
 	CURSOR_AMPM,
 };
 
+int fancy_mode = 0;
+
 int main(int argc , char* argv[]) {
 	PWR_setCPUSpeed(CPU_SPEED_MENU);
 	
@@ -258,12 +260,12 @@ int main(int argc , char* argv[]) {
 
 			GFX_clear(screen);
 			
-			GFX_blitHardwareGroup(screen, show_setting);
+			GFX_blitHardwareGroup(screen, show_setting, fancy_mode);
 			
-			if (show_setting) GFX_blitHardwareHints(screen, show_setting);
-			else GFX_blitButtonGroup((char*[]){ "SELECT",show_24hour?"12 HOUR":"24 HOUR", NULL }, 0, screen, 0);
+			if (show_setting) GFX_blitHardwareHints(screen, show_setting, fancy_mode);
+			else GFX_blitButtonGroup((char*[]){ "SELECT",show_24hour?"12 HOUR":"24 HOUR", NULL }, 0, screen, 0, fancy_mode);
 
-			GFX_blitButtonGroup((char*[]){ "B","CANCEL", "A","SET", NULL }, 1, screen, 1);
+			GFX_blitButtonGroup((char*[]){ "B","CANCEL", "A","SET", NULL }, 1, screen, 1, fancy_mode);
 		
 			// 376 or 446 (@2x)
 			// 188 or 223 (@1x)

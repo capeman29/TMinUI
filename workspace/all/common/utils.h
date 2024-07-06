@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-
 int prefixMatch(char* pre, char* str);
 int suffixMatch(char* suf, char* str);
 int exactMatch(char* str1, char* str2);
@@ -12,11 +11,25 @@ int hide(char* file_name);
 void getDisplayName(const char* in_name, char* out_name);
 void getEmuName(const char* in_name, char* out_name);
 void getEmuPath(char* emu_name, char* pak_path);
+
 //boxarts
+enum Aspect { ASPECT, NATIVE, FULL};
+
+typedef struct _BoxartData {
+    int sW;
+    int sH;
+    int bX;
+    int bY;
+    int bW;
+    int bH;
+    enum Aspect aspect;
+    char gradient[256];
+} myBoxartData;
+
 void getDisplayNameParens(const char* in_name, char* out_name);
 void getParentFolderName(const char* in_name, char* out_name);
 void getDisplayParentFolderName(const char* in_name, char* out_name);
-int readBoxartcfg(char *);
+int readBoxartcfg(char *, myBoxartData *);
 void bmp2png(char * filename);
 void getStatePath(char * gamepath, char* statepath);
 int canResume(char * rompath);
@@ -26,22 +39,6 @@ void normalizeNewline(char* line);
 void trimTrailingNewlines(char* line);
 void trimSortingMeta(char** str);
 char *trim(char *s);
-
-enum Aspect { ASPECT, NATIVE, FULL};
-
-struct _BoxartData {
-    int sW;
-    int sH;
-    int bX;
-    int bY;
-    int bW;
-    int bH;
-    enum Aspect aspect;
-    char gradient[256];
-};
-
-struct _BoxartData boxartdata;
-
 int exists(char* path);
 void touch(char* path);
 void putFile(char* path, char* contents);

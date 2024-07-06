@@ -15,8 +15,9 @@
 
 #include "libretro.h"
 #include "defines.h"
-#include "api.h"
 #include "utils.h"
+#include "api.h"
+
 #include "scaler.h"
 
 #include <sys/sysinfo.h>
@@ -2667,7 +2668,8 @@ static struct {
 };
 
 int makeBoxart(SDL_Surface *image, char *filename) {
-	readBoxartcfg(GAMEBOXART_CFGFILE);
+	myBoxartData boxartdata;
+	readBoxartcfg(GAMEBOXART_CFGFILE, &boxartdata);
 	char dirpath[256];
 	char tmp[256];
 	char cmd1[512];
@@ -2878,7 +2880,7 @@ static int Menu_message(char* message, char** pairs) {
 		if (dirty) {
 			GFX_clear(screen);
 			GFX_blitMessage(font.medium, message, screen, &(SDL_Rect){0,SCALE1((PADDING - (PADDING*fancy_mode))),screen->w,screen->h-SCALE1(PILL_SIZE+(PADDING - (PADDING*fancy_mode)))});
-			GFX_blitButtonGroup(pairs, 0, screen, 1);
+			GFX_blitButtonGroup(pairs, 0, screen, 1, fancy_mode);
 			GFX_flip(screen);
 			dirty = 0;
 		}
@@ -3405,7 +3407,7 @@ static int Menu_options(MenuList* list) {
 		
 		if (dirty) {
 			GFX_clear(screen);
-			GFX_blitHardwareGroup(screen, show_settings);
+			GFX_blitHardwareGroup(screen, show_settings, fancy_mode);
 			
 			char* desc = NULL;
 			SDL_Surface* text;
@@ -4093,7 +4095,7 @@ static void Menu_loop(void) {
 			SDL_BlitSurface(menu.overlay, NULL, screen, NULL);
 
 			int ox, oy;
-			int ow = GFX_blitHardwareGroup(screen, show_setting);
+			int ow = GFX_blitHardwareGroup(screen, show_setting, fancy_mode);
 			int max_width = screen->w - SCALE1((PADDING - (PADDING*fancy_mode)) * 2) - ow;
 			
 			char display_name[256];
@@ -4119,9 +4121,9 @@ static void Menu_loop(void) {
 			});
 			SDL_FreeSurface(text);
 			
-			if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting);
-			else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr, "Y","BOXART", NULL }, 0, screen, 0);
-			GFX_blitButtonGroup((char*[]){ "B","BACK", "A","OKAY", NULL }, 1, screen, 1);
+			if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting, fancy_mode);
+			else GFX_blitButtonGroup((char*[]){ BTN_SLEEP==BTN_POWER?"PWR":"MENU",pwractionstr, "Y","BOXART", NULL }, 0, screen, 0, fancy_mode);
+			GFX_blitButtonGroup((char*[]){ "B","BACK", "A","OKAY", NULL }, 1, screen, 1, fancy_mode);
 			
 			// list
 			oy = (((DEVICE_HEIGHT / FIXED_SCALE) - ((PADDING - (PADDING*fancy_mode))* 2)) - (MENU_ITEM_COUNT * PILL_SIZE)) / 2;
