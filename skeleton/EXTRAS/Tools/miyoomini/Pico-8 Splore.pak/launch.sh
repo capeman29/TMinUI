@@ -52,7 +52,11 @@ export EGL_VIDEODRIVER=mmiyoo
 #audioserver must be killed to let sdl2 taking control of audio 
 curvol=$(get_curvol)
 #killall -9 keymon.elf
-killall -9 audioserver
+if $IS_PLUS; then
+    killall -9 audioserver
+else
+    killall -9 audioserver.mod
+fi
 sleep 0.2
 set_snd_level "${curvol}" &
 
@@ -63,6 +67,10 @@ HOME="$progdir" \
 #restart audioserver and keymon for other process
 #killall -9 keymon.elf
 sleep 0.1
-/customer/app/audioserver -60 &
+if $IS_PLUS; then
+    /customer/app/audioserver -60 &
+else
+    ${SDCARD_PATH}/.system/miyoomini/bin/audioserver.mod -60 &
+fi
 wait_for_device &
 overclock.elf $CPU_SPEED_MENU
