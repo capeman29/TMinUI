@@ -2747,9 +2747,16 @@ int makeBoxart(SDL_Surface *image, char *filename) {
             LOG_info("Failed loading Gradient: %s\n", IMG_GetError());
             return -1;  
         } 
-        SDL_SetColorKey(blackgradient, SDL_TRUE, SDL_MapRGB(blackgradient->format, 0, 0, 0)); // enable color key (transparency)
-        SDL_BlitSurface(blackgradient,NULL,mysurface,NULL);
-        SDL_FreeSurface(blackgradient);
+		LOG_info("Applying Gradient %s\n",boxartdata.gradient);
+#if defined (USE_SDL2)
+		SDL_SetSurfaceBlendMode(blackgradient,SDL_BLENDMODE_BLEND);
+#else
+		SDL_SetColorKey(blackgradient, SDL_TRUE, SDL_MapRGB(blackgradient->format, 0, 0, 0));
+#endif
+		if (SDL_BlitSurface(blackgradient,NULL,mysurface,NULL) == 0) {
+			LOG_info("Applying Gradient Success\n");
+		}   			
+		SDL_FreeSurface(blackgradient);
     }
 
 
@@ -2760,8 +2767,8 @@ int makeBoxart(SDL_Surface *image, char *filename) {
     //SDL_FreeSurface(unscaled_myimg);
     SDL_FreeSurface(mysurface);
 
-	
-   bmp2png(filename);
+
+    bmp2png(filename);
     return 1;
 }
 
@@ -4323,7 +4330,7 @@ static unsigned getUsage(void) { // from picoarch
 
 	if (ticksps)
 		ticks = ticks * 100 / ticksps;
-
+	
 finish:
 	if (file)
 		fclose(file);

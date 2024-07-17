@@ -192,7 +192,11 @@ int makeBoxart(char *infilename, char *outfilename, myBoxartData mydata) {
             LOG_info("Failed loading Gradient: %s\n", IMG_GetError());
             return -1;  
         } 
-        SDL_SetColorKey(blackgradient, SDL_TRUE, SDL_MapRGB(blackgradient->format, 0, 0, 0)); // enable color key (transparency)
+#if defined (USE_SDL2)
+		SDL_SetSurfaceBlendMode(blackgradient,SDL_BLENDMODE_BLEND);
+#else
+		SDL_SetColorKey(blackgradient, SDL_TRUE, SDL_MapRGB(blackgradient->format, 0, 0, 0));
+#endif
         SDL_BlitSurface(blackgradient,NULL,mysurface,NULL);
         SDL_FreeSurface(blackgradient);
     }

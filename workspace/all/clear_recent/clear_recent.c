@@ -16,19 +16,20 @@
 #include "api.h"
 
 int main(int argc, char* argv[]) {
-    PWR_setCPUSpeed(CPU_SPEED_MENU);
-
-    SDL_Surface* screen = GFX_init(MODE_MAIN);
-    PWR_init();
-    InitSettings();
+	PWR_setCPUSpeed(CPU_SPEED_MENU);
+	
+	SDL_Surface* screen = GFX_init(MODE_MAIN);
+	PAD_init();
+	PWR_init();
+	InitSettings();
 
     SDL_Event event;
     int quit = 0;
     int save_changes = 0;
-
+    GFX_clear(screen);
     // Show confirmation message
     // GFX_blitHardwareGroup(screen, show_setting);
-    GFX_blitMessage(font.large, "Are you sure you want to clear\nRecently Played?", screen, NULL);
+    GFX_blitMessage(font.large, "Are you sure you want to clear\nRecently Played?", screen, &(SDL_Rect){0,0,screen->w,screen->h});
     GFX_blitButtonGroup((char*[]){ "B","CANCEL", "A","CLEAR", NULL },0, screen, 1, 0);
 
     GFX_flip(screen);
@@ -52,6 +53,7 @@ int main(int argc, char* argv[]) {
     }
 
     QuitSettings();
+    PAD_quit();
     PWR_quit();
     GFX_quit();
 
