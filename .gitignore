@@ -34,3 +34,6 @@ skeleton/EXTRAS/Roms/Pico-8 (P8)/194-8.p8.png
 
 
 workspace/rg35xx/boot/output/dmenu.bin
+toolchains/rg35xx-toolchain/.build
+toolchains/miyoomini-toolchain/.build
+toolchains/my282-toolchain/.build
