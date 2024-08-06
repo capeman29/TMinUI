@@ -23,7 +23,7 @@ early: $(REQUIRES_COMMANDER)
 
 clean:
 	cd ./overclock && make clean
-	cd ./boot && rm -rf ./output
+	cd ./boot && rm -rf ./output/*
 	cd other/DinguxCommander && make clean
 	
 $(REQUIRES_COMMANDER):
