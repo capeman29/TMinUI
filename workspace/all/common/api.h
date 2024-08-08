@@ -197,12 +197,18 @@ void SND_quit(void);
 
 ///////////////////////////////
 
+typedef struct PAD_Axis {
+		int x;
+		int y;
+} PAD_Axis;
 typedef struct PAD_Context {
 	int is_pressed;
 	int just_pressed;
 	int just_released;
 	int just_repeated;
 	uint32_t repeat_at[BTN_ID_COUNT];
+	PAD_Axis laxis;
+	PAD_Axis raxis;
 } PAD_Context;
 extern PAD_Context pad;
 
@@ -218,6 +224,8 @@ extern PAD_Context pad;
 void PAD_poll_SDL(void);
 int PAD_wake_SDL(void);
 #endif
+
+void PAD_setAnalog(int neg, int pos, int value, int repeat_at); // internal
 
 void PAD_reset(void);
 int PAD_anyJustPressed(void);
