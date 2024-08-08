@@ -14,18 +14,19 @@ endif
 
 .PHONY: all
 
+
 all:
-	cd ./$(PLATFORM)/libmsettings && make
-	cd ./$(PLATFORM) && make early # eg. other libs
-	cd ./$(PLATFORM)/keymon && make
-	cd ./$(PLATFORM)/cores && make
-	cd ./$(PLATFORM) && make
-	cd ./all/minui/ && make
-	cd ./all/minarch/ && make
-	cd ./all/clock/ && make
-	cd ./all/minput/ && make
-	cd ./all/clear_recent/ && make
-	cd ./all/convertboxart/ && make
+		cd ./$(PLATFORM)/libmsettings && make
+		cd ./$(PLATFORM) && make early # eg. other libs
+		cd ./$(PLATFORM)/keymon && make
+		cd ./$(PLATFORM)/cores && make
+		cd ./$(PLATFORM) && make
+		cd ./all/minui/ && make
+		cd ./all/minarch/ && make
+		cd ./all/clock/ && make
+		cd ./all/minput/ && make
+		cd ./all/clear_recent/ && make
+		cd ./all/convertboxart/ && make
 
 clean:
 	cd ./$(PLATFORM)/libmsettings && make clean

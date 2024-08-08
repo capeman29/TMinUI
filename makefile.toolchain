@@ -15,6 +15,7 @@ INIT_IF_NECESSARY=toolchains/$(PLATFORM)-toolchain/.build
 all: $(INIT_IF_NECESSARY)
 	docker run -it --rm -v $(HOST_WORKSPACE):$(GUEST_WORKSPACE) $(PLATFORM)-toolchain /bin/bash
 
+
 $(INIT_IF_NECESSARY): $(GIT_IF_NECESSARY)
 	cd toolchains/$(PLATFORM)-toolchain && make .build
 

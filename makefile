@@ -5,7 +5,7 @@
 
 ifeq (,$(PLATFORMS))
 #PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel
-PLATFORMS = rg35xx miyoomini
+PLATFORMS = rg35xx miyoomini my282
 endif
 
 ###########################################################
@@ -15,7 +15,9 @@ RELEASE_TIME:=$(shell TZ=GMT date +%Y%m%d)
 RELEASE_BETA=b
 RELEASE_BASE=MyMinUI-$(RELEASE_TIME)$(RELEASE_BETA)
 RELEASE_DOT:=$(shell find ./releases/. | grep -e ".*/${RELEASE_BASE}-[0-9]+-base\.zip" | wc -l | sed 's/ //g')
+
 RELEASE_NAME=$(RELEASE_BASE)-$(RELEASE_DOT)
+
 
 ###########################################################
 .PHONY: build
@@ -170,6 +172,13 @@ miyoomini:
 	# ----------------------------------------------------
 	make clean setup common special package PLATFORM=$@
 	# ----------------------------------------------------
+
+
+my282:
+	# ----------------------------------------------------
+	make clean setup common special package PLATFORM=$@
+	# ----------------------------------------------------
+
 
 trimuismart:
 	# ----------------------------------------------------
