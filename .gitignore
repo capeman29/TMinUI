@@ -37,3 +37,4 @@ workspace/rg35xx/boot/output
 toolchains/rg35xx-toolchain/.build
 toolchains/miyoomini-toolchain/.build
 toolchains/my282-toolchain/.build
+toolchains/my282-toolchain/support/my282_toolchain.tar.gz
