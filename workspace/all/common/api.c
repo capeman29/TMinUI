@@ -1042,6 +1042,12 @@ void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
 	
 	SDL_InitSubSystem(SDL_INIT_AUDIO);
 	
+/*	LOG_info("Available audio drivers:\n");
+	for (int i=0; i<SDL_GetNumAudioDrivers(); i++) {
+		LOG_info("- %s\n", SDL_GetAudioDriver(i));
+	}
+	LOG_info("Current audio driver: %s\n", SDL_GetCurrentAudioDriver());
+*/
 	snd.frame_rate = frame_rate;
 
 	SDL_AudioSpec spec_in;
@@ -1093,7 +1099,7 @@ void PAD_setAnalog(int neg_id,int pos_id,int value,int repeat_at) {
 			pad.just_pressed	|= pos; // set
 			pad.just_repeated	|= pos; // set
 			pad.repeat_at[pos_id]= repeat_at;
-		
+
 			if (pad.is_pressed&neg) { // was pressing opposite
 				pad.is_pressed 		&= ~neg; // unset
 				pad.just_repeated 	&= ~neg; // unset
@@ -1107,7 +1113,7 @@ void PAD_setAnalog(int neg_id,int pos_id,int value,int repeat_at) {
 			pad.just_pressed	|= neg; // set
 			pad.just_repeated	|= neg; // set
 			pad.repeat_at[neg_id]= repeat_at;
-		
+
 			if (pad.is_pressed&pos) { // was pressing opposite
 				pad.is_pressed 		&= ~pos; // unset
 				pad.just_repeated 	&= ~pos; // unset
@@ -1262,7 +1268,7 @@ void PAD_poll_SDL(void) {
 			else if (axis==AXIS_LY) { pad.laxis.y = val; PAD_setAnalog(BTN_ID_ANALOG_UP,   BTN_ID_ANALOG_DOWN,  val, tick+PAD_REPEAT_DELAY); }
 			else if (axis==AXIS_RX) pad.raxis.x = val;
 			else if (axis==AXIS_RY) pad.raxis.y = val;
-			
+
 			// axis will fire off what looks like a release
 			// before the first press but you can't release
 			// a button that wasn't pressed

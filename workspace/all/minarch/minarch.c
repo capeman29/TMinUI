@@ -73,6 +73,8 @@ static int show_debug = 0;
 static int max_ff_speed = 3; // 4x
 static int fast_forward = 0;
 static int overclock = 1; // normal
+static int has_custom_controllers = 0;
+static int gamepad_type = 0; // index in gamepad_labels/gamepad_values
 static int downsample = 0; // set to 1 to convert from 8888 to 565
 static int DEVICE_WIDTH = FIXED_WIDTH;
 static int DEVICE_HEIGHT = FIXED_HEIGHT;
@@ -690,13 +692,14 @@ enum {
 	SHORTCUT_SAVE_STATE,
 	SHORTCUT_LOAD_STATE,
 	SHORTCUT_RESET_GAME,
+	SHORTCUT_SAVE_QUIT,
 	SHORTCUT_CYCLE_SCALE,
 	SHORTCUT_TOGGLE_FF,
 	SHORTCUT_HOLD_FF,
 	SHORTCUT_COUNT,
 };
 
-#define LOCAL_BUTTON_COUNT 20 // depends on device
+#define LOCAL_BUTTON_COUNT 16 // depends on device
 #define RETRO_BUTTON_COUNT 16 // allow L3/R3 to be remapped by user if desired, eg. Virtual Boy uses extra buttons for right d-pad
 
 typedef struct ButtonMapping { 
@@ -709,10 +712,10 @@ typedef struct ButtonMapping {
 } ButtonMapping;
 
 static ButtonMapping default_button_mapping[] = { // used if pak.cfg doesn't exist or doesn't have bindings
-	{"Up",			RETRO_DEVICE_ID_JOYPAD_UP,		BTN_ID_UP},
-	{"Down",		RETRO_DEVICE_ID_JOYPAD_DOWN,	BTN_ID_DOWN},
-	{"Left",		RETRO_DEVICE_ID_JOYPAD_LEFT,	BTN_ID_LEFT},
-	{"Right",		RETRO_DEVICE_ID_JOYPAD_RIGHT,	BTN_ID_RIGHT},
+	{"Up",			RETRO_DEVICE_ID_JOYPAD_UP,		BTN_ID_DPAD_UP},
+	{"Down",		RETRO_DEVICE_ID_JOYPAD_DOWN,	BTN_ID_DPAD_DOWN},
+	{"Left",		RETRO_DEVICE_ID_JOYPAD_LEFT,	BTN_ID_DPAD_LEFT},
+	{"Right",		RETRO_DEVICE_ID_JOYPAD_RIGHT,	BTN_ID_DPAD_RIGHT},	
 	{"A Button",	RETRO_DEVICE_ID_JOYPAD_A,		BTN_ID_A},
 	{"B Button",	RETRO_DEVICE_ID_JOYPAD_B,		BTN_ID_B},
 	{"X Button",	RETRO_DEVICE_ID_JOYPAD_X,		BTN_ID_X},
@@ -729,10 +732,10 @@ static ButtonMapping default_button_mapping[] = { // used if pak.cfg doesn't exi
 };
 static ButtonMapping button_label_mapping[] = { // used to lookup the retro_id and local btn_id from button name
 	{"NONE",	-1,								BTN_ID_NONE},
-	{"UP",		RETRO_DEVICE_ID_JOYPAD_UP,		BTN_ID_UP},
-	{"DOWN",	RETRO_DEVICE_ID_JOYPAD_DOWN,	BTN_ID_DOWN},
-	{"LEFT",	RETRO_DEVICE_ID_JOYPAD_LEFT,	BTN_ID_LEFT},
-	{"RIGHT",	RETRO_DEVICE_ID_JOYPAD_RIGHT,	BTN_ID_RIGHT},
+	{"UP",		RETRO_DEVICE_ID_JOYPAD_UP,		BTN_ID_DPAD_UP},
+	{"DOWN",	RETRO_DEVICE_ID_JOYPAD_DOWN,	BTN_ID_DPAD_DOWN},
+	{"LEFT",	RETRO_DEVICE_ID_JOYPAD_LEFT,	BTN_ID_DPAD_LEFT},
+	{"RIGHT",	RETRO_DEVICE_ID_JOYPAD_RIGHT,	BTN_ID_DPAD_RIGHT},
 	{"A",		RETRO_DEVICE_ID_JOYPAD_A,		BTN_ID_A},
 	{"B",		RETRO_DEVICE_ID_JOYPAD_B,		BTN_ID_B},
 	{"X",		RETRO_DEVICE_ID_JOYPAD_X,		BTN_ID_X},
@@ -750,22 +753,22 @@ static ButtonMapping button_label_mapping[] = { // used to lookup the retro_id a
 static ButtonMapping core_button_mapping[RETRO_BUTTON_COUNT+1] = {0};
 
 static const char* device_button_names[LOCAL_BUTTON_COUNT] = {
-	[BTN_ID_UP]		= "UP",
-	[BTN_ID_DOWN]	= "DOWN",
-	[BTN_ID_LEFT]	= "LEFT",
-	[BTN_ID_RIGHT]	= "RIGHT",
-	[BTN_ID_SELECT]	= "SELECT",
-	[BTN_ID_START]	= "START",
-	[BTN_ID_Y]		= "Y",
-	[BTN_ID_X]		= "X",
-	[BTN_ID_B]		= "B",
-	[BTN_ID_A]		= "A",
-	[BTN_ID_L1]		= "L1",
-	[BTN_ID_R1]		= "R1",
-	[BTN_ID_L2]		= "L2",
-	[BTN_ID_R2]		= "R2",
-	[BTN_ID_L3]		= "L3",
-	[BTN_ID_R3]		= "R3",
+	[BTN_ID_DPAD_UP]	= "UP",
+	[BTN_ID_DPAD_DOWN]	= "DOWN",
+	[BTN_ID_DPAD_LEFT]	= "LEFT",
+	[BTN_ID_DPAD_RIGHT]	= "RIGHT",
+	[BTN_ID_SELECT]		= "SELECT",
+	[BTN_ID_START]		= "START",
+	[BTN_ID_Y]			= "Y",
+	[BTN_ID_X]			= "X",
+	[BTN_ID_B]			= "B",
+	[BTN_ID_A]			= "A",
+	[BTN_ID_L1]			= "L1",
+	[BTN_ID_R1]			= "R1",
+	[BTN_ID_L2]			= "L2",
+	[BTN_ID_R2]			= "R2",
+	[BTN_ID_L3]			= "L3",
+	[BTN_ID_R3]			= "R3",	
 };
 
 
@@ -813,6 +816,19 @@ static char* overclock_labels[] = {
 	"Max",
 	NULL,
 };
+
+// TODO: this should be provided by the core
+static char* gamepad_labels[] = {
+	"Standard",
+	"DualShock",
+	NULL,
+};
+static char* gamepad_values[] = {
+	"1",
+	"517",
+	NULL,
+};
+
 
 enum {
 	CONFIG_NONE,
@@ -922,6 +938,7 @@ static struct Config {
 		[SHORTCUT_SAVE_STATE]			= {"Save State",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_LOAD_STATE]			= {"Load State",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_RESET_GAME]			= {"Reset Game",		-1, BTN_ID_NONE, 0},
+		[SHORTCUT_SAVE_QUIT]			= {"Save & Quit",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_CYCLE_SCALE]			= {"Cycle Scaling",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_TOGGLE_FF]			= {"Toggle FF",			-1, BTN_ID_NONE, 0},
 		[SHORTCUT_HOLD_FF]				= {"Hold FF",			-1, BTN_ID_NONE, 0},
@@ -1094,6 +1111,12 @@ static void Config_readOptionsString(char* cfg) {
 		Config_syncFrontend(option->key, option->value);
 	}
 	
+	if (has_custom_controllers && Config_getValue(cfg,"minarch_gamepad_type",value,NULL)) {
+		gamepad_type = strtol(value, NULL, 0);
+		int device = strtol(gamepad_values[gamepad_type], NULL, 0);
+		core.set_controller_port_device(0, device);
+	}
+
 	for (int i=0; config.core.options[i].key; i++) {
 		Option* option = &config.core.options[i];
 		if (!Config_getValue(cfg, option->key, value, &option->lock)) continue;
@@ -1226,6 +1249,9 @@ static void Config_write(int override) {
 		Option* option = &config.core.options[i];
 		fprintf(file, "%s = %s\n", option->key, option->values[option->value]);
 	}
+
+	if (has_custom_controllers) fprintf(file, "%s = %i\n", "minarch_gamepad_type", gamepad_type);
+
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		int j = mapping->local + 1;
@@ -1264,6 +1290,11 @@ static void Config_restore(void) {
 		option->value = option->default_value;
 	}
 	config.core.changed = 1; // let the core know
+
+	if (has_custom_controllers) {
+		gamepad_type = 0;
+		core.set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
+	}
 
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
@@ -1563,6 +1594,14 @@ static void input_poll_callback(void) {
 		ButtonMapping* mapping = &config.shortcuts[i];
 		int btn = 1 << mapping->local;
 		if (btn==BTN_NONE) continue; // not bound
+		if (gamepad_type==0) {
+			switch(btn) {
+				case BTN_DPAD_UP: 		btn = BTN_UP; break;
+				case BTN_DPAD_DOWN: 	btn = BTN_DOWN; break;
+				case BTN_DPAD_LEFT: 	btn = BTN_LEFT; break;
+				case BTN_DPAD_RIGHT: 	btn = BTN_RIGHT; break;
+			}
+		}
 		if (!mapping->mod || PAD_isPressed(BTN_MENU)) {
 			if (i==SHORTCUT_TOGGLE_FF) {
 				if (PAD_justPressed(btn)) {
@@ -1588,6 +1627,10 @@ static void input_poll_callback(void) {
 					case SHORTCUT_SAVE_STATE: Menu_saveState(); break;
 					case SHORTCUT_LOAD_STATE: Menu_loadState(); break;
 					case SHORTCUT_RESET_GAME: core.reset(); break;
+					case SHORTCUT_SAVE_QUIT:
+						Menu_saveState();
+						quit = 1;
+						break;
 					case SHORTCUT_CYCLE_SCALE:
 						screen_scaling += 1;
 						if (screen_scaling>=SCALE_COUNT) screen_scaling -= SCALE_COUNT;
@@ -1806,6 +1849,10 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		// LOG_info("%i: RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK\n", cmd);
 		break;
 	}
+	case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK: { /* 22 */
+		// LOG_info("%i: RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK\n", cmd);
+		break;
+	}
 	case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE: { /* 23 */
 	        struct retro_rumble_interface *iface = (struct retro_rumble_interface*)data;
 
@@ -1813,12 +1860,12 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 	        iface->set_rumble_state = set_rumble_state;
 		break;
 	}
-	// case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
-	// 	unsigned *out = (unsigned *)data;
-	// 	if (out)
-	// 		*out = (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
-	// 	break;
-	// }
+case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
+		unsigned *out = (unsigned *)data;
+		if (out)
+			*out = (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
+		break;
+	}
 	case RETRO_ENVIRONMENT_GET_LOG_INTERFACE: { /* 27 */
 		struct retro_log_callback *log_cb = (struct retro_log_callback *)data;
 		if (log_cb)
@@ -1831,9 +1878,31 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 			*out = core.saves_dir; // save_dir;
 		break;
 	}
-	// RETRO_ENVIRONMENT_SET_CONTROLLER_INFO 35
+	case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO: { /* 35 */
+		// LOG_info("RETRO_ENVIRONMENT_SET_CONTROLLER_INFO\n");
+		const struct retro_controller_info *infos = (const struct retro_controller_info *)data;
+		if (infos) {
+			// TODO: store to gamepad_values/gamepad_labels for gamepad_device
+			const struct retro_controller_info *info = &infos[0];
+			for (int i=0; i<info->num_types; i++) {
+				const struct retro_controller_description *type = &info->types[i];
+				if (exactMatch((char*)type->desc,"dualshock")) { // currently only enabled for PlayStation
+					has_custom_controllers = 1;
+					break;
+				}
+				// printf("\t%i: %s\n", type->id, type->desc);
+			}
+		}
+		fflush(stdout);
+		return false; // TODO: tmp
+		break;
+	}
 	// RETRO_ENVIRONMENT_SET_MEMORY_MAPS (36 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 	// RETRO_ENVIRONMENT_GET_LANGUAGE 39
+	case RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER: { /* (40 | RETRO_ENVIRONMENT_EXPERIMENTAL) */
+		// puts("RETRO_ENVIRONMENT_GET_CURRENT_SOFTWARE_FRAMEBUFFER");
+		break;
+	}
 	// RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS (42 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 	// RETRO_ENVIRONMENT_GET_VFS_INTERFACE (45 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 	// RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
@@ -2058,6 +2127,220 @@ static void MSG_quit(void) {
 
 ///////////////////////////////
 
+static const char* bitmap_font[] = {
+	['0'] = 
+		" 111 "
+		"1   1"
+		"1   1"
+		"1  11"
+		"1 1 1"
+		"11  1"
+		"1   1"
+		"1   1"
+		" 111 ",
+	['1'] =
+		"   1 "
+		" 111 "
+		"   1 "
+		"   1 "
+		"   1 "
+		"   1 "
+		"   1 "
+		"   1 "
+		"   1 ",
+	['2'] =
+		" 111 "
+		"1   1"
+		"    1"
+		"   1 "
+		"  1  "
+		" 1   "
+		"1    "
+		"1    "
+		"11111",
+	['3'] =
+		" 111 "
+		"1   1"
+		"    1"
+		"    1"
+		" 111 "
+		"    1"
+		"    1"
+		"1   1"
+		" 111 ",
+	['4'] =
+		"1   1"
+		"1   1"
+		"1   1"
+		"1   1"
+		"1   1"
+		"1   1"
+		"11111"
+		"    1"
+		"    1",
+	['5'] =
+		"11111"
+		"1    "
+		"1    "
+		"1111 "
+		"    1"
+		"    1"
+		"    1"
+		"1   1"
+		" 111 ",
+	['6'] =
+		" 111 "
+		"1    "
+		"1    "
+		"1111 "
+		"1   1"
+		"1   1"
+		"1   1"
+		"1   1"
+		" 111 ",
+	['7'] =
+		"11111"
+		"    1"
+		"    1"
+		"   1 "
+		"  1  "
+		"  1  "
+		"  1  "
+		"  1  "
+		"  1  ",
+	['8'] =
+		" 111 "
+		"1   1"
+		"1   1"
+		"1   1"
+		" 111 "
+		"1   1"
+		"1   1"
+		"1   1"
+		" 111 ",
+	['9'] =
+		" 111 "
+		"1   1"
+		"1   1"
+		"1   1"
+		"1   1"
+		" 1111"
+		"    1"
+		"    1"
+		" 111 ",
+	['.'] = 
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		" 11  "
+		" 11  ",
+	[','] = 
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		"  1  "
+		"  1  "
+		" 1   ",
+	[' '] = 
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		"     "
+		"     ",
+	['('] = 
+		"   1 "
+		"  1  "
+		" 1   "
+		" 1   "
+		" 1   "
+		" 1   "
+		" 1   "
+		"  1  "
+		"   1 ",
+	[')'] = 
+		" 1   "
+		"  1  "
+		"   1 "
+		"   1 "
+		"   1 "
+		"   1 "
+		"   1 "
+		"  1  "
+		" 1   ",
+	['/'] = 
+		"   1 "
+		"   1 "
+		"   1 "
+		"  1  "
+		"  1  "
+		"  1  "
+		" 1   "
+		" 1   "
+		" 1   ",
+	['x'] = 
+		"     "
+		"     "
+		"1   1"
+		"1   1"
+		" 1 1 "
+		"  1  "
+		" 1 1 "
+		"1   1"
+		"1   1",
+	['%'] = 
+		" 1   "
+		"1 1  "
+		"1 1 1"
+		" 1 1 "
+		"  1  "
+		" 1 1 "
+		"1 1 1"
+		"  1 1"
+		"   1 ",
+};
+
+static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
+	#define CHAR_WIDTH 5
+	#define CHAR_HEIGHT 9
+	#define LETTERSPACING 1
+
+	int len = strlen(text);
+	int w = ((CHAR_WIDTH+LETTERSPACING)*len)-1;
+	int h = CHAR_HEIGHT;
+
+	if (ox<0) ox = width-w+ox;
+	if (oy<0) oy = height-h+oy;
+
+
+	data += oy * stride + ox;
+	for (int y=0; y<CHAR_HEIGHT; y++) {
+		uint16_t* row = data + y * stride;
+		memset(row, 0, w*2);
+		for (int i=0; i<len; i++) {
+			const char* c = bitmap_font[text[i]];
+			for (int x=0; x<CHAR_WIDTH; x++) {
+				int j = y * CHAR_WIDTH + x;
+				if (c[j]=='1') *row = 0xffff;
+				row++;
+			}
+			row += LETTERSPACING;
+		}
+	}
+}
+
+///////////////////////////////
+
 static int cpu_ticks = 0;
 static int fps_ticks = 0;
 static int use_ticks = 0;
@@ -2065,8 +2348,6 @@ static double fps_double = 0;
 static double cpu_double = 0;
 static double use_double = 0;
 static uint32_t sec_start = 0;
-
-static SDL_Surface* scaler_surface;
 
 #ifdef USES_SWSCALER
 	static int fit = 1;
@@ -2083,7 +2364,7 @@ static void buffer_dealloc(void) {
 }
 static void buffer_realloc(int w, int h, int p) {
 	buffer_dealloc();
-	buffer = malloc((w * sizeof(uint16_t)) * h);
+	buffer = malloc((w * FIXED_BPP) * h);
 }
 static void buffer_downsample(const void *data, unsigned width, unsigned height, size_t pitch) {
 	// from picoarch! https://git.crowdedwood.com/picoarch/tree/video.c#n51
@@ -2100,7 +2381,7 @@ static void buffer_downsample(const void *data, unsigned width, unsigned height,
 			output++;
 		}
 
-		input += extra;
+		input += extra; // TODO: commenting this out fixes geolith when cropped, it appears to be lying about the pitch...
 	}
 }
 
@@ -2341,9 +2622,6 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		screen = GFX_resize(dst_w,dst_h,dst_p);
 	// }
 	
-	// DEBUG HUD
-	if (scaler_surface) SDL_FreeSurface(scaler_surface);
-	scaler_surface = TTF_RenderUTF8_Blended(font.tiny, scaler_name, COLOR_WHITE);
 }
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
 	// return;
@@ -2372,7 +2650,8 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	if (!data) return;
 
 	fps_ticks += 1;
-	
+	if (downsample) pitch /= 2; // everything expects 16 but we're downsampling from 32
+
 	// if source has changed size (or forced by dst_p==0)
 	// eg. true src + cropped src + fixed dst + cropped dst
 	if (renderer.dst_p==0 || width!=renderer.true_w || height!=renderer.true_h) {
@@ -2381,13 +2660,24 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	}
 	
 	// debug
-	static int top_width = 0;
-	static int bottom_width = 0;
-	if (top_width) SDL_FillRect(screen, &(SDL_Rect){0,0,top_width,DIGIT_HEIGHT}, RGB_BLACK);
-	if (bottom_width) SDL_FillRect(screen, &(SDL_Rect){0,screen->h-DIGIT_HEIGHT,bottom_width,DIGIT_HEIGHT}, RGB_BLACK);
-	
+	if (show_debug) {
+		char debug_text[128];
+		sprintf(debug_text, "%ix%i %ix", renderer.src_w,renderer.src_h, renderer.scale);
+		blitBitmapText(debug_text,2,2,(uint16_t*)data,pitch/2, width,height);
+
+		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.src_w*renderer.scale,renderer.src_h*renderer.scale);
+		blitBitmapText(debug_text,-2,2,(uint16_t*)data,pitch/2, width,height);
+
+		sprintf(debug_text, "%.01f/%.01f %i%%", fps_double, cpu_double, (int)use_double);
+		blitBitmapText(debug_text,2,-2,(uint16_t*)data,pitch/2, width,height);
+
+		sprintf(debug_text, "%ix%i", renderer.dst_w,renderer.dst_h);
+		blitBitmapText(debug_text,-2,-2,(uint16_t*)data,pitch/2, width,height);
+	}
+
+
 	if (downsample) {
-		buffer_downsample(data,width,height,pitch);
+		buffer_downsample(data,width,height,pitch*2);
 		renderer.src = buffer;
 	}
 	else {
@@ -2396,55 +2686,6 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	renderer.dst = screen->pixels;
 	// LOG_info("video_refresh_callback: %ix%i@%i %ix%i@%i\n",width,height,pitch,screen->w,screen->h,screen->pitch);
 	GFX_blitRenderer(&renderer);
-	
-	if (show_debug) {
-		int x = 0;
-		int y = screen->h - SCALE1(DIGIT_HEIGHT);
-#if defined(USE_SDL2)
-		y = height - SCALE1(DIGIT_HEIGHT); // TODO: tmp?
-#endif
-		
-		if (fps_double) x = MSG_blitDouble(fps_double, x,y);
-		
-		if (cpu_double) {
-			x = MSG_blitChar(DIGIT_SLASH,x,y);
-			x = MSG_blitDouble(cpu_double, x,y);
-		}
-		
-		if (use_double) {
-			x = MSG_blitChar(DIGIT_SPACE,x,y);
-			x = MSG_blitDouble(use_double, x,y);
-			x = MSG_blitChar(DIGIT_PERCENT,x,y);
-		}
-		
-		if (x>bottom_width) bottom_width = x; // keep the largest width because triple buffer
-		
-		x = 0;
-		y = 0;
-		
-		// src res
-		x = MSG_blitInt(renderer.src_w,x,y);
-		x = MSG_blitChar(DIGIT_X,x,y);
-		x = MSG_blitInt(renderer.src_h,x,y);
-		
-		x = MSG_blitChar(DIGIT_SPACE,x,y);
-		
-		// dst res
-		x = MSG_blitChar(DIGIT_OP,x,y);
-		x = MSG_blitInt(renderer.dst_w,x,y);
-		x = MSG_blitChar(DIGIT_X,x,y);
-		x = MSG_blitInt(renderer.dst_h,x,y);
-		x = MSG_blitChar(DIGIT_CP,x,y);
-		x = MSG_blitChar(DIGIT_SPACE,x,y);
-		
-		if (scaler_surface) {
-			SDL_FillRect(screen, &(SDL_Rect){x,y,scaler_surface->w,SCALE1(DIGIT_HEIGHT)}, RGB_BLACK);
-			SDL_BlitSurface(scaler_surface, NULL, screen, &(SDL_Rect){x,y+((SCALE1(DIGIT_HEIGHT) - scaler_surface->h)/2)});
-			x += SCALE1(DIGIT_WIDTH) * 3;
-		}
-		
-		if (x>top_width) top_width = x; // keep the largest width because triple buffer
-	}
 	
 	if (!thread_video) GFX_flip(screen);
 	last_flip_time = SDL_GetTicks();
@@ -2580,7 +2821,7 @@ void Core_load(void) {
 	core.get_system_av_info(&av_info);
 
 	// FIX: some cores need configure a default controller.
-	core.set_controller_port_device(0, 1);
+	core.set_controller_port_device(0, RETRO_DEVICE_JOYPAD); // set a default, may update after loading configs
 
 	core.fps = av_info.timing.fps;
 	core.sample_rate = av_info.timing.sample_rate;
@@ -2588,7 +2829,7 @@ void Core_load(void) {
 	if (a<=0) a = (double)av_info.geometry.base_width / av_info.geometry.base_height;
 	core.aspect_ratio = a;
 	
-	LOG_info("aspect_ratio: %f fps: %f\n", a, core.fps);
+	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);
 }
 void Core_reset(void) {
 	core.reset();
@@ -2897,8 +3138,6 @@ static int Menu_message(char* message, char** pairs) {
 	return MENU_CALLBACK_NOP; // TODO: this should probably be an arg
 }
 
-#define OPTION_PADDING 8
-#define MAX_VISIBLE_OPTIONS 6
 static int Menu_options(MenuList* list);
 
 static int MenuList_freeItems(MenuList* list, int i) {
@@ -3033,7 +3272,12 @@ static int OptionEmulator_openMenu(MenuList* list, int i) {
 
 int OptionControls_bind(MenuList* list, int i) {
 	MenuItem* item = &list->items[i];
-	ButtonMapping* button = &config.controls[item->id];
+	if (item->values!=button_labels) {
+		// LOG_info("changed gamepad_type\n");
+		return MENU_CALLBACK_NOP;
+	}
+	
+	ButtonMapping* button = &config.controls[item->id];	
 	
 	int bound = 0;
 	while (!bound) {
@@ -3062,9 +3306,22 @@ int OptionControls_bind(MenuList* list, int i) {
 }
 static int OptionControls_unbind(MenuList* list, int i) {
 	MenuItem* item = &list->items[i];
+	if (item->values!=button_labels) return MENU_CALLBACK_NOP;
+	
 	ButtonMapping* button = &config.controls[item->id];
 	button->local = -1;
 	button->mod = 0;
+	return MENU_CALLBACK_NOP;
+}
+static int OptionControls_optionChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	if (item->values!=gamepad_labels) return MENU_CALLBACK_NOP;
+
+	if (has_custom_controllers) {
+		gamepad_type = item->value;
+		int device = strtol(gamepad_values[item->value], NULL, 0);
+		core.set_controller_port_device(0, device);
+	}
 	return MENU_CALLBACK_NOP;
 }
 static MenuList OptionControls_menu = {
@@ -3076,12 +3333,25 @@ static MenuList OptionControls_menu = {
 	.on_change = OptionControls_unbind,
 	.items = NULL
 };
+
 static int OptionControls_openMenu(MenuList* list, int i) {
 	LOG_info("OptionControls_openMenu\n");
+
 	if (OptionControls_menu.items==NULL) {
+		
 		// TODO: where do I free this?
-		OptionControls_menu.items = calloc(RETRO_BUTTON_COUNT+1, sizeof(MenuItem));
+		OptionControls_menu.items = calloc(RETRO_BUTTON_COUNT+1+has_custom_controllers, sizeof(MenuItem));
 		int k = 0;
+		
+		if (has_custom_controllers) {
+			MenuItem* item = &OptionControls_menu.items[k++];
+			item->name = "Controller";
+			item->desc = "Select the type of controller.";
+			item->value = gamepad_type;
+			item->values = gamepad_labels;
+			item->on_change = OptionControls_optionChanged;
+		}
+		
 		for (int j=0; config.controls[j].name; j++) {
 			ButtonMapping* button = &config.controls[j];
 			if (button->ignore) continue;
@@ -3100,6 +3370,12 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 	else {
 		// update values
 		int k = 0;
+		
+		if (has_custom_controllers) {
+			MenuItem* item = &OptionControls_menu.items[k++];
+			item->value = gamepad_type;
+		}
+		
 		for (int j=0; config.controls[j].name; j++) {
 			ButtonMapping* button = &config.controls[j];
 			if (button->ignore) continue;
@@ -3258,6 +3534,8 @@ static void OptionSaveChanges_updateDesc(void) {
 	options_menu.items[4].desc = getSaveDesc();
 }
 
+#define OPTION_PADDING 8
+
 static int Menu_options(MenuList* list) {
 	MenuItem* items = list->items;
 	int type = list->type;
@@ -3267,11 +3545,15 @@ static int Menu_options(MenuList* list) {
 	int show_settings = 0;
 	int await_input = 0;
 	
+	// dependent on option list offset top and bottom, eg. the gray triangles
+	int max_visible_options = (screen->h - ((SCALE1(PADDING + PILL_SIZE) * 2) + SCALE1(BUTTON_SIZE))) / SCALE1(BUTTON_SIZE); // 7 for 480, 10 for 720
+
+
 	int count;
 	for (count=0; items[count].name; count++);
 	int selected = 0;
 	int start = 0;
-	int end = MIN(count,MAX_VISIBLE_OPTIONS);
+	int end = MIN(count,max_visible_options);
 	int visible_rows = end;
 	
 	OptionSaveChanges_updateDesc();
@@ -3303,7 +3585,7 @@ static int Menu_options(MenuList* list) {
 			selected -= 1;
 			if (selected<0) {
 				selected = count - 1;
-				start = MAX(0,count - MAX_VISIBLE_OPTIONS);
+				start = MAX(0,count - max_visible_options);
 				end = count;
 			}
 			else if (selected<start) {
@@ -3325,30 +3607,31 @@ static int Menu_options(MenuList* list) {
 			}
 			dirty = 1;
 		}
-		else if (type!=MENU_INPUT && type!=MENU_LIST) {
-			if (PAD_justRepeated(BTN_LEFT)) {
-				MenuItem* item = &items[selected];
-				if (item->value>0) item->value -= 1;
-				else {
-					int j;
-					for (j=0; item->values[j]; j++);
-					item->value = j - 1;
+		else {
+			MenuItem* item = &items[selected];
+			if (item->values && item->values!=button_labels) { // not an input binding
+				if (PAD_justRepeated(BTN_LEFT)) {
+					if (item->value>0) item->value -= 1;
+					else {
+						int j;
+						for (j=0; item->values[j]; j++);
+						item->value = j - 1;
+					}
+				
+						if (item->on_change) item->on_change(list, selected);
+						else if (list->on_change) list->on_change(list, selected);
+				
+					dirty = 1;
 				}
+				else if (PAD_justRepeated(BTN_RIGHT)) {
+					if (item->values[item->value+1]) item->value += 1;
+					else item->value = 0;
 				
 				if (item->on_change) item->on_change(list, selected);
 				else if (list->on_change) list->on_change(list, selected);
 				
 				dirty = 1;
-			}
-			else if (PAD_justRepeated(BTN_RIGHT)) {
-				MenuItem* item = &items[selected];
-				if (item->values[item->value+1]) item->value += 1;
-				else item->value = 0;
-				
-				if (item->on_change) item->on_change(list, selected);
-				else if (list->on_change) list->on_change(list, selected);
-				
-				dirty = 1;
+				}
 			}
 		}
 		
@@ -3364,7 +3647,7 @@ static int Menu_options(MenuList* list) {
 			// TODO: is there a way to defer on_confirm for MENU_INPUT so we can clear the currently set value to indicate it is awaiting input? 
 			// eg. set a flag to call on_confirm at the beginning of the next frame?
 			else if (list->on_confirm) {
-				if (type==MENU_INPUT) await_input = 1;
+				if (item->values==button_labels) await_input = 1; // button binding
 				else result = list->on_confirm(list, selected); // list-specific action, eg. show item detail view or input binding
 			}
 			if (result==MENU_CALLBACK_EXIT) show_options = 0;
@@ -3606,7 +3889,7 @@ static int Menu_options(MenuList* list) {
 				}
 			}
 			
-			if (count>MAX_VISIBLE_OPTIONS) {
+			if (count>max_visible_options) {
 				#define SCROLL_WIDTH 24
 				#define SCROLL_HEIGHT 4
 				int ox = (screen->w - SCALE1(SCROLL_WIDTH))/2;
@@ -4387,6 +4670,11 @@ static void limitFF(void) {
 }
 
 static void* coreThread(void *arg) {
+		// force a vsync immediately before loop
+	// for better frame pacing?
+	GFX_clearAll();
+	GFX_flip(screen);
+
 	while (!quit) {
 		int run = 0;
 		pthread_mutex_lock(&core_mx);
@@ -4488,6 +4776,12 @@ int main(int argc , char* argv[]) {
 
 	PWR_warn(1);
 	PWR_disableAutosleep();
+
+	// force a vsync immediately before loop
+	// for better frame pacing?
+	GFX_clearAll();
+	GFX_flip(screen);
+
 	sec_start = SDL_GetTicks();
 	while (!quit) {
 		GFX_startFrame();
@@ -4533,6 +4827,11 @@ int main(int argc , char* argv[]) {
 				// disable
 				pthread_cancel(core_pt);
 				pthread_join(core_pt,NULL);
+
+				// force a vsync immediately before loop
+				// for better frame pacing?
+				GFX_clearAll();
+				GFX_flip(screen);
 			}
 		}
 	}
