@@ -45,8 +45,8 @@ read_controllers_in_background 0
 
 // :: Audio Settings (use "volume" for PICO-8)
 
-sound_volume 256 // 0..256
-music_volume 256 // 0..256
+sound_volume 100 // 0..256
+music_volume 100 // 0..256
 
 
 // :: usually 1024. Try 2048 if you get choppy sound
@@ -56,10 +56,10 @@ mix_buffer_size 1024
 
 // :: map scancodes. Format: 44=47,80=89,..  (scancode a, scancode b -- when press a, generates b)
 // run the program with -scancodes to determine which scancodes to use
-map_scancodes 8=75,23=78,42=77,43=74,44=29,224=27,41=224,225=20,226=16,228=21,
+map_scancodes 8=75,23=78,41=224,42=77,43=74,44=29,224=27,225=20,226=16,228=21,
 
 
-use_wget 1 // (Linux) 1 to use wget for downloads instead of libcurl (must be installed)
+use_wget 0 // (Linux) 1 to use wget for downloads instead of libcurl (must be installed)
 
 
 
@@ -68,7 +68,7 @@ use_wget 1 // (Linux) 1 to use wget for downloads instead of libcurl (must be in
 version 0.2.6b
 
 // audio volume: 0..256 
-volume 256
+volume 100
 
 
 // Location of pico-8's root folder
