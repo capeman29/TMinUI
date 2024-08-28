@@ -17,7 +17,7 @@ cd "${progdir}"
 
 export LD_LIBRARY_PATH="$progdir/lib:$thisdir/patch:/mnt/SDCARD/.system/my282/lib:/lib:${LD_LIBRARY_PATH}"
 export SDL_VIDEODRIVER=mali
-#export SDL_AUDIODRIVER=alsa
+export SDL_AUDIODRIVER=alsa
 export SDL_JOYSTICKDRIVER=a30
 
 cp "$thisdir/patch/onioncfg.json" "$progdir/cfg/"
