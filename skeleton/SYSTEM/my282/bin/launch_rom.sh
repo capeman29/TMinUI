@@ -84,11 +84,14 @@ if [ "$THISRUN" = "retroarch" ]; then
 
     RA_HOME="${BIOS_PATH}/RETROARCH"
     cd "$RA_HOME"
-
+    if [ ! -f ${RA_HOME}/retroarch.cfg ]; then
+        cp ${RA_HOME}/${PLATFORM}/retroarch.cfg ${RA_HOME}/retroarch.cfg
+    fi
     overclock.elf userspace 2 ${9} 384 1080 0
-    taskset --cpu-list 1 retroarch.elf -v --config "${BIOS_PATH}/RETROARCH/${PLATFORM}/retroarch.cfg" --appendconfig "${THIS_CORE_PATH}/specialcfg.cfg" -L "${CORES_PATH}/${EMU_EXE}_libretro.so" "$ROM" $LOADSLOT &> "$LOGS_PATH/$EMU_TAG.txt"
+    taskset --cpu-list 1 retroarch.elf -v --config "${BIOS_PATH}/RETROARCH/retroarch.cfg" --appendconfig "${THIS_CORE_PATH}/specialcfg.cfg" -L "${CORES_PATH}/${EMU_EXE}_libretro.so" "$ROM" $LOADSLOT &> "$LOGS_PATH/$EMU_TAG.txt"
     if [ $2 != "-1" ]; then
         rm -f "${3}.entry"
     fi
+    
 fi
 
