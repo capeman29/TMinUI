@@ -22,6 +22,12 @@ case $INFO in
 	;;
 esac
 
+if [ ! -f /mnt/SDCARD/.tmp_update/$PLATFORM.sh ]; then
+    cp -Rf /mnt/SDCARD/miyoo/app/.tmp_update /mnt/SDCARD/
+    cp -Rf /mnt/SDCARD/miyoo354/app/.tmp_update /mnt/SDCARD/
+fi
+
+
 /mnt/SDCARD/.tmp_update/$PLATFORM.sh # &> /mnt/SDCARD/boot.txt
 
 # force shutdown so nothing can modify the SD card

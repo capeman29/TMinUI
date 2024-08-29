@@ -25,17 +25,17 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	fi
 
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
-    ./unzip -o $NEWFILE -d $SDCARD_PATH #&>> $LOGFILE
+       ./unzip -o $NEWFILE -d $SDCARD_PATH #&>> $LOGFILE
 	sync
 
-	mv $SDCARD_PATH/.tmp_update $SDCARD_PATH/.tmp_update-old
-	cp -r $SDCARD_PATH/miyoo/app/.tmp_update $SDCARD_PATH/.tmp_update
+#	mv $SDCARD_PATH/.tmp_update $SDCARD_PATH/.tmp_update-old
+	cp -Rf $SDCARD_PATH/miyoo/app/.tmp_update $SDCARD_PATH/
 	rm -rf $SDCARD_PATH/.tmp_update-old
 
 	#remove useless dirs
-    rm -rf $SDCARD_PATH/rg35xx
+#	rm -rf $SDCARD_PATH/rg35xx
 	rm -rf $SDCARD_PATH/trimui	
-	rm -rf $SDCARD_PATH/miyoo354
+#	rm -rf $SDCARD_PATH/miyoo354
 	rm -rf $NEWFILE
 	sync 
 #	echo "Finita fase 1" >> $SDCARD_PATH/log.txt
@@ -55,7 +55,7 @@ if [ -f "$UPDATE_PATH" ]; then
 		./show.elf ./installing.png
 	fi
 
-	mv $SDCARD_PATH/.tmp_update $SDCARD_PATH/.tmp_update-old
+#	mv $SDCARD_PATH/.tmp_update $SDCARD_PATH/.tmp_update-old
 	./unzip -o "$UPDATE_PATH" -d "$SDCARD_PATH"
 	rm -f "$UPDATE_PATH"
 	rm -rf $SDCARD_PATH/.tmp_update-old

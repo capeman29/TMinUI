@@ -65,11 +65,11 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	sync
 
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
-    busybox unzip -o $NEWFILE -d $SDCARD_PATH #&>> $LOGFILE
+        busybox unzip -o $NEWFILE -d $SDCARD_PATH #&>> $LOGFILE
 	sync
-	#remove useless dirs for rg35xx
-    rm -rf ${SDCARD_PATH}/miyoo
-	rm -rf ${SDCARD_PATH}/miyoo354
+	#remove useless dirs for myminui
+#       rm -rf ${SDCARD_PATH}/miyoo
+#	rm -rf ${SDCARD_PATH}/miyoo354
 	rm -rf ${SDCARD_PATH}/trimui
 	
 	rm -rf $NEWFILE
@@ -115,8 +115,8 @@ if [ -f $UPDATE_PATH ]; then
 		echo $NEWMD5 > $OLDMD5_PATH
 		busybox unzip -o $UPDATE_PATH -d $SDCARD_PATH
 	fi
-	
-	rm -rf ${SDCARD_PATH}/.tmp_update
+#	preserve some dir needed by other devices
+#	rm -rf ${SDCARD_PATH}/.tmp_update
 	rm -rf $UPDATE_PATH
 	sync
 	

@@ -9,7 +9,7 @@ SDCARD_PATH=/mnt/SDCARD
 MIYOO_DIR=miyoo
 
 # .tmp_update/updater does the actual installation (and later, updating)
-cp -rf .tmp_update $SDCARD_PATH/
+cp -Rf .tmp_update $SDCARD_PATH/
 rm -rf "$SDCARD_PATH/$MIYOO_DIR"
 sync
 $SDCARD_PATH/.tmp_update/updater

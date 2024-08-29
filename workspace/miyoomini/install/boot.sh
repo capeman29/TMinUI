@@ -33,14 +33,14 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	fi
 
 	#echo "Found Release file $NEWFILE ! ACTION = $ACTION" >> $LOGFILE
-    busybox unzip -o $NEWFILE -d $SDCARD_PATH #&>> $LOGFILE
+        busybox unzip -o $NEWFILE -d $SDCARD_PATH #&>> $LOGFILE
 	sync
 
-	mv $SDCARD_PATH/.tmp_update $SDCARD_PATH/.tmp_update-old
-	cp -r $SDCARD_PATH/miyoo354/app/.tmp_update $SDCARD_PATH/.tmp_update
+	#mv $SDCARD_PATH/.tmp_update $SDCARD_PATH/.tmp_update-old
+	cp -Rf $SDCARD_PATH/miyoo354/app/.tmp_update $SDCARD_PATH/
 	rm -rf $SDCARD_PATH/.tmp_update-old
 
-	#remove useless dirs for rg35xx
+	#remove useless dirs for miyoomini
     rm -rf $SDCARD_PATH/rg35xx
 	rm -rf $SDCARD_PATH/trimui	
 	rm -rf $NEWFILE
