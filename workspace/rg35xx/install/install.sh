@@ -60,13 +60,13 @@ if [ ! -f $FLAG_PATH ] || was_updated; then
 	cp $SYSTEM_PATH/dat/ramdisk.img /misc
 	
 	# boot logo, only installed, never updated
-	if [ ! -f $FLAG_PATH ]; then
+	#if [ ! -f $FLAG_PATH ]; then
 		cp $SYSTEM_PATH/dat/boot_logo.bmp.gz /misc
-	fi
+	#fi
 	# charging graphic, only installed, never updated
-	if [ ! -f /misc/charging.png ]; then
+	#if [ ! -f /misc/charging.png ]; then
 		cp $SYSTEM_PATH/dat/charging.png /misc
-	fi
+	#fi
 
 	touch $FLAG_PATH
 	sync && reboot
