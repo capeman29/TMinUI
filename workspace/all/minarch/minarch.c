@@ -2812,7 +2812,8 @@ void Core_load(void) {
 	game_info.size = game.size;
 	
 	char native_path[256];
-	sprintf(native_path, "%s/Emus/%s/%s.pak/native.txt", SDCARD_PATH, PLATFORM, emu_name);
+	renderer.native_core = 0;
+	sprintf(native_path, "%s/Emus/%s/%s.pak/native.txt", SDCARD_PATH, PLATFORM, (char *)core.tag);
 	if (exists(native_path)) {
 		renderer.native_core = 1;
 	}
