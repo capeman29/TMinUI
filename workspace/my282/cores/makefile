@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom puae
-CORES += neocd bmp2png retroarch
+CORES += neocd bmp2png retroarch a5200 a7800
 #CORES = pcsx_rearmed bmp2png retroarch fbneo gambatte gpsp prboom fceumm fake-08 mednafen_supafaust mgba snes9x2005_plus beetle-vb beetle-pce-fast race pokemini neocd mame2003-plus picodrive
 
 ###############################
@@ -12,6 +12,14 @@ CORES += neocd bmp2png retroarch
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+a2600_REPO = https://github.com/libretro/stella2014-libretro
+a2600_CORE = stella2014_libretro.so
+
+a5200_CORE = a5200_libretro.so
+
+a7800_CORE = prosystem_libretro.so
+a7800_REPO = https://github.com/libretro/prosystem-libretro
 
 beetle-pce-fast_REPO = https://github.com/libretro/beetle-pce-fast-libretro
 beetle-pce-fast_CORE = mednafen_pce_fast_libretro.so

@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom puae mame2003-plus neocd
-CORES += retroarch bmp2png
+CORES += retroarch bmp2png a5200 a7800
 
 
 ###############################
@@ -12,6 +12,14 @@ CORES += retroarch bmp2png
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+a2600_REPO = https://github.com/libretro/stella2014-libretro
+a2600_CORE = stella2014_libretro.so
+
+a5200_CORE = a5200_libretro.so
+
+a7800_CORE = prosystem_libretro.so
+a7800_REPO = https://github.com/libretro/prosystem-libretro
 
 beetle-pce-fast_REPO = https://github.com/libretro/beetle-pce-fast-libretro
 beetle-pce-fast_CORE = mednafen_pce_fast_libretro.so
@@ -32,7 +40,6 @@ mednafen_supafaust_REPO = https://github.com/libretro/supafaust
 pcsx_rearmed_REPO = https://github.com/KMFDManic/pcsx_rearmed
 pcsx_rearmed_MAKEFILE = Makefile.libretro
 
-
 picodrive_REPO = https://github.com/irixxxx/picodrive
 picodrive_MAKEFILE = Makefile.libretro
 
@@ -41,7 +48,6 @@ pokemini_MAKEFILE = Makefile.libretro
 
 snes9x2005_plus_REPO = https://github.com/libretro/snes9x2005
 snes9x2005_plus_FLAGS = USE_BLARGG_APU=1
-
 
 mame2003-plus_REPO = https://github.com/libretro/mame2003-plus-libretro
 mame2003-plus_CORE = mame2003_plus_libretro.so
