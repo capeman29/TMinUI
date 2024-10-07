@@ -1,0 +1,169 @@
+diff --git a/src/video/directfb/SDL_DirectFB_events.c b/src/video/directfb/SDL_DirectFB_events.c
+index 71aac7669..abdc3a4bd 100644
+--- a/src/video/directfb/SDL_DirectFB_events.c
++++ b/src/video/directfb/SDL_DirectFB_events.c
+@@ -302,9 +302,8 @@ ProcessWindowEvent(_THIS, SDL_Window *sdlwin, DFBWindowEvent * evt)
+     } else
+         printf("Event Clazz %d\n", evt->clazz);
+ }
+-
+ static void
+-ProcessInputEvent(_THIS, DFBInputEvent * ievt)
++_ProcessInputEvent(_THIS, DFBInputEvent * ievt)
+ {
+     SDL_DFB_DEVICEDATA(_this);
+     SDL_Keysym keysym;
+@@ -407,7 +406,7 @@ ProcessInputEvent(_THIS, DFBInputEvent * ievt)
+ }
+ 
+ void
+-DirectFB_PumpEventsWindow(_THIS)
++_DirectFB_PumpEventsWindow(_THIS)
+ {
+     SDL_DFB_DEVICEDATA(_this);
+     DFBInputEvent ievt;
+@@ -444,7 +443,7 @@ DirectFB_PumpEventsWindow(_THIS)
+             wmmsg.msg.dfb.event.input = ievt;
+             SDL_SendSysWMEvent(&wmmsg);
+         }
+-        ProcessInputEvent(_this, &ievt);
++        _ProcessInputEvent(_this, &ievt);
+     }
+ }
+ 
+@@ -701,7 +700,7 @@ EnumKeyboards(DFBInputDeviceID device_id,
+ }
+ 
+ void
+-DirectFB_InitKeyboard(_THIS)
++_DirectFB_InitKeyboard(_THIS)
+ {
+     SDL_DFB_DEVICEDATA(_this);
+     cb_data cb;
+@@ -731,9 +730,125 @@ DirectFB_InitKeyboard(_THIS)
+ }
+ 
+ void
+-DirectFB_QuitKeyboard(_THIS)
++_DirectFB_QuitKeyboard(_THIS)
+ {
+     /* SDL_DFB_DEVICEDATA(_this); */
+ }
+ 
++struct input_event {
++	struct timeval time;
++	uint16_t type;
++	uint16_t code;
++	int32_t value;
++};
++#define EV_KEY			0x01
++
++#define RAW_UP		103 //SDL_SCANCODE_UP
++#define RAW_DOWN	108 //SDL_SCANCODE_DOWN
++#define RAW_LEFT	105 //SDL_SCANCODE_LEFT
++#define RAW_RIGHT	106 //SDL_SCANCODE_RIGHT
++#define RAW_A		290 //SDL_SCANCODE_A
++#define RAW_B		289 //SDL_SCANCODE_B
++#define RAW_X		291 //SDL_SCANCODE_X
++#define RAW_Y		288 //SDL_SCANCODE_Y
++#define RAW_START	297 //SDL_SCANCODE_RETURN
++#define RAW_SELECT	296 //SDL_SCANCODE_ESCAPE
++#define RAW_MENU	27 //SDL_SCANCODE_MENU
++#define RAW_L1		292 //SDL_SCANCODE_PAGEUP
++#define RAW_L2		294 //SDL_SCANCODE_TAB
++#define RAW_R1		293 //SDL_SCANCODE_PAGEDOWN
++#define RAW_R2		295 //SDL_SCANCODE_BACKSPACE
++#define RAW_PLUS	12 //SDL_SCANCODE_VOLUMEUP
++#define RAW_MINUS	11 //SDL_SCANCODE_VOLUMEDOWN
++
++
++static int keyboard_fd = -1;
++void
++DirectFB_InitKeyboard(_THIS)
++{
++    if (keyboard_fd < 0) {
++        keyboard_fd= open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
++        if (keyboard_fd < 0) {
++            printf("failed to open /dev/input/event1 with error \n");
++            return;
++        }
++    }
++}
++
++void
++DirectFB_QuitKeyboard(_THIS)
++{
++   if (keyboard_fd >= 0){
++		close(keyboard_fd);
++	}
++	keyboard_fd = -1;
++}
++
++static void
++ProcessInputEvent(_THIS, struct input_event * event)
++{
++    int pressed;    
++    SDL_Keysym keysym;
++    if (event->type==EV_KEY) {
++		if (event->value>1) return; // ignore repeats
++		if (event->value==0) pressed = SDL_RELEASED;
++		if (event->value==1) pressed = SDL_PRESSED;
++		keysym.scancode = SDL_SCANCODE_UNKNOWN;
++		keysym.sym = SDLK_UNKNOWN;
++		// LOG_info("key event: %i (%i)\n", code,pressed);
++		     if (event->code==RAW_UP) 		    { keysym.scancode = SDL_SCANCODE_UP;            keysym.sym = SDLK_UP; }
++		else if (event->code==RAW_DOWN)		    { keysym.scancode = SDL_SCANCODE_DOWN;          keysym.sym = SDLK_DOWN; }
++		else if (event->code==RAW_LEFT)		    { keysym.scancode = SDL_SCANCODE_LEFT;          keysym.sym = SDLK_LEFT; }
++		else if (event->code==RAW_RIGHT)		{ keysym.scancode = SDL_SCANCODE_RIGHT;         keysym.sym = SDLK_RIGHT; }
++		else if (event->code==RAW_A)			{ keysym.scancode = SDL_SCANCODE_A;             keysym.sym = SDLK_a; }
++		else if (event->code==RAW_B)			{ keysym.scancode = SDL_SCANCODE_B;             keysym.sym = SDLK_b; }
++		else if (event->code==RAW_X)			{ keysym.scancode = SDL_SCANCODE_X;             keysym.sym = SDLK_x; }
++		else if (event->code==RAW_Y)			{ keysym.scancode = SDL_SCANCODE_Y;             keysym.sym = SDLK_y; }
++		else if (event->code==RAW_START)		{ keysym.scancode = SDL_SCANCODE_RETURN;        keysym.sym = SDLK_RETURN; }
++		else if (event->code==RAW_SELECT)	    { keysym.scancode = SDL_SCANCODE_ESCAPE;        keysym.sym = SDLK_ESCAPE; }
++		else if (event->code==RAW_MENU)		    { keysym.scancode = SDL_SCANCODE_MENU;          keysym.sym = SDLK_MENU; }
++		else if (event->code==RAW_L2)		    { keysym.scancode = SDL_SCANCODE_TAB;           keysym.sym = SDLK_TAB; }
++		else if (event->code==RAW_L1)		    { keysym.scancode = SDL_SCANCODE_PAGEUP;        keysym.sym = SDLK_PAGEUP; }
++		else if (event->code==RAW_R2)		    { keysym.scancode = SDL_SCANCODE_BACKSPACE;     keysym.sym = SDLK_BACKSPACE; }
++		else if (event->code==RAW_R1)		    { keysym.scancode = SDL_SCANCODE_PAGEDOWN;      keysym.sym = SDLK_PAGEDOWN; }
++		else if (event->code==RAW_PLUS)		    { keysym.scancode = SDL_SCANCODE_VOLUMEUP;      keysym.sym = SDLK_VOLUMEUP; }
++		else if (event->code==RAW_MINUS)		{ keysym.scancode = SDL_SCANCODE_VOLUMEDOWN;    keysym.sym = SDLK_VOLUMEDOWN; }
++	    SDL_SendKeyboardKey(pressed, keysym.scancode);
++	}
++}
++
++void
++DirectFB_PumpEventsWindow(_THIS)
++{
++    SDL_DFB_DEVICEDATA(_this);
++    DFBInputEvent ievt;
++    SDL_Window *w;
++
++    for (w = devdata->firstwin; w != NULL; w = w->next) {
++        SDL_DFB_WINDOWDATA(w);
++        DFBWindowEvent evt;
++
++        while (windata->eventbuffer->GetEvent(windata->eventbuffer,
++                                        DFB_EVENT(&evt)) == DFB_OK) {
++            if (!DirectFB_WM_ProcessEvent(_this, w, &evt)) {
++                /* Send a SDL_SYSWMEVENT if the application wants them */
++                if (SDL_GetEventState(SDL_SYSWMEVENT) == SDL_ENABLE) {
++                    SDL_SysWMmsg wmmsg;
++                    SDL_VERSION(&wmmsg.version);
++                    wmmsg.subsystem = SDL_SYSWM_DIRECTFB;
++                    wmmsg.msg.dfb.event.window = evt;
++                    SDL_SendSysWMEvent(&wmmsg);
++                }
++                ProcessWindowEvent(_this, w, &evt);
++            }
++        }
++    }
++    if (keyboard_fd >= 0) {
++	struct input_event event;
++		while (read(keyboard_fd, &event, sizeof(event))==sizeof(event)) {
++            ProcessInputEvent(_this, &event);
++        }
++    }
++}
++
+ #endif /* SDL_VIDEO_DRIVER_DIRECTFB */
