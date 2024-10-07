@@ -38,3 +38,11 @@ toolchains/rg35xx-toolchain/.build
 toolchains/miyoomini-toolchain/.build
 toolchains/my282-toolchain/.build
 toolchains/my282-toolchain/support/my282_toolchain.tar.gz
+
+workspace/m21/other/test
+toolchains/m21-toolchain/storage
+toolchains/m21-toolchain/.build
+.vscode/tasks.json
+.vscode/settings.json
+toolchains/m21-toolchain/support/m21_toolchain_glibc.tar.gz
+toolchains/m21-toolchain/support/m21_toolchain_musl.tar.gz
