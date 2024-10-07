@@ -12,9 +12,82 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 - Additional emulators (MAME2003-PLUS)
 - Base and Extras are merged into one Full release
 
-# New features of MyMinUI (RG35XX and MiyooMiniplus only):
+# New features of MyMinUI:
 
-## release 27/06/2024
+## Release 08/10/2024
+
+# New Features:
+
+- All: Added Atari 5200 and Atari 7800 libretro cores, add bios and rom files to the provided folders. The best site to get bios/roms compatibility info is onion specifically the emulators page.
+- Added support to SJGAM M21, it took more time than expected to bring a custom os overhaul to this device.
+  Installation instructions are written in the Install.md file of this repo.
+  Starting from the bad news, the so called N909 cpu is actually an allwinner h133 soc which is a dual core a7 @ max1.2GHz without any gpu, so the claimed "up to PS1" was absolutely right. 
+  Performances wise this device is similar to a MM+ without overclock.
+  What is not working: NDS, Amiga, retroarch, external controllers, HDMI out.
+  What is working: all standard MyMinUI (including native pico8) features except the above. Special care put on the power handling as it has only a physical power switch. 
+            double press on menu button put the device in sleep mode (the same happen after 30secs of inactivity)
+            single menu press wake up the device (this is the standard behavior of MinUI on similar devices such as m17 and trimui smart) Thanks Shaun!
+            keeping pressed the menu button for more than 3secs causes a poweroff command at button release time. If during the menu pressed time another button is pressed (i.e. plus button to adjust brightness) nothing will happen at button release.
+            After 2 minutes of sleep the device will auto shutdown.
+
+            There is no rtc, anyway the system time is saved at every poweroff command and restored at boot exactly as miyoo mini does, just be aware that switching off through the physical button don't do that.
+
+            The input event handler doesn't work in sdl/sdl2 event, I patched both libraries to get the proper key events. I suspect most of the issues seen in some YT videos are caused by that.
+
+            Specific setting for performances:
+            all cores with a native.txt file in the pak folder are forced 1x fullscreen regardless the frontend setting, this is requested by all PS1 and some fbneo games to run fullspeed.
+            SNES is running slow (50fps) if scaling is set to aspect/fullscreen, full speed is acheved only with scaling set to native.
+            In almost all cores the thread set to ON gives a better overall fps result. 
+            Some heavy arcade games can run full speed in fbneo with frameskip 1 of 2. 
+
+  Some technical info for curious on this device:
+
+            The display don't accept other than RGB8888 pixel format, moreover the MSB Byte of each pixel must be 0xff to get the pixel visible. (Still under investigation)
+            That made impossibile using sdl/sdl2 flip/render functions, since MyMinUI works only with RGB565 I had to work direclty on framebuffer and creating my own flip functions.
+
+            The Joysticks are digital (not L3/R3 buttons) and are hardwired to buttons so there is no way to remap them. 
+
+            The device has a read only stock firmware accessible as mtd, it is based on musl libc which don't allow native pico8 and probably nds able to run. 
+            The stock provided "cores" are actually all standalone tiny libretro frontend with core integrated.
+
+            I created 2 toolchains, the native one (musleabihf) and a standard glibc (gnueabihf), after several test I decided to compile everything with gnueabihf and running everything in a chroot environment (thankfully sjgam provided fuse support) as MinUI already does on RG35XX OG.
+
+            This allowed me to run native pico_dyn which is not working on musl environment. For those interested in experimenting with musl toolchain I already patched sdl, sdl2, directfb to work, in case someone wants to create some paks based on stock cores.
+
+            In future I would like playing with mtd partitions to 1) change bootlogo and 2) edit the content of the /Games folder which is a collection of nes games that are accessible in case sdcard is not detected at boot. Since there are no way to connect to it from remote I don't see the point to invest time on custom kernel or system image.
+
+# Fixes:
+
+- fixed a bug in audio callback (api.c) that prevented to properly run prboom core, now Doom can run directly in minarch at full speed (Yeah!!!).
+- fixed a bug in controller libretro event that caused segfaults on puae2021 core.
+
+
+## Release 29/08/2024
+
+RG35XX OG: fix audio speed bug in native pico8
+Changed key mapping on pico8 to make it easier to use (refer to pdf file in the repo)
+
+Miyoo A30: add analog stick support (from MinUI)
+Changed key mapping on native pico8 to make it easier to use (refer to pdf file in the repo)
+
+All: changed a bit the install/update/boot process so it can be shared a single sdcard among all 4 supported devices. At the moment save states are shared, some are working (i.e. doom) some others don't, I'm planning to split saves per device but this will eventually happen on future releases.
+
+All: merged several functions implemented by MinUI during the summer. In a future release I'll merge also scanline/grid.
+
+Updated Install.md file to reflect the current status.
+
+IMPORTANT NOTE:
+before updating from a previous release delete from sdcard the following folders (if present):
+
+.tmp_update
+miyoo
+miyoo354
+rg35xx
+trimui
+
+
+
+## Release 27/06/2024
 
 # New features:
 

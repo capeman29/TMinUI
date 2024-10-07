@@ -5,7 +5,7 @@
 
 ifeq (,$(PLATFORMS))
 #PLATFORMS = tg5040 rgb30 miyoomini trimuismart m17 rg35xx rg35xxplus gkdpixel
-PLATFORMS = rg35xx miyoomini my282
+PLATFORMS = rg35xx miyoomini my282 m21
 endif
 
 ###########################################################
@@ -71,6 +71,7 @@ setup:
 	mkdir -p ./build/SYSTEM
 	mkdir -p ./build/EXTRAS/Emus
 	mkdir -p ./build/EXTRAS/Tools
+	mkdir -p ./build/PAYLOAD
 
 	cp -R ./skeleton/BASE ./build/BASE
 	cp -R ./skeleton/BOOT ./build/BOOT
@@ -104,29 +105,21 @@ special:
 	cp -R ./build/BOOT/.tmp_update ./build/BASE/miyoo/app/
 	cp -R ./build/BOOT/.tmp_update ./build/BASE/trimui/app/
 	cp -R ./build/BASE/miyoo ./build/BASE/miyoo354
-	
 
-tidy:
-	# ----------------------------------------------------
-	# remove systems we're not ready to support yet
-	
-	# TODO: tmp, figure out a cleaner way to do this
-	rm -rf ./build/SYSTEM/trimui
-	rm -rf ./build/EXTRAS/Tools/trimui
+specialpackage: tidy
 
-package: tidy
-	# ----------------------------------------------------
+# ----------------------------------------------------
 	# zip up build
 		
 	# move formatted readmes from workspace to build
 	cp ./workspace/readmes/BASE-out.txt ./build/BASE/README.txt
-	cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README.txt
+	cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README_EXTRAS.txt
 	rm -rf ./workspace/readmes
 	
 	cd ./build/SYSTEM && echo "$(RELEASE_NAME)\n$(BUILD_HASH)" > version.txt
 	./commits.sh > ./build/SYSTEM/commits.txt
 	cd ./build && find . -type f -name '.DS_Store' -delete
-	mkdir -p ./build/PAYLOAD
+	
 	mv ./build/SYSTEM ./build/PAYLOAD/.system
 	cp -R ./build/BOOT/.tmp_update ./build/PAYLOAD/
 	cd ./build/PAYLOAD && zip -r ../BASE/trimui.zip .tmp_update
@@ -148,7 +141,55 @@ package: tidy
 	rm -rf ./build/PAYLOAD
 	rm -rf ./build/BOOT
 	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
-	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xx rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 trimui rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
+	
+	
+	echo "$(RELEASE_NAME)" > ./build/latest.txt
+	
+
+
+tidy:
+	# ----------------------------------------------------
+	# remove systems we're not ready to support yet
+	
+	# TODO: tmp, figure out a cleaner way to do this
+	rm -rf ./build/SYSTEM/trimui
+	rm -rf ./build/EXTRAS/Tools/trimui
+
+package: tidy
+	# ----------------------------------------------------
+	# zip up build
+		
+	# move formatted readmes from workspace to build
+	cp ./workspace/readmes/BASE-out.txt ./build/BASE/README.txt
+	cp ./workspace/readmes/EXTRAS-out.txt ./build/EXTRAS/README_EXTRAS.txt
+	rm -rf ./workspace/readmes
+	
+	cd ./build/SYSTEM && echo "$(RELEASE_NAME)\n$(BUILD_HASH)" > version.txt
+	./commits.sh > ./build/SYSTEM/commits.txt
+	cd ./build && find . -type f -name '.DS_Store' -delete
+	
+	mv ./build/SYSTEM ./build/PAYLOAD/.system
+
+	
+	cd ./build/PAYLOAD && zip -r MinUI.zip .system 
+	mv ./build/PAYLOAD/MinUI.zip ./build/BASE
+	
+	# TODO: can I just add everything in BASE to zip?
+#	cd ./build/BASE && zip -r ../../releases/$(RELEASE_NAME)-base.zip Bios Roms Saves miyoo miyoo354 trimui rg35xx rg35xxplus gkdpixel em_ui.sh MinUI.zip README.txt
+#	cd ./build/EXTRAS && zip -r ../../releases/$(RELEASE_NAME)-extras.zip Bios Emus Roms Saves Tools README.txt
+	
+	
+	rm -fr ./build/FULL
+	mkdir ./build/FULL
+	cp -fR ./build/BASE/* ./build/FULL/
+	cp -fR ./build/EXTRAS/* ./build/FULL/
+	rm -rf ./build/BASE
+	rm -rf ./build/EXTRAS
+	rm -rf ./build/PAYLOAD
+	rm -rf ./build/BOOT
+	rm -rf ./releases/$(RELEASE_NAME)-$(PLATFORM).zip
+	cd ./build/FULL && zip -r ../../releases/$(RELEASE_NAME)-$(PLATFORM).zip Bios Emus Roms Saves Tools miyoo miyoo354 m21 rg35xx MinUI.zip README.txt
 	
 	
 	echo "$(RELEASE_NAME)" > ./build/latest.txt
@@ -160,7 +201,7 @@ package: tidy
 
 rg35xx:
 	# ----------------------------------------------------
-	make clean setup common special package PLATFORM=$@
+	make clean setup common package PLATFORM=$@
 	# ----------------------------------------------------
 
 rg35xxplus:
@@ -170,13 +211,19 @@ rg35xxplus:
 
 miyoomini:
 	# ----------------------------------------------------
-	make clean setup common special package PLATFORM=$@
+	make clean setup common special specialpackage PLATFORM=$@
 	# ----------------------------------------------------
 
 
 my282:
 	# ----------------------------------------------------
-	make clean setup common special package PLATFORM=$@
+	make clean setup common special specialpackage PLATFORM=$@
+	# ----------------------------------------------------
+
+
+m21:
+	# ----------------------------------------------------
+	make clean setup common package PLATFORM=$@
 	# ----------------------------------------------------
 
 
