@@ -917,7 +917,7 @@ void GFX_blitText(TTF_Font* font, char* str, int leading, SDL_Color color, SDL_S
 // better
 
 #define MAX_SAMPLE_RATE 48000
-#define BATCH_SIZE 100
+#define BATCH_SIZE 400
 
 typedef int (*SND_Resampler)(const SND_Frame frame);
 static struct SND_Context {
@@ -1012,7 +1012,7 @@ size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count) { // plat_s
 	if (snd.frame_count==0) return 0;
 	
 	SDL_LockAudio();
-
+	int progress = 0;
 	int consumed = 0;
 	while (frame_count > 0) {
 		int tries = 0;
@@ -1030,11 +1030,11 @@ size_t SND_batchSamples(const SND_Frame* frames, size_t frame_count) { // plat_s
 			frames += consumed;
 			amount -= consumed;
 			frame_count -= consumed;
+			progress += consumed;
 		}
 	}
 	SDL_UnlockAudio();
-	
-	return consumed;
+	return progress;
 }
 
 void SND_init(double sample_rate, double frame_rate) { // plat_sound_init
