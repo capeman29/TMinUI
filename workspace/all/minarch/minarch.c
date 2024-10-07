@@ -1786,7 +1786,7 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 	}
 	case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: { /* 10 */
 		const enum retro_pixel_format *format = (enum retro_pixel_format *)data;
-
+		LOG_info("SET RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: %i\n", *format);
 		if (*format != RETRO_PIXEL_FORMAT_RGB565) { // TODO: pull from platform.h?
 			/* 565 is only supported format */
 			return false;
@@ -1884,7 +1884,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 		if (infos) {
 			// TODO: store to gamepad_values/gamepad_labels for gamepad_device
 			const struct retro_controller_info *info = &infos[0];
-			for (int i=0; i<info->num_types; i++) {
+			for (int i=0; i<info->num_types-1; i++) {
 				const struct retro_controller_description *type = &info->types[i];
 				if (exactMatch((char*)type->desc,"dualshock")) { // currently only enabled for PlayStation
 					has_custom_controllers = 1;
@@ -2811,6 +2811,12 @@ void Core_load(void) {
 	game_info.data = game.data;
 	game_info.size = game.size;
 	
+	char native_path[256];
+	sprintf(native_path, "%s/Emus/%s/%s.pak/native.txt", SDCARD_PATH, PLATFORM, emu_name);
+	if (exists(native_path)) {
+		renderer.native_core = 1;
+	}
+
 	core.load_game(&game_info);
 	
 	SRAM_read();

@@ -124,6 +124,7 @@ typedef struct GFX_Renderer {
 	int dst_w;
 	int dst_h;
 	int dst_p;
+	int native_core;
 } GFX_Renderer;
 
 enum {
