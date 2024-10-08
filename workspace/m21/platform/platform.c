@@ -42,24 +42,32 @@
 #define RAW_PLUS	12 //SDL_SCANCODE_MINUS
 #define RAW_MINUS	11 //SDL_SCANCODE_0
 
-#define RAW_POWER 	666 // devil number
-
-#define RAW_MENU1	RAW_MENU
 
 
-static int inputs;
+static int inputs = -1;
 
 void PLAT_initInput(void) {
+	LOG_info("PLAT_initInput\n");
+	if (inputs>=0) {
+		close(inputs);
+		inputs = -1;
+	}
+
 	inputs = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
 	if (inputs < 0) {
-		printf("failed to open /dev/input/event1 with error \n");system("sync");
-		return;
+		LOG_info("failed to open /dev/input/event1 with error \n");system("sync");
 	}
+	LOG_info("PLAT_initInput success!\n");
+	fflush(stdout);
 }
 void PLAT_quitInput(void) {
+	LOG_info("PLAT_quitInput\n");
 	if (inputs >= 0){
 		close(inputs);
 	}
+	inputs = -1;
+	LOG_info("PLAT_quitInput Success!\n");
+	fflush(stdout);
 }
 
 // from <linux/input.h> which has BTN_ constants that conflict with platform.h
@@ -79,6 +87,13 @@ static uint32_t PWR_Tick = 0;
 
 
 void PLAT_pollInput(void) {
+
+	if (inputs<0) {
+		LOG_info("ERROR as inputs<0\n");
+		fflush(stdout);
+		return;
+	}
+
 	// reset transient state
 	pad.just_pressed = BTN_NONE;
 	pad.just_released = BTN_NONE;
@@ -112,7 +127,7 @@ void PLAT_pollInput(void) {
 				if (value>1) continue; // ignore repeats
 			
 				pressed = value;
-				// LOG_info("key event: %i (%i)\n", code,pressed);
+				//LOG_info("key event: %i (%i)\n", code,pressed);fflush(stdout);
 				     if (code==RAW_UP) 		{ btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
 	 			else if (code==RAW_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
 				else if (code==RAW_LEFT)	{ btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
@@ -169,12 +184,15 @@ void PLAT_pollInput(void) {
 
 int PLAT_shouldWake(void) {
 	static struct input_event event;
-	while (read(inputs, &event, sizeof(event))==sizeof(event)) {
+	if (inputs > 0) {
+		while (read(inputs, &event, sizeof(event))==sizeof(event)) {
 		if (event.type==EV_KEY && event.code==RAW_MENU && event.value==0) {
 			return 1;
 		}
 	}	
 	return 0;
+	}
+	
 }
 
 static struct VID_Context {

@@ -36,7 +36,6 @@
 #define	BUTTON_POWER	BUTTON_NA
 #define	BUTTON_PLUS		BUTTON_NA
 #define	BUTTON_MINUS	BUTTON_NA
-#define BUTTON_POWEROFF	666
 
 ///////////////////////////////
 
@@ -121,7 +120,7 @@
 ///////////////////////////////
 
 #define THISPLATFORM "m21"
-//#define M21 1   
+#define M21 1   
 #define SDCARD_PATH "/mnt/SDCARD"
 #define MUTE_VOLUME_RAW 0
 #define HAS_NEON
