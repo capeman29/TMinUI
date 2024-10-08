@@ -58,8 +58,7 @@ set_snd_level "${curvol}" &
 cd "${progdir}" 2&> "${thisdir}/log.txt"
 echo $(pwd) >> "${thisdir}/log.txt"
 cp "$basedir/patch/onioncfg.json" "$progdir/cfg/"
-HOME=$progdir \
-./pico8_dyn -v -run "${GAME}" >> "${thisdir}/log.txt" 2>&1
+HOME="${progdir}" "${progdir}/pico8_dyn" -v -run "${1}"  &> $LOGS_PATH/P8N.txt
 
 #killall -9 keymon.elf
 sleep 0.1

@@ -21,7 +21,6 @@ export SDL_AUDIODRIVER=alsa
 export SDL_JOYSTICKDRIVER=a30
 
 cp "$thisdir/patch/onioncfg.json" "$progdir/cfg/"
-HOME="$progdir" \
-./pico8_dyn -v -splore -root_path "${romdir}" &> $thisdir/log.txt
+HOME="${progdir}" "${progdir}/pico8_dyn" -v -splore -root_path "${romdir}" &> $LOGS_PATH/pico8_splore.txt
 
 overclock.elf $CPU_SPEED_MENU

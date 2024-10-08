@@ -12,6 +12,6 @@ overclock.elf $CPU_SPEED_GAME
 #overclock.elf $CPU_SPEED_PERF
 #overclock.elf $CPU_SPEED_MAX
 
-HOME="${progdir}" "${progdir}/pico8_dyn" -v -run "${1}"  > "${LOGS_PATH}/Pico8.txt" 2>&1
+HOME="${progdir}" "${progdir}/pico8_dyn" -v -run "${1}"  &> $LOGS_PATH/P8N.txt
 
 overclock.elf $CPU_SPEED_MENU

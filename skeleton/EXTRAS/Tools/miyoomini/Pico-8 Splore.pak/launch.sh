@@ -61,9 +61,7 @@ sleep 0.2
 set_snd_level "${curvol}" &
 
 cp "$thisdir/patch/onioncfg.json" "$progdir/cfg/"
-HOME="$progdir" \
-./pico8_dyn -v -splore -root_path "${romdir}" &> $thisdir/log.txt
-
+HOME="${progdir}" "${progdir}/pico8_dyn" -v -splore -root_path "${romdir}" &> $LOGS_PATH/pico8_splore.txt
 #restart audioserver and keymon for other process
 #killall -9 keymon.elf
 sleep 0.1

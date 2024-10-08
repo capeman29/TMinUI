@@ -14,6 +14,6 @@ thisdir=$(dirname "$0")
 export SDL_VIDEODRIVER=directfb
 export SDL_AUDIODRIVER=alsa
 
-HOME="${progdir}" "${progdir}/pico8_dyn" -v -splore -root_path "${romdir}" &> "${thisdir}/log.txt"
+HOME="${progdir}" "${progdir}/pico8_dyn" -v -splore -root_path "${romdir}" &> $LOGS_PATH/pico8_splore.txt
 
 overclock.elf $CPU_SPEED_MENU

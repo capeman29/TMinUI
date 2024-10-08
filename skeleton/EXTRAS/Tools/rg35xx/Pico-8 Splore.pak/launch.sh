@@ -19,8 +19,7 @@ overclock.elf $CPU_SPEED_GAME
 
 cp "${progdir}/patch/mypatch.conf" /usr/share/alsa/alsa.conf.d/mypatch.conf
 
-HOME="${progdir}" \
-./pico8_dyn -v -splore -root_path "${romdir}" >> "${thisdir}/log.txt" 2>&1
+HOME="${progdir}" "${progdir}/pico8_dyn" -v -splore -root_path "${romdir}" &> $LOGS_PATH/pico8_splore.txt
 
 #restore previous state
 rm -rf /usr/share/alsa/alsa.conf.d/mypatch.conf
