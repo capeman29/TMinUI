@@ -42,13 +42,12 @@ static void blitButton(char* label, SDL_Surface* dst, int pressed, int x, int y,
 }
 
 int main(int argc , char* argv[]) {
-	PWR_setCPUSpeed(CPU_SPEED_MENU);
-	
+	LOG_info("Minput\n");
+	InitSettings();
 	SDL_Surface* screen = GFX_init(MODE_MAIN);
 	PAD_init();
 	PWR_init();
-	InitSettings();
-	
+	PWR_setCPUSpeed(CPU_SPEED_MENU);
 	// one-time
 	int has_L2 = (BUTTON_L2!=BUTTON_NA || CODE_L2!=CODE_NA || JOY_L2!=JOY_NA || AXIS_L2!=AXIS_NA);
 	int has_R2 = (BUTTON_R2!=BUTTON_NA || CODE_R2!=CODE_NA || JOY_R2!=JOY_NA || AXIS_R2!=AXIS_NA);
@@ -63,19 +62,17 @@ int main(int argc , char* argv[]) {
 	int oy = SCALE1(PADDING);
 	if (!has_L3 && !has_R3) oy += SCALE1(PILL_SIZE);
 	
-	SDL_Event event;
 	int quit = 0;
 	int dirty = 1;
 	// int show_setting = 0;
 	// int was_online = PLAT_isOnline();
 	while(!quit) {
-		uint32_t frame_start = SDL_GetTicks();
-		
+		GFX_startFrame();
 		PAD_poll();
-		
 		if (PAD_anyPressed() || PAD_anyJustReleased()) dirty = 1;
-		if (PAD_isPressed(BTN_SELECT) && PAD_isPressed(BTN_START)) quit = 1;
-		
+		if (PAD_isPressed(BTN_SELECT) && PAD_isPressed(BTN_START)) {
+			quit = 1;
+		}
 		// PWR_update(&dirty, NULL, NULL,NULL);
 		
 		// int is_online = PLAT_isOnline();
@@ -163,8 +160,11 @@ int main(int argc , char* argv[]) {
 				
 				// SDL_FillRect(screen, &(SDL_Rect){x,y+SCALE1(PILL_SIZE/2),SCALE1(PILL_SIZE),SCALE1(PILL_SIZE*2)}, RGB_DARK_GRAY);
 				GFX_blitPill(ASSET_DARK_GRAY_PILL, screen, &(SDL_Rect){x,y,0});
+#ifdef M21
+				blitButton("Y", screen, PAD_isPressed(BTN_Y), x+o, y+o,0);
+#else
 				blitButton("X", screen, PAD_isPressed(BTN_X), x+o, y+o,0);
-				
+#endif
 				y += SCALE1(PILL_SIZE*2);
 				GFX_blitPill(ASSET_DARK_GRAY_PILL, screen, &(SDL_Rect){x,y,0});
 				blitButton("B", screen, PAD_isPressed(BTN_B), x+o, y+o,0);
@@ -174,8 +174,11 @@ int main(int argc , char* argv[]) {
 				
 				// SDL_FillRect(screen, &(SDL_Rect){x+SCALE1(PILL_SIZE/2),y,SCALE1(PILL_SIZE*2),SCALE1(PILL_SIZE)}, RGB_DARK_GRAY);
 				GFX_blitPill(ASSET_DARK_GRAY_PILL, screen, &(SDL_Rect){x,y,0});
+#ifdef M21
+				blitButton("X", screen, PAD_isPressed(BTN_X), x+o, y+o,0);
+#else
 				blitButton("Y", screen, PAD_isPressed(BTN_Y), x+o, y+o,0);
-				
+#endif				
 				x += SCALE1(PILL_SIZE*2);
 				GFX_blitPill(ASSET_DARK_GRAY_PILL, screen, &(SDL_Rect){x,y,0});
 				blitButton("A", screen, PAD_isPressed(BTN_A), x+o, y+o,0);
@@ -260,7 +263,9 @@ int main(int argc , char* argv[]) {
 			GFX_flip(screen);
 			dirty = 0;
 		}
-		else GFX_sync();
+		else {
+			GFX_sync();
+		}
 	}
 	
 	QuitSettings();

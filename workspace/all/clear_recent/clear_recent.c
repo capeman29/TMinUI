@@ -36,6 +36,7 @@ int main(int argc, char* argv[]) {
 
     // Wait for user's input
     while (!quit) {
+        GFX_startFrame();
         PAD_poll();
         if (PAD_justPressed(BTN_A)) {
             save_changes = 1;
