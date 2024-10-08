@@ -21,7 +21,7 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 #	echo "Trovato release file" >> $SDCARD_PATH/log.txt
 #	echo "Sono nella directory " $(pwd) >> $SDCARD_PATH/log.txt
 
-	if [ -d "$SYSTEM_PATH" ]; then
+	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
 	    ACTION="updating"
 	else
 	    ACTION="installing"
@@ -47,7 +47,7 @@ fi
 if [ -f "$UPDATE_PATH" ]; then
 
 
-	if [ -d "$SYSTEM_PATH" ]; then
+	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
 	    ACTION="updating"
 	else
 	    ACTION="installing"
@@ -93,6 +93,9 @@ if [ -f ${ROOTFS_MOUNTPOINT}/bin/busybox ]; then
     export PATH=/bin:/sbin:/usr/bin:/usr/sbin
     export LD_LIBRARY_PATH=/usr/lib/:/lib/
     export HOME=$SDCARD_PATH
+
+#evaluate if adding swap file or not
+
     chroot $ROOTFS_MOUNTPOINT ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/launch.sh #&> $SDCARD_PATH/chroot.txt
     sync
 fi

@@ -26,7 +26,7 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
 	sleep 1
 	export LCD_INIT=1
 
-	if [ -d "$SYSTEM_PATH" ]; then
+	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
 		./show.elf ./updating.png
 	else
 		./show.elf ./installing.png
@@ -62,7 +62,7 @@ if [ -f "$UPDATE_PATH" ]; then
 	sleep 1
 	export LCD_INIT=1
 
-	if [ -d "$SYSTEM_PATH" ]; then
+	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
 		./show.elf ./updating.png
 	else
 		./show.elf ./installing.png

@@ -18,7 +18,7 @@ if [ -f ${SDCARD_PATH}/My${FWNAME}-*-${PLATFORM}.zip ]; then
     cd $(dirname "$0")/$PLATFORM
 #	echo "Sono nella directory " $(pwd) >> $SDCARD_PATH/log.txt
 	
-	if [ -d "$SYSTEM_PATH" ]; then
+	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
 		./show.elf ./updating.png
 	else
 		./show.elf ./installing.png
@@ -49,7 +49,7 @@ if [ -f "$UPDATE_PATH" ]; then
     cd $(dirname "$0")/$PLATFORM
 #	echo "Sono nella directory " $(pwd) >> $SDCARD_PATH/log.txt
 
-	if [ -d "$SYSTEM_PATH" ]; then
+	if [ -d "${SYSTEM_PATH}/${PLATFORM}" ]; then
 		./show.elf ./updating.png
 	else
 		./show.elf ./installing.png
