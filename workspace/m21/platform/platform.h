@@ -95,7 +95,7 @@
 ///////////////////////////////
 
 #define BTN_RESUME 			BTN_X
-#define BTN_SLEEP 			BTN_MENU
+#define BTN_SLEEP 			BTN_NONE
 #define BTN_WAKE 			BTN_MENU
 #define BTN_MOD_VOLUME 		BTN_NONE
 #define BTN_MOD_BRIGHTNESS 	BTN_MENU
@@ -112,8 +112,8 @@
 #define FIXED_PITCH		(FIXED_WIDTH * FIXED_BPP)
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
 
-#define MAX_WIDTH 1280
-#define MAX_HEIGHT 720
+#define MAX_WIDTH 900
+#define MAX_HEIGHT 1440
 #define MAX_DEPTH 32 
 
 #define ARGB_MASK_8888	0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
