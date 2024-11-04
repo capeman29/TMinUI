@@ -30,6 +30,14 @@
 
 ///////////////////////////////////////
 
+struct mybackbuffer {
+	int w;
+	int h;
+	int pitch;
+	uint32_t* pixels;
+};
+
+
 static SDL_Surface* screen;
 
 static int quit = 0;
@@ -38,12 +46,25 @@ static int simple_mode = 0;
 static int thread_video = 0;
 static int was_threaded = 0;
 static int should_run_core = 1; // used by threaded video
+static int should_run_flip = 1;
+static int flipThreadStarted = 0;
+static int coreThreadStarted = 0;
+static int flipThreadPaused = 0;
+static int coreThreadPaused = 0;
+static int render = 0;
+static int rendering = 0;
+static int firstmenu = 0;
+static int processors = 0;
+static int Founddiskcontrol = 0;
+static int config_load_done = 0;
+static int wait_for_thread = 0;
 
-static pthread_t		core_pt;
-static pthread_mutex_t	core_mx;
-static pthread_cond_t	core_rq; // not sure this is required
-static SDL_Surface*	backbuffer = NULL;
+static pthread_t		core_pt, flip_pt;
+static pthread_mutex_t	core_mx, flip_mx;
+static pthread_cond_t	core_rq, core2_rq, flip_rq, flip2_rq; 
+static struct mybackbuffer	backbuffer;
 static void* coreThread(void *arg);
+static void* flipThread(void *arg);
 
 
 char pwractionstr[256];
@@ -54,6 +75,7 @@ enum {
 	SCALE_NATIVE,
 	SCALE_ASPECT,
 	SCALE_FULLSCREEN,
+	SCALE_FULLSCREEN1X,
 #ifdef CROP_OVERSCAN
 	SCALE_CROPPED,
 #endif
@@ -67,6 +89,8 @@ enum {
 
 // default frontend options
 static int screen_scaling = SCALE_ASPECT;
+static int screen_effect = EFFECT_NONE;
+static int allow_32bpp = 0;
 static int screen_sharpness = SHARPNESS_SOFT;
 static int prevent_tearing = 1; // lenient
 static int show_debug = 0;
@@ -81,6 +105,8 @@ static int DEVICE_HEIGHT = FIXED_HEIGHT;
 static int DEVICE_PITCH = FIXED_PITCH;
 
 GFX_Renderer renderer;
+
+static int coreloaded = 0;
 
 ///////////////////////////////////////
 
@@ -646,9 +672,16 @@ static char* scaling_labels[] = {
 	"Native",
 	"Aspect",
 	"Fullscreen",
+	"Fullscreen1X",
 #ifdef CROP_OVERSCAN
 	"Cropped",
 #endif
+	NULL
+};
+static char* effect_labels[] = {
+	"None",
+	"Line",
+	"Grid",
 	NULL
 };
 static char* sharpness_labels[] = {
@@ -679,6 +712,8 @@ static char* max_ff_labels[] = {
 
 enum {
 	FE_OPT_SCALING,
+	FE_OPT_32BPP,
+	FE_OPT_EFFECT,
 	FE_OPT_SHARPNESS,
 	FE_OPT_TEARING,
 	FE_OPT_OVERCLOCK,
@@ -694,6 +729,7 @@ enum {
 	SHORTCUT_RESET_GAME,
 	SHORTCUT_SAVE_QUIT,
 	SHORTCUT_CYCLE_SCALE,
+	SHORTCUT_CYCLE_EFFECT,
 	SHORTCUT_TOGGLE_FF,
 	SHORTCUT_HOLD_FF,
 	SHORTCUT_COUNT,
@@ -856,13 +892,33 @@ static struct Config {
 #ifdef CROP_OVERSCAN
 				.desc	= "Native uses integer scaling. Aspect uses core\nreported aspect ratio. Fullscreen has non-square\npixels. Cropped is integer scaled then cropped.",
 #else
-				.desc	= "Native uses integer scaling.\nAspect uses core reported aspect ratio.\nFullscreen has non-squarepixels.",
+				.desc	= "Native uses integer scaling.\nAspect uses core reported aspect ratio.\nFullscreen has non-squarepixels.\nFullscreen 1X fits native to fullscreen.",
 #endif
 				.default_value = 1,
 				.value = 1,
 				.count = SCALE_COUNT,
 				.values = scaling_labels,
 				.labels = scaling_labels,
+			},
+			[FE_OPT_32BPP] = {
+				.key	= "minarch_allow_32bpp",
+				.name	= "Allow 32bpp",
+				.desc	= "Allow 32bpp for cores/games that prefer it.",
+				.default_value = 0,
+				.value = 0,
+				.count = 2,
+				.values = onoff_labels,
+				.labels = onoff_labels,
+			},
+			[FE_OPT_EFFECT] = {
+				.key	= "minarch_screen_effect",
+				.name	= "Screen Effect",
+				.desc	= "Grid simulates an LCD grid.\nLine simulates CRT scanlines.\nEffects usually look best at native scaling.",
+				.default_value = 0,
+				.value = 0,
+				.count = 3,
+				.values = effect_labels,
+				.labels = effect_labels,
 			},
 			[FE_OPT_SHARPNESS] = {
 				.key	= "minarch_screen_sharpness",
@@ -940,6 +996,7 @@ static struct Config {
 		[SHORTCUT_RESET_GAME]			= {"Reset Game",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_SAVE_QUIT]			= {"Save & Quit",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_CYCLE_SCALE]			= {"Cycle Scaling",		-1, BTN_ID_NONE, 0},
+		[SHORTCUT_CYCLE_EFFECT]			= {"Cycle Effect",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_TOGGLE_FF]			= {"Toggle FF",			-1, BTN_ID_NONE, 0},
 		[SHORTCUT_HOLD_FF]				= {"Hold FF",			-1, BTN_ID_NONE, 0},
 		{NULL}
@@ -973,6 +1030,7 @@ static void setOverclock(int i) {
 		case 2: PWR_setCPUSpeed(CPU_SPEED_PERFORMANCE); break;
 		case 3: PWR_setCPUSpeed(CPU_SPEED_MAX); break;
 	}
+	processors = PLAT_getNumProcessors();
 }
 static int toggle_thread = 0;
 static void Config_syncFrontend(char* key, int value) {
@@ -986,7 +1044,17 @@ static void Config_syncFrontend(char* key, int value) {
 		renderer.dst_p = 0;
 		i = FE_OPT_SCALING;
 	}
-	if (exactMatch(key,config.frontend.options[FE_OPT_SHARPNESS].key)) {
+	else if (exactMatch(key,config.frontend.options[FE_OPT_32BPP].key)) {
+		allow_32bpp = value;
+		i = FE_OPT_32BPP;
+	}
+	else if (exactMatch(key,config.frontend.options[FE_OPT_EFFECT].key)) {
+		screen_effect = value;
+		GFX_setEffect(value);
+		renderer.dst_p = 0;
+		i = FE_OPT_EFFECT;
+	}
+	else if (exactMatch(key,config.frontend.options[FE_OPT_SHARPNESS].key)) {
 		screen_sharpness = value;
 		GFX_setSharpness(value);
 		renderer.dst_p = 0;
@@ -999,6 +1067,7 @@ static void Config_syncFrontend(char* key, int value) {
 	else if (exactMatch(key,config.frontend.options[FE_OPT_THREAD].key)) {
 		int old_value = thread_video || was_threaded;
 		toggle_thread = old_value!=value;
+		wait_for_thread = value;
 		i = FE_OPT_THREAD;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_OVERCLOCK].key)) {
@@ -1214,7 +1283,8 @@ static void Config_load(void) {
 static void Config_free(void) {
 	if (config.system_cfg) free(config.system_cfg);
 	if (config.default_cfg) free(config.default_cfg);
-	if (config.user_cfg) free(config.user_cfg);
+	if (config.user_cfg) free(config.user_cfg);	
+	LOG_info("Config_free: wait_for_thread=%d thread_video=%d, toggle_thread=%d\n", wait_for_thread, thread_video, toggle_thread);system("sync");
 }
 static void Config_readOptions(void) {
 	Config_readOptionsString(config.system_cfg);
@@ -1557,7 +1627,6 @@ static int setFastForward(int enable) {
 	return enable;
 }
 
-
 static uint32_t buttons = 0; // RETRO_DEVICE_ID_JOYPAD_* buttons
 static int ignore_menu = 0;
 static void input_poll_callback(void) {
@@ -1636,6 +1705,11 @@ static void input_poll_callback(void) {
 						if (screen_scaling>=SCALE_COUNT) screen_scaling -= SCALE_COUNT;
 						Config_syncFrontend(config.frontend.options[FE_OPT_SCALING].key, screen_scaling);
 						break;
+					case SHORTCUT_CYCLE_EFFECT:
+						screen_effect += 1;
+						if (screen_effect>=EFFECT_COUNT) screen_effect -= EFFECT_COUNT;
+						Config_syncFrontend(config.frontend.options[FE_OPT_EFFECT].key, screen_effect);
+						break;
 					default: break;
 				}
 				
@@ -1646,11 +1720,21 @@ static void input_poll_callback(void) {
 	
 	if (!ignore_menu && PAD_justReleased(BTN_MENU)) {
 		show_menu = 1;
+		firstmenu = 1;
 
-		if (thread_video) {
+		if (thread_video) {	
 			pthread_mutex_lock(&core_mx);
 			should_run_core = 0;
 			pthread_mutex_unlock(&core_mx);
+			usleep(50000);
+			//rendering = 1;
+			pthread_mutex_lock(&core_mx);
+			pthread_cond_signal(&core_rq);
+			pthread_mutex_unlock(&core_mx);
+		//	pthread_mutex_lock(&flip_mx);
+		//	pthread_cond_signal(&flip_rq);
+		//	pthread_mutex_unlock(&flip_mx);
+			usleep(50000);
 		}
 	}
 	
@@ -1718,6 +1802,8 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 			present[var->id] = 1;
 			core_button_names[var->id] = var->description;
 		}
+	} else {
+		LOG_info("Input data actually not received\n");
 	}
 	
 	puts("---------------------------------");
@@ -1751,6 +1837,42 @@ static bool set_rumble_state(unsigned port, enum retro_rumble_effect effect, uin
 	VIB_setStrength(strength);
 	return 1;
 }
+
+// buffer to convert xrgb8888 to rgb565
+static void* buffer = NULL;
+static void buffer_dealloc(void) {
+	if (!buffer) return;
+	free(buffer);
+	buffer = NULL;
+}
+static void buffer_realloc(int w, int h, int p) {
+	buffer_dealloc();
+	buffer = malloc((w * FIXED_BPP) * h);
+	LOG_info("for 32bit: Buffer_realloc: %d %d %d\n", w, h, p);
+	system("sync");
+}
+static void buffer_downsample(const void *data, unsigned width, unsigned height, size_t pitch) {
+	// from picoarch! https://git.crowdedwood.com/picoarch/tree/video.c#n51
+	//LOG_info("buffer_downsampleIN: %d %d %d\n", width, height, pitch);system("sync");
+	const uint32_t *input = data;
+	uint16_t *output = buffer;
+	size_t extra = pitch / sizeof(uint32_t) - width;
+
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			*output =  (*input & 0xF80000) >> 8;
+			*output |= (*input & 0xFC00) >> 5;
+			*output |= (*input & 0xF8) >> 3;
+			input++;
+			output++;
+		}
+
+		input += extra; // TODO: commenting this out fixes geolith when cropped, it appears to be lying about the pitch...
+	}
+
+	//LOG_info("buffer_downsampleOUT: %d %d %d\n", width, height, pitch);system("sync");
+}
+
 static bool environment_callback(unsigned cmd, void *data) { // copied from picoarch initially
 	// LOG_info("environment_callback: %i\n", cmd);
 	
@@ -1787,15 +1909,29 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 	case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: { /* 10 */
 		const enum retro_pixel_format *format = (enum retro_pixel_format *)data;
 		LOG_info("SET RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: %i\n", *format);
-		if (*format != RETRO_PIXEL_FORMAT_RGB565) { // TODO: pull from platform.h?
+		if (*format == RETRO_PIXEL_FORMAT_RGB565) { // TODO: pull from platform.h?
 			/* 565 is only supported format */
-			return false;
+			downsample = 0;
+			backbuffer.pitch = MAX_WIDTH*(sizeof(uint16_t));
+			return true;
 			// downsample = 1; // TODO: not ready for primetime yet
+		} //else {
+		//	return false;
+		//}
+		if (*format == RETRO_PIXEL_FORMAT_XRGB8888) { // TODO: pull from platform.h?
+			/* 565 is only supported format */
+			if (allow_32bpp) {
+				downsample = 1; // TODO: not ready for primetime yet
+				buffer_realloc(MAX_WIDTH, MAX_HEIGHT,0);
+				backbuffer.pitch = MAX_WIDTH*(sizeof(uint32_t));
+				return true;
+			}
 		}
+		return false;
 		break;
 	}
 	case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: { /* 11 */
-		// puts("RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS\n");
+		//puts("RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS\n");
 		Input_init((const struct retro_input_descriptor *)data);
 		return false;
 	} break;
@@ -1806,6 +1942,7 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		if (var) {
 			memset(&disk_control_ext, 0, sizeof(struct retro_disk_control_ext_callback));
 			memcpy(&disk_control_ext, var, sizeof(struct retro_disk_control_callback));
+			Founddiskcontrol = 1;
 		}
 		break;
 	}
@@ -1954,6 +2091,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 
 		if (var) {
 			memcpy(&disk_control_ext, var, sizeof(struct retro_disk_control_ext_callback));
+			Founddiskcontrol = 1;
 		}
 		break;
 	}
@@ -2308,6 +2446,16 @@ static const char* bitmap_font[] = {
 		"1 1 1"
 		"  1 1"
 		"   1 ",
+	['T'] = 
+		"11111"
+		"  1  "
+		"  1  "
+		"  1  "
+		"  1  "
+		"  1  "
+		"  1  "
+		"  1  "
+		"  1  ",	
 };
 
 static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int stride, int width, int height) {
@@ -2341,12 +2489,16 @@ static void blitBitmapText(char* text, int ox, int oy, uint16_t* data, int strid
 
 ///////////////////////////////
 
-static int cpu_ticks = 0;
+//static int cpu_ticks = 0;
 static int fps_ticks = 0;
+static int fps2_ticks = 0;
 static int use_ticks = 0;
 static double fps_double = 0;
-static double cpu_double = 0;
+static double fps2_double = 0;
+//static double cpu_double = 0;
 static double use_double = 0;
+static char cpuload[64];
+		
 static uint32_t sec_start = 0;
 
 #ifdef USES_SWSCALER
@@ -2355,44 +2507,22 @@ static uint32_t sec_start = 0;
 	static int fit = 0;
 #endif	
 
-// buffer to convert xrgb8888 to rgb565
-static void* buffer = NULL;
-static void buffer_dealloc(void) {
-	if (!buffer) return;
-	free(buffer);
-	buffer = NULL;
-}
-static void buffer_realloc(int w, int h, int p) {
-	buffer_dealloc();
-	buffer = malloc((w * FIXED_BPP) * h);
-}
-static void buffer_downsample(const void *data, unsigned width, unsigned height, size_t pitch) {
-	// from picoarch! https://git.crowdedwood.com/picoarch/tree/video.c#n51
-	const uint32_t *input = data;
-	uint16_t *output = buffer;
-	size_t extra = pitch / sizeof(uint32_t) - width;
-
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			*output =  (*input & 0xF80000) >> 8;
-			*output |= (*input & 0xFC00) >> 5;
-			*output |= (*input & 0xF8) >> 3;
-			input++;
-			output++;
-		}
-
-		input += extra; // TODO: commenting this out fixes geolith when cropped, it appears to be lying about the pitch...
-	}
-}
-
 static void selectScaler(int src_w, int src_h, int src_p) {
-	LOG_info("selectScaler\n");
-	
-	if (downsample) buffer_realloc(src_w,src_h,src_p);
-	
+	LOG_info("SelectScaler IN %d %d %d\n", src_w, src_h, src_p);
+	char scaler_type[20];
+	switch(screen_scaling) {
+		case SCALE_ASPECT: strcpy(scaler_type,"Scaler ASPECT"); break;
+		case SCALE_NATIVE: strcpy(scaler_type,"Scaler NATIVE"); break;
+		case SCALE_FULLSCREEN: strcpy(scaler_type,"Scaler FULLSCREEN"); break;
+		case SCALE_FULLSCREEN1X: strcpy(scaler_type,"Scaler FULLSCREEN1X"); break;
+		default: strcpy(scaler_type,"Scaler Unknown"); break;
+	}
+
 	int src_x,src_y,dst_x,dst_y,dst_w,dst_h,dst_p,scale;
 	double aspect;
-	
+	if (core.aspect_ratio < 0.1) { //tmp fix to let prboom start on miyoomini/my282
+		core.aspect_ratio=1.333333;
+	}
 	int aspect_w = src_w;
 	int aspect_h = CEIL_DIV(aspect_w, core.aspect_ratio);
 	
@@ -2518,6 +2648,8 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		if (r && r<8) scale_y -= 1;
 		
 		scale = MAX(scale_x, scale_y);
+		if (scale * src_w > MAX_WIDTH)  //needed for performaneces reasons TODO: set 920 for everything
+			scale = scale_x;
 		// if (scale>4) scale = 4;
 		// if (scale>2) scale = 4; // TODO: restore, requires sanity checking
 		
@@ -2584,7 +2716,17 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 			dst_p = dst_w * FIXED_BPP;
 		}
 	}
-	
+
+	renderer.aspect = (scaling==SCALE_NATIVE||scaling==SCALE_CROPPED)?0:(scaling==SCALE_FULLSCREEN?-1:core.aspect_ratio);
+	if (screen_scaling == SCALE_FULLSCREEN1X) {
+		dst_w = src_w;
+		dst_h = src_h;
+		dst_p = src_p;
+		dst_x = src_x;
+		dst_y = src_y;
+		scale = 1;
+		renderer.aspect = -1; 
+	}
 	// TODO: need to sanity check scale and demands on the buffer
 	
 	// LOG_info("aspect: %ix%i (%f)\n", aspect_w,aspect_h,core.aspect_ratio);
@@ -2600,8 +2742,8 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	renderer.dst_h = dst_h;
 	renderer.dst_p = dst_p;
 	renderer.scale = scale;
-	renderer.aspect = (scaling==SCALE_NATIVE||scaling==SCALE_CROPPED)?0:(scaling==SCALE_FULLSCREEN?-1:core.aspect_ratio);
-	LOG_info("aspect: %f\n", renderer.aspect);
+	
+	LOG_info("%s %s aspect: %f\n", scaler_type, scaler_name, renderer.aspect);
 	renderer.blit = GFX_getScaler(&renderer);
 		
 	// LOG_info("coreAR:%0.3f fixedAR:%0.3f srcAR: %0.3f\nname:%s\nfit:%i scale:%i\nsrc_x:%i src_y:%i src_w:%i src_h:%i src_p:%i\ndst_x:%i dst_y:%i dst_w:%i dst_h:%i dst_p:%i\naspect_w:%i aspect_h:%i\n",
@@ -2619,17 +2761,15 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	}
 	
 	// if (screen->w!=dst_w || screen->h!=dst_w || screen->pitch!=dst_p) {
+		LOG_info("SelectScaler call GFX_resize %ix%i_%i+%i-%i\n",dst_w,dst_h,dst_p,dst_x,dst_y);system("sync");
 		screen = GFX_resize(dst_w,dst_h,dst_p);
 	// }
 	
 }
 static void video_refresh_callback_main(const void *data, unsigned width, unsigned height, size_t pitch) {
-	// return;
-	
-	// static int tmp_frameskip = 0;
-	// if ((tmp_frameskip++)%2) return;
-	
+	if (!data) return;
 	static uint32_t last_flip_time = 0;
+	fps_ticks += 1;
 	
 	// 10 seems to be the sweet spot that allows 2x in NES and SNES and 8x in GB at 60fps
 	// 14 will let GB hit 10x but NES and SNES will drop to 1.5x at 30fps (not sure why)
@@ -2647,73 +2787,95 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	// you can squeeze more out of every console by turning prevent tearing off
 	// eg. PS@10 60/240
 	
-	if (!data) return;
-
-	fps_ticks += 1;
-	if (downsample) pitch /= 2; // everything expects 16 but we're downsampling from 32
-
-	// if source has changed size (or forced by dst_p==0)
-	// eg. true src + cropped src + fixed dst + cropped dst
-	if (renderer.dst_p==0 || width!=renderer.true_w || height!=renderer.true_h) {
-		selectScaler(width, height, pitch);
-		GFX_clearAll();
-	}
-	
-	// debug
-	if (show_debug) {
-		char debug_text[128];
-		sprintf(debug_text, "%ix%i %ix", renderer.src_w,renderer.src_h, renderer.scale);
-		blitBitmapText(debug_text,2,2,(uint16_t*)data,pitch/2, width,height);
-
-		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.src_w*renderer.scale,renderer.src_h*renderer.scale);
-		blitBitmapText(debug_text,-2,2,(uint16_t*)data,pitch/2, width,height);
-
-		sprintf(debug_text, "%.01f/%.01f %i%%", fps_double, cpu_double, (int)use_double);
-		blitBitmapText(debug_text,2,-2,(uint16_t*)data,pitch/2, width,height);
-
-		sprintf(debug_text, "%ix%i", renderer.dst_w,renderer.dst_h);
-		blitBitmapText(debug_text,-2,-2,(uint16_t*)data,pitch/2, width,height);
-	}
-
+	//fps_ticks += 1;
+	//LOG_info("%05d: fps_ticks incremented!\n", fps_ticks);system("sync");
+	//if (downsample) pitch /= 2; // everything expects 16 but we're downsampling from 32
 
 	if (downsample) {
-		buffer_downsample(data,width,height,pitch*2);
+		buffer_downsample(data,width,height,pitch);
 		renderer.src = buffer;
+		pitch /= 2;
 	}
 	else {
 		renderer.src = (void*)data;
 	}
-	renderer.dst = screen->pixels;
-	// LOG_info("video_refresh_callback: %ix%i@%i %ix%i@%i\n",width,height,pitch,screen->w,screen->h,screen->pitch);
-	GFX_blitRenderer(&renderer);
+
+	if (renderer.dst_p==0 || width!=renderer.true_w || height!=renderer.true_h || pitch!=renderer.src_p) {
+		selectScaler(width, height, pitch);
+		GFX_clearAll();	
+	}
+	// debug
+	if (show_debug) {
+		char debug_text[128];
+		sprintf(debug_text, "%ix%i %ix %d", renderer.src_w,renderer.src_h, renderer.scale, downsample?32:16);
+		blitBitmapText(debug_text,2,2,(uint16_t*)renderer.src,pitch/2, width,height);
+
+		sprintf(debug_text, "%i,%i %ix%i", renderer.dst_x,renderer.dst_y, renderer.src_w*renderer.scale,renderer.src_h*renderer.scale);
+		blitBitmapText(debug_text,-2,2,(uint16_t*)renderer.src,pitch/2, width,height);
+
+		sprintf(debug_text, "%.1f/%.1f", fps_double,fps2_double);
+		blitBitmapText(debug_text,2,-13,(uint16_t*)renderer.src,pitch/2, width, height);
+
+		sprintf(debug_text, "%d %s", processors, cpuload);
+		blitBitmapText(debug_text,2,-1,(uint16_t*)renderer.src,pitch/2, width,height);
+
+		sprintf(debug_text, "%ix%i", renderer.dst_w,renderer.dst_h);
+		blitBitmapText(debug_text,-2,-1,(uint16_t*)renderer.src,pitch/2, width,height);
+	}
 	
-	if (!thread_video) GFX_flip(screen);
+	renderer.dst = screen->pixels;
+	GFX_blitRenderer(&renderer);
+	GFX_flip(screen);
 	last_flip_time = SDL_GetTicks();
 }
 
+//static uint32_t last_callback_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
-	if (!data) return;
-
-	if (thread_video) {
-		pthread_mutex_lock(&core_mx);
-
-		if (backbuffer && (backbuffer->w!=width || backbuffer->h!=height || backbuffer->pitch!=pitch)) {
+//	LOG_info("video_refresh_callback width:%i height:%i pitch:%i\n",width,height,pitch);system("sync");
+	if (!data) return; //frameskip activated?
+	//if ((!thread_video)&&(wait_for_thread)) return; //prboom sends frames before thread_video started....
+	//while (coreloaded==0) usleep(1000);
+//	LOG_info("2video_refresh_callback width:%i height:%i pitch:%i\n",width,height,pitch);system("sync");
+	fps2_ticks++;
+//	uint32_t callback_time = SDL_GetTicks();
+	if (thread_video) {		
+		pthread_mutex_lock(&flip_mx);
+	/*	if (backbuffer && (backbuffer->w!=width || backbuffer->h!=height || backbuffer->pitch!=pitch)) {
+			
 			free(backbuffer->pixels);
 			SDL_FreeSurface(backbuffer);
 			backbuffer = NULL;
+			LOG_info("Deleted Backbuffer!\n");system("sync");
+			//pthread_mutex_unlock(&flip_mx);
 		}
 		if (!backbuffer) {
+			//pthread_mutex_lock(&flip_mx);
+			//uint16_t* pixels = malloc(height*pitch);
 			uint16_t* pixels = malloc(height*pitch);
-			// backbuffer = SDL_CreateRGBSurface(0,width,height,FIXED_DEPTH,RGBA_MASK_565);
 			backbuffer = SDL_CreateRGBSurfaceFrom(pixels, width, height, FIXED_DEPTH, pitch, RGBA_MASK_565);
-		}
-
-		memcpy(backbuffer->pixels, data, backbuffer->h*backbuffer->pitch);
-
-		pthread_cond_signal(&core_rq);
+			LOG_info("Created Backbuffer %ix%i-%i-%i!\n",width,height,FIXED_DEPTH,pitch);system("sync");
+			//pthread_mutex_unlock(&flip_mx);
+		}*/
+		//pthread_mutex_lock(&flip_mx);
+		backbuffer.w = width;
+		backbuffer.h = height;
+		backbuffer.pitch = pitch;
+		memcpy(backbuffer.pixels, data, backbuffer.h*backbuffer.pitch);
+		pthread_mutex_unlock(&flip_mx);
+		//LOG_info("%05d:Backbuffer Copied!\n",fps_ticks);system("sync");
+		//pthread_mutex_lock(&core_mx);
+		pthread_mutex_lock(&core_mx);
+		rendering = 1;
+		pthread_cond_signal(&core_rq);		
 		pthread_mutex_unlock(&core_mx);
+		//pthread_cond_signal(&flip_rq);
+		//pthread_mutex_unlock(&core_mx);
 	}
-	else video_refresh_callback_main(data,width,height,pitch);
+	else {
+		video_refresh_callback_main(data,width,height,pitch);	
+	}
+//	LOG_info("video_refresh_callback     : wait_for_thread:%i thread_video:%i config_done = %i %ix%i_%i elapsed %lums took:%lums abs %lu\n",wait_for_thread,thread_video,config_load_done,width,height,pitch,width,height,pitch, callback_time-last_callback_time, SDL_GetTicks()-callback_time, callback_time);
+//	last_callback_time = callback_time;
 }
 ///////////////////////////////
 
@@ -2811,13 +2973,6 @@ void Core_load(void) {
 	game_info.data = game.data;
 	game_info.size = game.size;
 	
-	char native_path[256];
-	renderer.native_core = 0;
-	sprintf(native_path, "%s/Emus/%s/%s.pak/native.txt", SDCARD_PATH, PLATFORM, (char *)core.tag);
-	if (exists(native_path)) {
-		renderer.native_core = 1;
-	}
-
 	core.load_game(&game_info);
 	
 	SRAM_read();
@@ -2835,8 +2990,9 @@ void Core_load(void) {
 	double a = av_info.geometry.aspect_ratio;
 	if (a<=0) a = (double)av_info.geometry.base_width / av_info.geometry.base_height;
 	core.aspect_ratio = a;
-	
-	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);
+	coreloaded = 1;
+	if (Founddiskcontrol) LOG_info("RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE - NumDiscs = %i\n", disk_control_ext.get_num_images());
+	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);system("sync");
 }
 void Core_reset(void) {
 	core.reset();
@@ -2930,7 +3086,7 @@ int makeBoxart(SDL_Surface *image, char *filename) {
     SDL_Surface *mysurface = SDL_CreateRGBSurface(0,boxartdata.sW,boxartdata.sH,16,0,0,0,0);
     //SDL_Surface *unscaled_myimg = IMG_Load(BACKGROUND);
     if (image == NULL){
-        LOG_info("errore nel caricare l'immagine sfondo");
+        LOG_info("Background image loading failed");
         return -1;
     }
 	double xfactr, yfactr;
@@ -4206,6 +4362,16 @@ static char* getAlias(char* path, char* alias) {
 }
 
 static void Menu_loop(void) {
+	if (thread_video) {
+		while ((render!=0) || (rendering!=0)) {
+			usleep(1000);
+			}
+	}
+//#ifdef M21
+	if (firstmenu) PLAT_clearAll();
+	firstmenu = 0;
+//#endif	
+	//LOG_info("ENTRATO NEL MENU render = %i - rendering = %i\n",render,rendering) ;system("sync");
 	menu.bitmap = SDL_CreateRGBSurfaceFrom(renderer.src, renderer.true_w, renderer.true_h, FIXED_DEPTH, renderer.src_p, RGBA_MASK_565);
 	// LOG_info("Menu_loop:menu.bitmap %ix%i\n", menu.bitmap->w,menu.bitmap->h);
 	
@@ -4215,9 +4381,10 @@ static void Menu_loop(void) {
 	int restore_w = screen->w;
 	int restore_h = screen->h;
 	int restore_p = screen->pitch;
-	if (restore_w!=DEVICE_WIDTH || restore_h!=DEVICE_HEIGHT) {
-		screen = GFX_resize(DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
-	}
+	//if (restore_w!=DEVICE_WIDTH || restore_h!=DEVICE_HEIGHT || restore_p!=DEVICE_PITCH) {
+	LOG_info("Menu_loop begin call GFX_resize %i %i %i\n",DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
+	screen = GFX_resize(DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
+	//}
 	
 	SRAM_write();
 	RTC_write();
@@ -4225,6 +4392,7 @@ static void Menu_loop(void) {
 	if (!HAS_POWER_BUTTON) PWR_enableSleep();
 	PWR_setCPUSpeed(CPU_SPEED_MENU); // set Hz directly
 	GFX_setVsync(VSYNC_STRICT);
+	GFX_setEffect(EFFECT_NONE);
 	
 	int rumble_strength = VIB_getStrength();
 	VIB_setStrength(0);
@@ -4362,9 +4530,10 @@ static void Menu_loop(void) {
 						if (screen_scaling!=old_scaling) {
 							selectScaler(renderer.true_w,renderer.true_h,renderer.src_p);
 						
-							restore_w = screen->w;
-							restore_h = screen->h;
-							restore_p = screen->pitch;
+							restore_w = renderer.dst_w;
+							restore_h = renderer.dst_h;
+							restore_p = renderer.dst_p; // screen->pitch;
+							LOG_info("Menu_loop change aspect call GFX_resize %i %i %i\n", DEVICE_WIDTH, DEVICE_HEIGHT, DEVICE_PITCH);system("sync");
 							screen = GFX_resize(DEVICE_WIDTH,DEVICE_HEIGHT,DEVICE_PITCH);
 						
 							SDL_FillRect(backing, NULL, 0);
@@ -4542,10 +4711,17 @@ static void Menu_loop(void) {
 				if (menu.preview_exists) { // has save, has preview
 					// lotta memory churn here
 					SDL_Surface* bmp = IMG_Load(menu.bmp_path);
-					SDL_Surface* preview = zoomSurface(bmp, (1.0 * hw / bmp->w) , (1.0 * hh / bmp->h), 0);					
-					SDL_BlitSurface(preview, NULL, screen, &(SDL_Rect){ox,oy}); 
-					SDL_FreeSurface(bmp);   
-					SDL_FreeSurface(preview);					
+					if (!bmp) {
+						SDL_Rect preview_rect = {ox,oy,hw,hh};
+						SDL_FillRect(screen, &preview_rect, 0);
+						GFX_blitMessage(font.large, "No Preview", screen, &preview_rect);
+					} else {
+						SDL_Surface* preview = zoomSurface(bmp, (1.0 * hw / bmp->w) , (1.0 * hh / bmp->h), 0);					
+						SDL_BlitSurface(preview, NULL, screen, &(SDL_Rect){ox,oy}); 
+						if (bmp) SDL_FreeSurface(bmp);   
+						if (preview) SDL_FreeSurface(preview);					
+					}
+					
 				}
 				else {
 					SDL_Rect preview_rect = {ox,oy,hw,hh};
@@ -4577,11 +4753,12 @@ static void Menu_loop(void) {
 	PWR_warn(1);
 	
 	if (!quit) {
-		if (restore_w!=DEVICE_WIDTH || restore_h!=DEVICE_HEIGHT) {
-			screen = GFX_resize(restore_w,restore_h,restore_p);
-		}
+
+		LOG_info("Menu_loop exit from menu call GFX_resize %i %i %i\n", restore_w, restore_h, restore_p);system("sync");
+		screen = GFX_resize(restore_w,restore_h,restore_p);
+		GFX_setEffect(screen_effect);
 		GFX_clear(screen);
-		video_refresh_callback(renderer.src, renderer.true_w, renderer.true_h, renderer.src_p);
+		
 
 		setOverclock(overclock); // restore overclock value
 		if (rumble_strength) VIB_setStrength(rumble_strength);
@@ -4594,6 +4771,11 @@ static void Menu_loop(void) {
 			pthread_mutex_lock(&core_mx);
 			should_run_core = 1;
 			pthread_mutex_unlock(&core_mx);
+			pthread_mutex_lock(&flip_mx);
+			should_run_flip = 1;
+			pthread_mutex_unlock(&flip_mx);			
+		} else {
+			video_refresh_callback(renderer.src, renderer.true_w, renderer.true_h, renderer.src_p);
 		}
 	}
 	
@@ -4628,28 +4810,67 @@ finish:
 	return ticks;
 }
 
+
+static long a[9];
+static long up[5], up1[5], idle[5], idle1[5];
+void getCPUusage(char * data) {
+	int counter;
+  	int i;
+  	float load;
+  	FILE* fp;
+  	char *scrap;
+	data[0] = '\0';
+	scrap=(char *)malloc(15);
+    fp = fopen ("/proc/stat", "r");
+	for (counter = 1; counter <= processors; counter++)
+    {
+       up1[counter]=0;
+       fscanf (fp, "%s %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",scrap,&a[0],&a[1],&a[2],&a[3],&a[4],&a[5],&a[6],&a[7],&a[8],&a[9]);
+       if (strncmp(scrap,"cpu",3) != 0) break;
+       for (i =0; i < 8; i++) up1[counter]+= a[i];
+       idle1[counter] = a[3]+a[4];
+       up[counter]=up1[counter]-up[counter];
+       idle[counter]=idle1[counter]-idle[counter];
+       load=((float)(up[counter]-idle[counter])/(float)up[counter])*100.0;
+// now you halve the load..
+        sprintf(data,"%s%02.0f%%", data,  counter, load, thread_video);
+        //if (counter == processors) printf("\n");
+// update staic variables for next loop
+       up[counter]=up1[counter];
+       idle[counter]=idle1[counter];
+     }
+	sprintf(data,"%s T%d", data, thread_video);
+	fclose(fp);
+}
+
 static void trackFPS(void) {
-	cpu_ticks += 1;
-	static int last_use_ticks = 0;
+	if (!show_debug) return;
+	//cpu_ticks += 1;
+	//static int last_use_ticks = 0;
 	uint32_t now = SDL_GetTicks();
 	if (now - sec_start>=1000) {
 		double last_time = (double)(now - sec_start) / 1000;
 		fps_double = fps_ticks / last_time;
-		cpu_double = cpu_ticks / last_time;
-		use_ticks = getUsage();
-		if (use_ticks && last_use_ticks) {
-			use_double = (use_ticks - last_use_ticks) / last_time;
-		}
-		last_use_ticks = use_ticks;
+		fps2_double = fps2_ticks / last_time;
+		//cpu_double = cpu_ticks / last_time;
+		//getCPUusage(cpuload);
+		//use_ticks = getUsage();
+		//if (use_ticks && last_use_ticks) {
+		//	use_double = (use_ticks - last_use_ticks) / last_time;
+		//}
+		getCPUusage(cpuload);
+		//last_use_ticks = use_ticks;
 		sec_start = now;
-		cpu_ticks = 0;
+		//cpu_ticks = 0;
 		fps_ticks = 0;
+		fps2_ticks = 0;
 		
 		// LOG_info("fps: %f cpu: %f\n", fps_double, cpu_double);
 	}
 }
 
 static void limitFF(void) {
+	if (! fast_forward) return;
 	static uint64_t ff_frame_time = 0;
 	static uint64_t last_time = 0;
 	static int last_max_speed = -1;
@@ -4676,12 +4897,26 @@ static void limitFF(void) {
 	last_time = now;
 }
 
+static void* flipThread(void *arg) {
+	int run = 0;
+	LOG_info("flipThread started now\n");system("sync");
+	flipThreadStarted = 1;
+	while (!quit) {
+		//wait for backbuffer to be ready
+		pthread_mutex_lock(&flip_mx);
+		run = should_run_flip;
+		if  (run) {
+			pthread_cond_wait(&flip_rq, &flip_mx);
+			video_refresh_callback_main(backbuffer.pixels,backbuffer.w,backbuffer.h,backbuffer.pitch);
+			render = 0;
+		} 
+		pthread_mutex_unlock(&flip_mx);
+	}
+	pthread_exit(NULL);
+}
 static void* coreThread(void *arg) {
-		// force a vsync immediately before loop
-	// for better frame pacing?
-	GFX_clearAll();
-	GFX_flip(screen);
-
+	LOG_info("coreThread started now\n");system("sync");
+	coreThreadStarted = 1;
 	while (!quit) {
 		int run = 0;
 		pthread_mutex_lock(&core_mx);
@@ -4705,11 +4940,17 @@ int main(int argc , char* argv[]) {
 	// force a stack overflow to ensure asan is linked and actually working
 	// char tmp[2];
 	// tmp[2] = 'a';
-	
+	processors = PLAT_getNumProcessors();
 	char core_path[MAX_PATH];
 	char rom_path[MAX_PATH]; 
 	char tag_name[MAX_PATH];
 	int resume_slot;
+
+	//backbuffer.pixels = (uint16_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint16_t));
+	backbuffer.pixels = (uint32_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint32_t));
+	backbuffer.w = MAX_WIDTH;
+	backbuffer.h = MAX_HEIGHT;
+	backbuffer.pitch = MAX_WIDTH*sizeof(uint32_t);
 
 	fancy_mode = exists(FANCY_MODE_PATH);
 	
@@ -4779,8 +5020,10 @@ int main(int argc , char* argv[]) {
 		core_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 		core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 		pthread_create(&core_pt, NULL, &coreThread, NULL);
+		flip_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+		flip_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+		pthread_create(&flip_pt, NULL, &flipThread, NULL);	
 	}
-
 	PWR_warn(1);
 	PWR_disableAutosleep();
 
@@ -4790,25 +5033,32 @@ int main(int argc , char* argv[]) {
 	GFX_flip(screen);
 
 	sec_start = SDL_GetTicks();
+	quit = 0; //quick fix for prboom on miyoomini...needs further info
 	while (!quit) {
 		GFX_startFrame();
 
-		if (!thread_video) {
+		if ((!thread_video)&&(config_load_done)&&(!wait_for_thread)) {
 			core.run();
 			limitFF();
 			trackFPS();
 		}
 
 		if (thread_video && !quit) {
+		//if (0 == 1) {
 			pthread_mutex_lock(&core_mx);
 			pthread_cond_wait(&core_rq,&core_mx);
-
-			if (backbuffer) {
-				video_refresh_callback_main(backbuffer->pixels,backbuffer->w,backbuffer->h,backbuffer->pitch);
-				GFX_flip(screen);
-			}
-			core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 			pthread_mutex_unlock(&core_mx);
+			//if (backbuffer) {
+				//pthread_mutex_lock(&flip_mx);
+				render = 1;
+				//LOG_info("%05d: Start Rendering BackBuffer!\n", fps_ticks);system("sync");
+				rendering = 0;
+				pthread_cond_signal(&flip_rq);
+								
+				//pthread_mutex_unlock(&flip_mx);						
+			//}
+			//core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+			
 		}
 		
 		if (show_menu) Menu_loop();
@@ -4829,17 +5079,29 @@ int main(int argc , char* argv[]) {
 				core_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
 				core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 				pthread_create(&core_pt, NULL, &coreThread, NULL);
+
+				flip_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+				flip_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+				pthread_create(&flip_pt, NULL, &flipThread, NULL);
+				LOG_info("Here I started the threads 1\n");system("sync");
+				config_load_done = 1;
 			}
 			else {
 				// disable
 				pthread_cancel(core_pt);
 				pthread_join(core_pt,NULL);
 
+				pthread_cancel(flip_pt);
+				pthread_join(flip_pt,NULL);
+
 				// force a vsync immediately before loop
 				// for better frame pacing?
 				GFX_clearAll();
 				GFX_flip(screen);
 			}
+		}
+		if ((!wait_for_thread)&&(!config_load_done)) {
+			config_load_done = 1;
 		}
 	}
 	
@@ -4862,7 +5124,7 @@ finish:
 	SND_quit();
 	PAD_quit();
 	GFX_quit();
-	
+	free(backbuffer.pixels);
 	buffer_dealloc();
 	
 	return EXIT_SUCCESS;
