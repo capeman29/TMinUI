@@ -94,6 +94,7 @@ if [ -f ${ROOTFS_MOUNTPOINT}/bin/busybox ]; then
     export LD_LIBRARY_PATH=/usr/lib/:/lib/
     export HOME=$SDCARD_PATH
 
+	cat /dev/zero > /dev/fb0
 #evaluate if adding swap file or not
 
     chroot $ROOTFS_MOUNTPOINT ${SYSTEM_PATH}/${PLATFORM}/paks/MinUI.pak/launch.sh #&> $SDCARD_PATH/chroot.txt
