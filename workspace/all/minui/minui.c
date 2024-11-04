@@ -2099,7 +2099,7 @@ int main (int argc, char *argv[]) {
 							} else {
 								sprintf(myslot_path, "%s/%s.state.png",slot_path_rom,myslot_name);
 							}
-							LOG_info("CIAO\n\n\n\n\n\n%s\n\n\n\n\n\n\n\n",myslot_name);
+							//LOG_info("CIAO\n\n\n\n\n\n%s\n\n\n\n\n\n\n\n",myslot_name);
 						}
 						
 						
