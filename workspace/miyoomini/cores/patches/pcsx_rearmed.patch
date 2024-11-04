@@ -1,19 +1,10 @@
 diff --git a/Makefile.libretro b/Makefile.libretro
-index a1c8c7a..0ed16b8 100644
+index 6bacb3f..134f92e 100644
 --- a/Makefile.libretro
 +++ b/Makefile.libretro
-@@ -27,7 +27,7 @@ AS ?= as
- CC_AS ?= $(CC)
- CFLAGS ?=
- 
--TARGET_NAME := km_pcsxtreme_hd
-+TARGET_NAME := pcsx_rearmed
- ARCH_DETECTED := $(shell $(CC) -dumpmachine | awk -F- '{print $$1}')
- GIT_VERSION := " $(shell git rev-parse --short HEAD || echo unknown)"
- ifneq ($(GIT_VERSION)," unknown")
-@@ -392,6 +392,26 @@ else ifeq ($(platform), rpi4_64)
-         fpic := -fPIC
-         CFLAGS += -march=armv8-a+crc+simd -mtune=cortex-a72 -ftree-vectorize
+@@ -599,6 +599,24 @@ else ifeq ($(platform), miyoo)
+ 	DYNAREC = ari64
+ 	HAVE_NEON = 0
  
 +# MIYOOMINI
 +else ifeq ($(platform), miyoomini)
@@ -21,12 +12,9 @@ index a1c8c7a..0ed16b8 100644
 +	CC = $(CROSS_COMPILE)gcc
 +	CXX = $(CROSS_COMPILE)g++
 +	AR = $(CROSS_COMPILE)ar
-+	CFLAGS += -marm -mtune=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard -march=armv7ve -fomit-frame-pointer
++	CFLAGS += -marm $(MYARCH) -fomit-frame-pointer
 +	CFLAGS += -ffast-math -fdata-sections -ffunction-sections -fsingle-precision-constant -flto -fPIC
 +	LDFLAGS += -flto -fPIC
-+	ifeq (,$(DEBUG))
-+		# LDFLAGS += -s
-+	endif
 +	CPU_ARCH := arm
 +	OPTIMIZE := -Ofast -DNDEBUG=1
 +	HAVE_NEON = 1
@@ -35,6 +23,7 @@ index a1c8c7a..0ed16b8 100644
 +	ARCH = arm
 +	DYNAREC = ari64
 +
- # Classic Platforms ####################
- # Platform affix = classic_<ISA>_<µARCH>
- # Help at https://modmyclassic.com/comp
++
+ # Emscripten
+ else ifeq ($(platform), emscripten)
+    TARGET  := $(TARGET_NAME)_libretro_$(platform).bc

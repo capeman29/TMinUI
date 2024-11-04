@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
-CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom puae
-CORES += neocd bmp2png retroarch a5200 a7800
+CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom
+CORES += neocd bmp2png retroarch a5200 a7800 #scummvm
 
 ###############################
 
@@ -62,7 +62,7 @@ fbneo_BUILD_PATH = fbneo/src/burner/libretro
 
 prboom_REPO = https://github.com/libretro/libretro-prboom
 prboom_CORE = prboom_libretro.so
-prboom_HASH = 6be5a20
+#prboom_HASH = 6be5a20
 
 retroarch_REPO = https://github.com/libretro/RetroArch
 retroarch_CORE = retroarch
@@ -75,13 +75,14 @@ retroarch_CORE = retroarch
 retroarch_MAKEFILE = Makefile.m21
 
 puae_REPO = https://github.com/libretro/libretro-uae
+puae_REPO = https://github.com/libretro/uae4arm-libretro
 #puae_BR = 2.6.1
 puae_CORE = puae2021_libretro.so 
 #puae_HASH = 6fd6bc9
 
 neocd_REPO = https://github.com/libretro/neocd_libretro
 neocd_CORE = neocd_libretro.so
-neocd_HASH = 71ebe50
+#neocd_HASH = 71ebe50
 
 bmp2png_REPO = https://github.com/Turro75/bmp2png
 bmp2png_CORE = bmp2png

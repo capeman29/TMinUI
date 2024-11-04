@@ -37,7 +37,7 @@ gambatte_REPO = https://github.com/libretro/gambatte-libretro
 mednafen_supafaust_REPO = https://github.com/libretro/supafaust
 
 pcsx_rearmed_MAKEFILE = Makefile.libretro
-pcsx_rearmed_HASH = 1fec8a9
+#pcsx_rearmed_HASH = 1fec8a9
 
 picodrive_REPO = https://github.com/irixxxx/picodrive
 picodrive_MAKEFILE = Makefile.libretro
@@ -59,6 +59,7 @@ fbneo_BUILD_PATH = fbneo/src/burner/libretro
 
 prboom_REPO = https://github.com/libretro/libretro-prboom
 prboom_CORE = prboom_libretro.so
+#prboom_HASH = 6be5a20
 
 retroarch_REPO = https://github.com/libretro/RetroArch
 retroarch_CORE = retroarch

@@ -37,7 +37,7 @@ gambatte_REPO = https://github.com/libretro/gambatte-libretro
 
 mednafen_supafaust_REPO = https://github.com/libretro/supafaust
 
-pcsx_rearmed_REPO = https://github.com/KMFDManic/pcsx_rearmed
+#pcsx_rearmed_REPO = https://github.com/KMFDManic/pcsx_rearmed
 pcsx_rearmed_MAKEFILE = Makefile.libretro
 
 picodrive_REPO = https://github.com/irixxxx/picodrive
@@ -55,9 +55,9 @@ mame2003-plus_CORE = mame2003_plus_libretro.so
 fbneo_REPO = https://github.com/libretro/fbneo
 fbneo_CORE = fbneo_libretro.so
 #same version as garlicos
-#fbneo_HASH = db9f7e9
+fbneo_HASH = db9f7e9
 #same version as onionsos
-fbneo_HASH = d7a13a0
+#fbneo_HASH = d7a13a0
 fbneo_BUILD_PATH = fbneo/src/burner/libretro
 
 #xtreme fbneo don't work with nbajam and smgp, hiscore for wbmlb working....
@@ -65,6 +65,7 @@ fbneo_BUILD_PATH = fbneo/src/burner/libretro
 
 prboom_REPO = https://github.com/libretro/libretro-prboom
 prboom_CORE = prboom_libretro.so
+#prboom_HASH = 6be5a20
 
 retroarch_REPO = https://github.com/OnionUI/RetroArch
 retroarch_CORE = retroarch
