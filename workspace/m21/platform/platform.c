@@ -83,7 +83,7 @@ struct input_event {
 static int PWR_Pressed = 0;
 static int PWR_Actions = 0;
 static uint32_t PWR_Tick = 0;
-#define PWR_TIMEOUT 3000
+#define PWR_TIMEOUT 2000
 
 
 void PLAT_pollInput(void) {
@@ -208,6 +208,7 @@ static struct VID_Context {
 	int height; // current height
 	int pitch;  //sdl bpp
 	int sharpness; //let's see if it works
+	uint16_t* pixels;
 } vid;
 
 static int device_width;
@@ -216,6 +217,7 @@ static int device_pitch;
 
 static int lastw=0;
 static int lasth=0;
+static int lastp=0;
 
 void get_fbinfo(void){
     ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
@@ -254,79 +256,42 @@ void set_fbinfo(void){
     ioctl(vid.fdfb, FBIOPUT_VSCREENINFO, &vid.vinfo);
 }
 
-int M21_SDLFB_Flip2(GFX_Renderer * buffer, void * fbmmap, int linewidth, int bpp) {
-	//copy a surface to the screen and flip it
-	//it must be the same resolution, the bpp16 is then converted to 32bpp
-	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
-	if (bpp == 16) {
-		//ok start conversion assuming it is RGB565
-		int x, y;
-		for (y = 0; y < buffer->src_h; y++) {
-			for (x = 0; x < buffer->src_w; x++) {
-				uint16_t pixel = *((uint16_t *)buffer->src + x + y * buffer->src_w);
-				*((uint32_t *)fbmmap + x + y * linewidth) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
-			}
-		}
-	}
-	//TODO Handle 24bpp images
-/*	if (buffer->format->BitsPerPixel == 24) {
-		//ok start conversion assuming it is RGB888
-		int x, y;
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
-				uint24_t pixel = *((uint24_t *)buffer->pixels + x + y * buffer->w);
-				*((uint32_t *)_screen->pixels + x + y * _screen->w) = 
-					0xFF000000 | (pixel & 0xFF0000) | (pixel & 0xFF00)  | (pixel & 0xFF) ;
-			}
-		}
-	}*/
-	if (bpp == 32) {
-		//ok start conversion assuming it is ABGR888
-		int x, y;
-		for (y = 0; y < buffer->src_h; y++) {
-			for (x = 0; x < buffer->src_w; x++) {
-				uint32_t pixel = *((uint32_t *)buffer->src + x + y * buffer->src_w);
-				*((uint32_t *)fbmmap + x + y * linewidth) = 
-					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
-			}
-		}
-	}
-	return 0;	
-}
-static int doublebuffer = 0;
 int M21_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	//copy a surface to the screen and flip it
 	//it must be the same resolution, the bpp16 is then converted to 32bpp
 	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
-	
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y;
 	if (buffer->format->BitsPerPixel == 16) {
-		//ok start conversion assuming it is RGB565
-		int x, y;
+		//ok start conversion assuming it is RGB565		
 		for (y = 0; y < buffer->h; y++) {
 			for (x = 0; x < buffer->w; x++) {
-				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * buffer->w);
+				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + x + y * linewidth) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
 			}
 		}
 	}
-	//TODO Handle 24bpp images
-/*	if (buffer->format->BitsPerPixel == 24) {
+/*	//TODO Handle 24bpp images
+	if (buffer->format->BitsPerPixel == 24) {
 		//ok start conversion assuming it is RGB888
 		int x, y;
 		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
-				uint24_t pixel = *((uint24_t *)buffer->pixels + x + y * buffer->w);
-				*((uint32_t *)_screen->pixels + x + y * _screen->w) = 
-					0xFF000000 | (pixel & 0xFF0000) | (pixel & 0xFF00)  | (pixel & 0xFF) ;
+			for (x = 0; x < buffer->w * 3; x+=3) {
+				uint8_t pixelred = *((uint8_t *)buffer->pixels + x + y * buffer->w);
+				uint8_t pixelgreen = *((uint8_t *)buffer->pixels + (x+1) + y * buffer->w);
+				uint8_t pixelblue = *((uint8_t *)buffer->pixels + (x+2) + y * buffer->w);
+				if (x % 3 == 0)	*((uint32_t *)fbmmap + (x/3) + y * linewidth) = 
+					(uint32_t)(0xFF000000 | (pixelred << 16) | (pixelgreen << 8)  | (pixelblue & 0xFF)) ;
 			}
 		}
 	}*/
 	if (buffer->format->BitsPerPixel == 32) {
 		//ok start conversion assuming it is ABGR888
-		int x, y;
 		for (y = 0; y < buffer->h; y++) {
 			for (x = 0; x < buffer->w; x++) {
-				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * buffer->w);
+				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
 				*((uint32_t *)fbmmap + x + y * linewidth) = 
 					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
 			}
@@ -334,65 +299,6 @@ int M21_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	}
 	return 0;	
 }
-
-
-int M21_SDLFB_FlipRender(SDL_Surface *buffer, void * fbmmap, int linewidth) {
-	//copy a surface to the screen and flip it
-	//it must be the same resolution, the bpp16 is then converted to 32bpp
-	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
-	int currentbuffer = doublebuffer *buffer->h;
-	if (buffer->format->BitsPerPixel == 16) {
-		//ok start conversion assuming it is RGB565
-		int x, y;
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
-				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * buffer->w);
-				*((uint32_t *)fbmmap + x + (y+currentbuffer) * linewidth) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
-			}
-		}
-	}
-	//TODO Handle 24bpp images
-/*	if (buffer->format->BitsPerPixel == 24) {
-		//ok start conversion assuming it is RGB888
-		int x, y;
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
-				uint24_t pixel = *((uint24_t *)buffer->pixels + x + y * buffer->w);
-				*((uint32_t *)_screen->pixels + x + y * _screen->w) = 
-					0xFF000000 | (pixel & 0xFF0000) | (pixel & 0xFF00)  | (pixel & 0xFF) ;
-			}
-		}
-	}*/
-	if (buffer->format->BitsPerPixel == 32) {
-		//ok start conversion assuming it is ABGR888
-		int x, y;
-		for (y = 0; y < buffer->h; y++) {
-			for (x = 0; x < buffer->w; x++) {
-				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * buffer->w);
-				*((uint32_t *)fbmmap + x + (y+currentbuffer) * linewidth) = 
-					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
-			}
-		}
-	}
-	if (doublebuffer == 0)
-	{ 
-		doublebuffer = 1;
-		vid.vinfo.yoffset = 0;
-	} 
-	else 
-	{
-		doublebuffer = 0;
-		vid.vinfo.yoffset = buffer->h;
-	}; //flip doublebuffer
-	//ioctl(vid.fdfb, FBIOPAN_DISPLAY, &vid.vinfo);
-	return 0;	
-}
-
-
-
-
-
-
 
 SDL_Surface* PLAT_initVideo(void) {
 	
@@ -418,7 +324,10 @@ SDL_Surface* PLAT_initVideo(void) {
 	//SDL_Init(SDL_INIT_VIDEO);
 	//SDL_ShowCursor(0);
 	//create a surface to let SDL draw everything to
-	vid.screen	= SDL_CreateRGBSurface(SDL_SWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
+	//if (vid.pixels) {free(vid.pixels);vid.pixels=NULL;}
+	vid.pixels = malloc(h*p);
+	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
+	//vid.screen	= SDL_CreateRGBSurfaceFrom(pixels, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	//vid.screen	= SDL_CreateRGBSurface(SDL_HWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
 	vid.width	= w;
 	vid.height	= h;
@@ -429,6 +338,8 @@ SDL_Surface* PLAT_initVideo(void) {
 	device_pitch	= vid.linewidth;
 
 	//vid.screen_size = vid.finfo.line_length * vid.vinfo.yres_virtual;
+
+	//create a mmap with the maximum available memory, we avoid recreating it during the resize as it is useless and waste of time.
 	vid.screen_size = vid.finfo.line_length * 1440;
     vid.fbmmap = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 
@@ -438,7 +349,10 @@ SDL_Surface* PLAT_initVideo(void) {
 
 void PLAT_quitVideo(void) {
 		// clearVideo();
+	PLAT_clearAll();
+	if (vid.pixels) free(vid.pixels);
 	SDL_FreeSurface(vid.screen);
+	vid.pixels=NULL;
 	munmap(vid.fbmmap, 0);
     close(vid.fdfb);
 	SDL_Quit();
@@ -450,11 +364,11 @@ static void clearVideo(void) {
 }
 
 void PLAT_clearVideo(SDL_Surface* screen) {
-	SDL_FillRect(screen, NULL, 0); // TODO: revisit
+	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 }
 
 void PLAT_clearAll(void) {
-	PLAT_clearVideo(vid.screen); // TODO: revist
+	SDL_FillRect(vid.screen, NULL, 0); // TODO: revisit
 	memset(vid.fbmmap, 0, vid.screen_size);
 }
 
@@ -462,65 +376,46 @@ void PLAT_setVsync(int vsync) {
 	// buh
 }
 
-void resizescreen(int width, int height) {   
-    //get_fbinfo();//get screen size //it shouldn't be necessary as data are updated
-    if ((width != vid.vinfo.xres) || (height != vid.vinfo.yres)) {
-        //resize to FULLSCREEN
-        vid.vinfo.xres=width;     
-        vid.vinfo.yres=height;
-		//vid.vinfo.yres_virtual=height*2;
-        vid.vinfo.bits_per_pixel=32;
-        set_fbinfo();
-    } else {
-        //don't resize
-    }
-}
 
-
-static int hard_scale = 4; // TODO: base src size, eg. 160x144 can be 4
+//static int hard_scale = 4; // TODO: base src size, eg. 160x144 can be 4
 static void resizeVideo(int w, int h, int p) {
-	if (w==vid.width && h==vid.height && p==vid.pitch) return;
-	
+	//if (w==vid.width && h==vid.height && p==vid.pitch) return;
 	
 	// TODO: minarch disables crisp (and nn upscale before linear downscale) when native
 	if (w < 0) w = w* -1;
 	if (h < 0) h = h* -1;
-	w=MIN(w,MAX_WIDTH); h=MIN(h,MAX_HEIGHT);
-	if (w>=device_width && h>=device_height) hard_scale = 1;
-	else if (h>=160) hard_scale = 2; // limits gba and up to 2x (seems sufficient)
-	else hard_scale = 4;
-
-	SDL_FreeSurface(vid.screen);
-	//munmap(vid.fbmmap, 0);
+	
+	if (vid.screen) {
+		SDL_FreeSurface(vid.screen);
+	}
+	
 	get_fbinfo();
-	vid.vinfo.xoffset=0;
-	//if ((w < 256) && (p % w != 0)) {
-	//	vid.vinfo.xoffset=(256-w)/2;
-	//	w=256;
-	//}
     vid.vinfo.xres=w;
     vid.vinfo.yres=h;
 	
-	//vid.vinfo.yres_virtual=h*2;
+	vid.vinfo.yres_virtual=h;
+	vid.vinfo.xres_virtual=vid.vinfo.xres;
 	vid.vinfo.bits_per_pixel=32;
-	//at the beginning set the screen size to 640x480
     set_fbinfo();
 	get_fbinfo();
-	
-	//vid.screen_size = vid.finfo.line_length * vid.vinfo.yres;
-    //vid.fbmmap = mmap(NULL, vid.screen_size, PROT_READ | PROT_WRITE, MAP_SHARED, vid.fdfb, 0);
 
-	vid.screen	= SDL_CreateRGBSurface(SDL_SWSURFACE, w,h, FIXED_DEPTH, RGBA_MASK_565);
+	//vid.screen	= SDL_CreateRGBSurface(SDL_SWSURFACE,w,h, FIXED_DEPTH, RGBA_MASK_565);
+	//if (pixels) free(pixels);
+	vid.pixels = (uint16_t *)realloc(vid.pixels,h*p);
+	vid.screen = SDL_CreateRGBSurfaceFrom(vid.pixels, w, h, FIXED_DEPTH, p, RGBA_MASK_565);
+	
 	vid.width	= w;
 	vid.height	= h;
 	vid.pitch	= p;
-	LOG_info("resizeVideo(%i,%i,%i) hard_scale: %i crisp: %i\n",w,h,p, hard_scale,vid.sharpness==SHARPNESS_CRISP);
+	//LOG_info("resizeVideo(%i,%i,%i) hard_scale: %i crisp: %i\n",w,h,p, hard_scale,vid.sharpness==SHARPNESS_CRISP);
+	LOG_info("resizeVideo(%i,%i,%i)\n",w,h,p);
 }
 
+static int next_effect = EFFECT_NONE;
+static int effect_type = EFFECT_NONE;
 
 SDL_Surface* PLAT_resizeVideo(int w, int h, int p) {
 	resizeVideo(w,h,p);
-	//resizescreen(w,h);
 	return vid.screen;
 }
 
@@ -531,17 +426,35 @@ void PLAT_setNearestNeighbor(int enabled) {
 	// buh
 }
 void PLAT_setSharpness(int sharpness) {
-	if (vid.sharpness==sharpness) return;
-	int p = vid.pitch;
-	vid.pitch = 0;
-	vid.sharpness = sharpness;
-	resizeVideo(vid.width,vid.height,p);
+	// force effect to reload
+	// on scaling change
+	if (effect_type>=EFFECT_NONE) next_effect = effect_type;
+	effect_type = -1;
+}
+
+void PLAT_setEffect(int effect) {
+	next_effect = effect;
 }
 void PLAT_vsync(int remaining) {
-	if (remaining>0) SDL_Delay(remaining);
+	if (remaining>0) usleep(remaining*1000);
 }
 
 scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
+	if (effect_type==EFFECT_LINE) {
+		switch (renderer->scale) {
+			case 4:  return scale4x_line;
+			case 3:  return scale3x_line;
+			case 2:  return scale2x_line;
+			default: return scale1x_line;
+		}
+	}
+	else if (effect_type==EFFECT_GRID) {
+		switch (renderer->scale) {
+			case 3:  return scale3x_grid;
+			case 2:  return scale2x_grid;
+		}
+	}
+	
 	switch (renderer->scale) {
 		case 6:  return scale6x6_n16;
 		case 5:  return scale5x5_n16;
@@ -552,28 +465,14 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 	}
 }
 
-enum {
-	_SCALE_NATIVE,
-	_SCALE_ASPECT,
-	_SCALE_FULLSCREEN,
-};
-
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
-	if(renderer->native_core==1) {
-		// hack to get full speed on most PS1 games, DOOM, FBNEO, etc. it forces 1x fullscreen.
-		//LOG_info("NATIVE CORE!!!!\n");
-		if (lastw!=renderer->src_w || lasth!=renderer->src_h) {
-			resizeVideo(renderer->src_w,renderer->src_h,renderer->src_p);
-			lastw=renderer->dst_w;
-			lasth=renderer->dst_h;
-		}
-		SDL_FreeSurface(vid.screen);
-		vid.screen = SDL_CreateRGBSurfaceFrom(renderer->src, renderer->src_w, renderer->src_h, FIXED_BPP*8, renderer->src_p, RGBA_MASK_565);
-	} else {
-		void* dst = renderer->dst + (renderer->dst_y * renderer->dst_p) + (renderer->dst_x * FIXED_BPP);
-		((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
+	if (effect_type!=next_effect) {
+		effect_type = next_effect;
+		renderer->blit = PLAT_getScaler(renderer); // refresh the scaler
 	}
+	void* dst = renderer->dst + (renderer->dst_y * renderer->dst_p) + (renderer->dst_x * FIXED_BPP);
+	((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
 }
 
 
@@ -610,7 +509,9 @@ void PLAT_enableOverlay(int enable) {
 
 ///////////////////////////////
 
-
+long map(int x, int in_min, int in_max, int out_min, int out_max) {
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 /*	BATTERY info:
@@ -619,7 +520,8 @@ void PLAT_getBatteryStatus(int* is_charging, int* charge) {
 
 battery level info:
 /sys/class/gpadc/data  min value 1030 (it is checked systemwise, whne below 1030 the /usr/bin/lowpower is launched)
-need some work to get the maximum (full charge) value	*/
+need some work to get the maximum (full charge) value
+after some test the max battery level seems 1215	*/
 	int charge_fd = open("/sys/class/gpadc/charge", O_RDONLY);
 	if (charge_fd == -1) {
 		*is_charging = 0;
@@ -634,18 +536,23 @@ need some work to get the maximum (full charge) value	*/
 	if (charge_fd == -1) {
 		i = 1000;
 	} else {
-		char buf[8];
+		char buf[8];//
 		read(charge_fd, buf, 8);
 		i = atoi(buf);
 	}
 	close(charge_fd);
+	i = MIN(i,1200);
+	*charge = map(i,1030,1200,0,100);
+	//LOG_info("Raw battery: %i -> %d%%\n", i, *charge);
 	// worry less about battery and more about the game you're playing
+	/*
 	     if (i>1200) *charge = 100;
 	else if (i>1175) *charge =  80;
 	else if (i>1150) *charge =  60;
 	else if (i>1100) *charge =  40;
 	else if (i>1050) *charge =  20;
 	else           *charge =  10;
+	*/
 }
 
 #define DISP_LCD_BACKLIGHT_ENABLE   0x104
@@ -731,4 +638,13 @@ char* PLAT_getModel(void) {
 
 int PLAT_isOnline(void) {
 	return 0;
+}
+
+int PLAT_getNumProcessors(void) {
+	//the core can be deactivated by command line
+	return sysconf(_SC_NPROCESSORS_ONLN);
+}
+
+uint32_t PLAT_screenMemSize(void) {
+	return vid.screen_size;
 }
