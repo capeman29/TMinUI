@@ -101,6 +101,13 @@ enum {
 	SHARPNESS_SOFT,
 };
 
+enum {
+	EFFECT_NONE,
+	EFFECT_LINE,
+	EFFECT_GRID,
+	EFFECT_COUNT,
+};
+
 typedef struct GFX_Renderer {
 	void* src;
 	void* dst;
@@ -124,7 +131,6 @@ typedef struct GFX_Renderer {
 	int dst_w;
 	int dst_h;
 	int dst_p;
-	int native_core;
 } GFX_Renderer;
 
 enum {
@@ -140,6 +146,7 @@ SDL_Surface* GFX_init(int mode);
 #define GFX_setScaleClip PLAT_setVideoScaleClip // (int x, int y, int width, int height)
 #define GFX_setNearestNeighbor PLAT_setNearestNeighbor // (int enabled)
 #define GFX_setSharpness PLAT_setSharpness // (int sharpness)
+#define GFX_setEffect PLAT_setEffect // (int effect)
 void GFX_setMode(int mode);
 int GFX_hdmiChanged(void);
 
@@ -300,6 +307,7 @@ SDL_Surface* PLAT_resizeVideo(int w, int h, int pitch);
 void PLAT_setVideoScaleClip(int x, int y, int width, int height);
 void PLAT_setNearestNeighbor(int enabled);
 void PLAT_setSharpness(int sharpness);
+void PLAT_setEffect(int effect);
 void PLAT_vsync(int remaining);
 scaler_t PLAT_getScaler(GFX_Renderer* renderer);
 void PLAT_blitRenderer(GFX_Renderer* renderer);
@@ -320,5 +328,9 @@ int PLAT_pickSampleRate(int requested, int max);
 
 char* PLAT_getModel(void);
 int PLAT_isOnline(void);
+
+int PLAT_getNumProcessors(void);
+uint32_t PLAT_screenMemSize(void);
+
 
 #endif

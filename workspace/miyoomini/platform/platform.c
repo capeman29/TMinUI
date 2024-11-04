@@ -255,7 +255,9 @@ SDL_Surface* PLAT_resizeVideo(int w, int h, int pitch) {
 	vid.height = h;
 	vid.pitch = pitch;
 	
-	if (vid.direct) memset(vid.video->pixels, 0, vid.pitch * vid.height);
+	if (vid.direct) {
+		memset(vid.video->pixels, 0, vid.pitch * vid.height);
+	}
 	else {
 		vid.screen->pixels = NULL;
 		vid.screen->pixelsPa = NULL; // otherwise custom SDL will try to free it?
@@ -265,7 +267,7 @@ SDL_Surface* PLAT_resizeVideo(int w, int h, int pitch) {
 		vid.screen->pixelsPa = vid.buffer.padd + ALIGN4K(vid.page*PAGE_SIZE);
 		memset(vid.screen->pixels, 0, vid.pitch * vid.height);
 	}
-	
+	LOG_info("resizeVideo: vid.%s, w: %i, h: %i, pitch: %i\n", vid.direct ? "direct" : "screen", vid.width, vid.height, vid.pitch);
 	return vid.direct ? vid.video : vid.screen;
 }
 
@@ -275,14 +277,39 @@ void PLAT_setVideoScaleClip(int x, int y, int width, int height) {
 void PLAT_setNearestNeighbor(int enabled) {
 	// buh
 }
+static int next_effect = EFFECT_NONE;
+static int effect_type = EFFECT_NONE;
 void PLAT_setSharpness(int sharpness) {
-	// buh
+	// force effect to reload
+	// on scaling change
+	if (effect_type>=EFFECT_NONE) next_effect = effect_type;
+	effect_type = -1;
 }
+
+void PLAT_setEffect(int effect) {
+	next_effect = effect;
+}
+
 void PLAT_vsync(int remaining) {
 	if (remaining>0) SDL_Delay(remaining);
 }
 
 scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
+	if (effect_type==EFFECT_LINE) {
+		switch (renderer->scale) {
+			case 4:  return scale4x_line;
+			case 3:  return scale3x_line;
+			case 2:  return scale2x_line;
+			default: return scale1x_line;
+		}
+	}
+	else if (effect_type==EFFECT_GRID) {
+		switch (renderer->scale) {
+			case 3:  return scale3x_grid;
+			case 2:  return scale2x_grid;
+		}
+	}
+	
 	switch (renderer->scale) {
 		case 6:  return scale6x6_n16;
 		case 5:  return scale5x5_n16;
@@ -294,6 +321,10 @@ scaler_t PLAT_getScaler(GFX_Renderer* renderer) {
 }
 
 void PLAT_blitRenderer(GFX_Renderer* renderer) {
+	if (effect_type!=next_effect) {
+		effect_type = next_effect;
+		renderer->blit = PLAT_getScaler(renderer); // refresh the scaler
+	}
 	void* dst = renderer->dst + (renderer->dst_y * renderer->dst_p) + (renderer->dst_x * FIXED_BPP);
 	((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
 }
@@ -518,4 +549,21 @@ char* PLAT_getModel(void) {
 
 int PLAT_isOnline(void) {
 	return 0;
+}
+
+int PLAT_getNumProcessors(void) {
+	//the core can be deactivated by command line
+	return 2;
+}
+
+
+uint32_t PLAT_screenMemSize(void) {
+
+	int fdfb; // /dev/fb0 handler
+	struct fb_fix_screeninfo finfo;  //fixed fb info
+
+	fdfb = open("/dev/fb0", O_RDWR);
+	ioctl(fdfb, FBIOGET_FSCREENINFO, &finfo);
+	close(fdfb);
+	return finfo.smem_len;
 }
