@@ -26,10 +26,10 @@ echo on > /sys/devices/b0230000.mmc/mmc_host/mmc1/power/control
 #######################################
 
 # enable all CPU cores
-#echo 0xf > /sys/devices/system/cpu/autoplug/plug_mask
-#echo 1 > /sys/devices/system/cpu/cpu1/online
-#echo 1 > /sys/devices/system/cpu/cpu2/online
-#echo 1 > /sys/devices/system/cpu/cpu3/online
+echo 0xf > /sys/devices/system/cpu/autoplug/plug_mask
+echo 1 > /sys/devices/system/cpu/cpu1/online
+echo 1 > /sys/devices/system/cpu/cpu2/online
+echo 1 > /sys/devices/system/cpu/cpu3/online
 
 
 export CPU_SPEED_MENU=504000
