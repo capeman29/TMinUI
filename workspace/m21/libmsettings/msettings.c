@@ -143,10 +143,20 @@ void SetRawBrightness(int val) { // 0 - 255
 	// printf("SetRawBrightness(%i)\n", val); fflush(stdout);
 	
 }
+
+long map(int x, int in_min, int in_max, int out_min, int out_max) {
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 void SetRawVolume(int val) { // 0 - 20
 	char cmd[256];	
-	sprintf(cmd, "amixer sset 'Headphone volume' %i%%", val*5);
+	int rawval = map(val, 0, 20, 0, 8);
+	if (rawval == 0) {
+		sprintf(cmd, "amixer sset 'Headphone' mute && amixer sset 'Headphone volume' %d", 2);
+	} else	{
+		sprintf(cmd, "amixer sset 'Headphone' unmute && amixer sset 'Headphone volume' %d", rawval-1);
+	}
 	system(cmd);
+	printf("SetRawVolume(%i->%i) \"%s\"\n", val,rawval,cmd); fflush(stdout);
 }
 
 // monitored and set by thread in keymon
