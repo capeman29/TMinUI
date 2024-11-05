@@ -16,10 +16,6 @@
 #include "api.h"
 #include "utils.h"
 
-//#include "sunxi_display2.h"
-//#include "ion.h"
-//#include "ion_sunxi.h"
-//#include "scaler.h"
 
 ///////////////////////////////
 
@@ -44,28 +40,35 @@
 
 
 
-static int inputs = -1;
+static int inputs[3] = {-1, -1, -1};
 
 void PLAT_initInput(void) {
 	LOG_info("PLAT_initInput\n");
-	if (inputs>=0) {
-		close(inputs);
-		inputs = -1;
+	char path[64];
+	for (int i=0; i<3; i++) {
+		if (inputs[i]>=0) {
+			close(inputs[i]);
+			inputs[i] = -1;
+		}
 	}
-
-	inputs = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC); // power
-	if (inputs < 0) {
-		LOG_info("failed to open /dev/input/event1 with error \n");system("sync");
+	for (int i=0; i<3; i++) {
+		sprintf(path, "/dev/input/event%d", i+1);
+		inputs[i] = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+		if (inputs[i] < 0) {
+			LOG_info("failed to open /dev/input/event%d with error \n", i+1);system("sync");
+		}
 	}
 	LOG_info("PLAT_initInput success!\n");
 	fflush(stdout);
 }
 void PLAT_quitInput(void) {
 	LOG_info("PLAT_quitInput\n");
-	if (inputs >= 0){
-		close(inputs);
+	for (int i=0; i<3; i++) {
+		if (inputs[i]>=0) {
+			close(inputs[i]);
+			inputs[i] = -1;
+		}
 	}
-	inputs = -1;
 	LOG_info("PLAT_quitInput Success!\n");
 	fflush(stdout);
 }
@@ -84,11 +87,15 @@ static int PWR_Pressed = 0;
 static int PWR_Actions = 0;
 static uint32_t PWR_Tick = 0;
 #define PWR_TIMEOUT 2000
+int last_dpad_used[2];
+int selectstartstatus[2] = {0}; 
+int selectstartlaststatus[2] = {0}; 
+
 
 
 void PLAT_pollInput(void) {
 
-	if (inputs<0) {
+	if (inputs[0]<0) {
 		LOG_info("ERROR as inputs<0\n");
 		fflush(stdout);
 		return;
@@ -111,8 +118,8 @@ void PLAT_pollInput(void) {
 	// the actual poll
 	int input;
 	static struct input_event event;
-	
-		while (read(inputs, &event, sizeof(event))==sizeof(event)) {
+	for (int i=0; i<3; i++) {
+		while (read(inputs[i], &event, sizeof(event))==sizeof(event)) {
 			if (event.type!=EV_KEY && event.type!=EV_ABS) continue;
 
 			int btn = BTN_NONE;
@@ -121,12 +128,33 @@ void PLAT_pollInput(void) {
 			int type = event.type;
 			int code = event.code;
 			int value = event.value;
-			//printf("key %d event: SCANCODE=%i, PRESSED=%i\n", type, code, value);system("sync");
+			//printf("/dev/input/event%d: Type %d event: SCANCODE/AXIS=%i, PRESSED/AXIS_VALUE=%i\n", i,type, code, value);system("sync");
 			// TODO: tmp, hardcoded, missing some buttons
 			if (type==EV_KEY) {
 				if (value>1) continue; // ignore repeats
 			
 				pressed = value;
+
+				if (i > 0) { //external controllers
+				//special handling as the sjgam external controller does not provide menu button but only select+start, 
+				//let's find a way to simulate menu button when select+start is detected
+					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[i-1]++ : selectstartstatus[i-1]--; } 
+				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[i-1]++ : selectstartstatus[i-1]--;}
+					if (selectstartstatus[i-1] == 2) {
+							btn = BTN_MENU; 	
+							id = BTN_ID_MENU; 
+							selectstartlaststatus[i-2]=1; 
+							pad.is_pressed		&= ~BTN_SELECT; // unset
+							pad.just_repeated	&= ~BTN_SELECT; // unset	
+							pad.is_pressed		&= ~BTN_START; // unset
+							pad.just_repeated	&= ~BTN_START; // unset						
+							}
+					if ((selectstartstatus[i-1] == 1) && (selectstartlaststatus[i-1] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[i-1]=0;}				
+				} else { //internal controls, standard behavior
+					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
+				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
+				}
+
 				//LOG_info("key event: %i (%i)\n", code,pressed);fflush(stdout);
 				     if (code==RAW_UP) 		{ btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
 	 			else if (code==RAW_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
@@ -136,8 +164,6 @@ void PLAT_pollInput(void) {
 				else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
 				else if (code==RAW_X)		{ btn = BTN_X; 			id = BTN_ID_X; }
 				else if (code==RAW_Y)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
-				else if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; }
-				else if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
 				else if (code==RAW_MENU)	{ 
 							btn = BTN_MENU; 		id = BTN_ID_MENU; 
 							// hack to generate a pwr button
@@ -161,6 +187,25 @@ void PLAT_pollInput(void) {
 				else if (code==RAW_R2)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
 				else if (code==RAW_PLUS)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
 				else if (code==RAW_MINUS)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
+				if (selectstartstatus[i] == 3) { btn = BTN_MENU; 		id = BTN_ID_MENU; }
+			}
+			if (type==EV_ABS) {
+				if (code==1) {
+					if (value==0)	{ last_dpad_used[1] = 0; pressed = 1; btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
+					if (value==255)	{ last_dpad_used[1] = 255; pressed = 1; btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
+					if (value==128)	{ pressed = 0; 
+									  if (last_dpad_used[1] == 0) { btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
+									  else { btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
+					}
+				}
+				if (code==0) {
+					if (value==0)	{ last_dpad_used[0] = 0; pressed = 1; btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
+					if (value==255)	{ last_dpad_used[0] = 255; pressed = 1; btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
+					if (value==128)	{ pressed = 0; 
+									if (last_dpad_used[0] == 0) { btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
+									else { btn = BTN_DPAD_RIGHT; 	id = BTN_ID_DPAD_RIGHT; }
+					}
+				}
 			}
 			if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) PWR_Actions = 1;
 			if (btn==BTN_NONE) continue;
@@ -177,6 +222,7 @@ void PLAT_pollInput(void) {
 				pad.repeat_at[id]	= tick + PAD_REPEAT_DELAY;
 			}
 		}
+	}
 }
 		
 
@@ -184,8 +230,8 @@ void PLAT_pollInput(void) {
 
 int PLAT_shouldWake(void) {
 	static struct input_event event;
-	if (inputs > 0) {
-		while (read(inputs, &event, sizeof(event))==sizeof(event)) {
+	if (inputs[0] > 0) {
+		while (read(inputs[0], &event, sizeof(event))==sizeof(event)) {
 		if (event.type==EV_KEY && event.code==RAW_MENU && event.value==0) {
 			return 1;
 		}
