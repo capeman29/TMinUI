@@ -330,6 +330,7 @@ char* PLAT_getModel(void);
 int PLAT_isOnline(void);
 
 int PLAT_getNumProcessors(void);
+void PLAT_getAudioOutput(void);
 uint32_t PLAT_screenMemSize(void);
 
 

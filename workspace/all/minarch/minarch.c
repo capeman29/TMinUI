@@ -58,6 +58,7 @@ static int processors = 0;
 static int Founddiskcontrol = 0;
 static int config_load_done = 0;
 static int wait_for_thread = 0;
+unsigned char *mutedaudiodata;
 
 static pthread_t		core_pt, flip_pt;
 static pthread_mutex_t	core_mx, flip_mx;
@@ -2884,8 +2885,18 @@ static void audio_sample_callback(int16_t left, int16_t right) {
 	if (!fast_forward) SND_batchSamples(&(const SND_Frame){left,right}, 1);
 }
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
+#ifdef M21
+	if (fast_forward) return frames;
+	if (GetVolume()) return SND_batchSamples((const SND_Frame*)data, frames);
+	else {
+		//audio muted
+		memset(mutedaudiodata,0,frames*4);
+		return SND_batchSamples((const SND_Frame*)mutedaudiodata, frames);
+	} 
+#else
 	if (!fast_forward) return SND_batchSamples((const SND_Frame*)data, frames);
 	else return frames;
+#endif
 };
 
 ///////////////////////////////////////
@@ -4946,12 +4957,16 @@ int main(int argc , char* argv[]) {
 	char tag_name[MAX_PATH];
 	int resume_slot;
 
+	mutedaudiodata = malloc(sizeof(uint32_t)*11025);
+
 	//backbuffer.pixels = (uint16_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint16_t));
 	backbuffer.pixels = (uint32_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint32_t));
 	backbuffer.w = MAX_WIDTH;
 	backbuffer.h = MAX_HEIGHT;
 	backbuffer.pitch = MAX_WIDTH*sizeof(uint32_t);
-
+#ifdef M21 //if hdmi cable is detected the audio is routed to hdmi instead of speakers, specific for SJGAM M21.
+	PLAT_getAudioOutput();
+#endif
 	fancy_mode = exists(FANCY_MODE_PATH);
 	
 	strcpy(core_path, argv[1]);
@@ -5125,6 +5140,7 @@ finish:
 	PAD_quit();
 	GFX_quit();
 	free(backbuffer.pixels);
+	free(mutedaudiodata);
 	buffer_dealloc();
 	
 	return EXIT_SUCCESS;

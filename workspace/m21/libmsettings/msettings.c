@@ -149,12 +149,14 @@ long map(int x, int in_min, int in_max, int out_min, int out_max) {
 }
 void SetRawVolume(int val) { // 0 - 20
 	char cmd[256];	
-	int rawval = map(val, 0, 20, 0, 8);
-	if (rawval == 0) {
-		sprintf(cmd, "amixer sset 'Headphone' mute && amixer sset 'Headphone volume' %d", 2);
-	} else	{
-		sprintf(cmd, "amixer sset 'Headphone' unmute && amixer sset 'Headphone volume' %d", rawval-1);
-	}
+	int rawval = map(val, 0, 20, 0, 7);
+	//if (rawval == 0) {
+		//sprintf(cmd, "amixer sset 'Headphone' mute && amixer sset 'Headphone volume' %d", 2);
+	//	sprintf(cmd, "amixer sset 'Headphone volume' %d", 2);
+	//} else	{
+		//sprintf(cmd, "amixer sset 'Headphone' unmute && amixer sset 'Headphone volume' %d", rawval-1);
+		sprintf(cmd, "amixer sset 'Headphone' unmute && amixer sset 'Headphone volume' %d", rawval);
+	//}
 	system(cmd);
 	printf("SetRawVolume(%i->%i) \"%s\"\n", val,rawval,cmd); fflush(stdout);
 }

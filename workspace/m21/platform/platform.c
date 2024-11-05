@@ -695,3 +695,26 @@ int PLAT_getNumProcessors(void) {
 uint32_t PLAT_screenMemSize(void) {
 	return vid.screen_size;
 }
+
+void PLAT_getAudioOutput(void){
+	LOG_info("Check for Videooutput\n");
+	int __stream = fopen("/sys/class/extcon/extcon0/state","r");
+    if (__stream == (FILE *)0x0) {
+      setenv("AUDIODEV","default",1);
+    }
+    else {
+	  char acStack_128 [260];
+      memset(acStack_128,0,0x100);
+      fread(acStack_128,0x100,1,__stream);
+      int pcVar10 = strstr(acStack_128,"HDMI=1");
+      if (pcVar10 == (char *)0x0) {
+        setenv("AUDIODEV","default",1);
+		LOG_info("VideoOutput default\n");
+      }
+      else {
+        setenv("AUDIODEV","audioHDMI",1);
+		LOG_info("VideoOutput audioHDMI\n");
+      }
+      fclose(__stream);
+    }
+}
