@@ -38,20 +38,20 @@
 #define RAW_PLUS	12 //SDL_SCANCODE_MINUS
 #define RAW_MINUS	11 //SDL_SCANCODE_0
 
+#define NUM_INPUTS 2
 
-
-static int inputs[3] = {-1, -1, -1};
+static int inputs[NUM_INPUTS] = {-1};
 
 void PLAT_initInput(void) {
 	LOG_info("PLAT_initInput\n");
 	char path[64];
-	for (int i=0; i<3; i++) {
+	for (int i=0; i<NUM_INPUTS; i++) {
 		if (inputs[i]>=0) {
 			close(inputs[i]);
 			inputs[i] = -1;
 		}
 	}
-	for (int i=0; i<3; i++) {
+	for (int i=0; i<NUM_INPUTS; i++) {
 		sprintf(path, "/dev/input/event%d", i+1);
 		inputs[i] = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 		if (inputs[i] < 0) {
@@ -63,7 +63,7 @@ void PLAT_initInput(void) {
 }
 void PLAT_quitInput(void) {
 	LOG_info("PLAT_quitInput\n");
-	for (int i=0; i<3; i++) {
+	for (int i=0; i<NUM_INPUTS; i++) {
 		if (inputs[i]>=0) {
 			close(inputs[i]);
 			inputs[i] = -1;
@@ -118,7 +118,7 @@ void PLAT_pollInput(void) {
 	// the actual poll
 	int input;
 	static struct input_event event;
-	for (int i=0; i<3; i++) {
+	for (int i=0; i<NUM_INPUTS; i++) {
 		while (read(inputs[i], &event, sizeof(event))==sizeof(event)) {
 			if (event.type!=EV_KEY && event.type!=EV_ABS) continue;
 
@@ -151,7 +151,8 @@ void PLAT_pollInput(void) {
 					if ((selectstartstatus[i-1] == 1) && (selectstartlaststatus[i-1] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[i-1]=0;}	
 					if (code==RAW_A)		{ btn = BTN_B; 			id = BTN_ID_B; }
 					if (code==RAW_B)		{ btn = BTN_A; 			id = BTN_ID_A; }
-				} else { //internal controls, standard behavior
+				} 
+				else { //internal controls, standard behavior
 					if 		(code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
 				    else if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
 					else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
@@ -698,7 +699,7 @@ uint32_t PLAT_screenMemSize(void) {
 
 void PLAT_getAudioOutput(void){
 	LOG_info("Check for Videooutput\n");
-	int __stream = fopen("/sys/class/extcon/extcon0/state","r");
+	FILE * __stream = fopen("/sys/class/extcon/extcon0/state","r");
     if (__stream == (FILE *)0x0) {
       setenv("AUDIODEV","default",1);
     }
@@ -706,7 +707,7 @@ void PLAT_getAudioOutput(void){
 	  char acStack_128 [260];
       memset(acStack_128,0,0x100);
       fread(acStack_128,0x100,1,__stream);
-      int pcVar10 = strstr(acStack_128,"HDMI=1");
+      char *pcVar10 = strstr(acStack_128,"HDMI=1");
       if (pcVar10 == (char *)0x0) {
         setenv("AUDIODEV","default",1);
 		LOG_info("VideoOutput default\n");
