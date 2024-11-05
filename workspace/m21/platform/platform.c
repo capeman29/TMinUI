@@ -141,18 +141,21 @@ void PLAT_pollInput(void) {
 					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[i-1]++ : selectstartstatus[i-1]--; } 
 				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[i-1]++ : selectstartstatus[i-1]--;}
 					if (selectstartstatus[i-1] == 2) {
-							btn = BTN_MENU; 	
-							id = BTN_ID_MENU; 
-							selectstartlaststatus[i-2]=1; 
+							btn = BTN_MENU;  id = BTN_ID_MENU; 
+							selectstartlaststatus[i-1]=1; 
 							pad.is_pressed		&= ~BTN_SELECT; // unset
 							pad.just_repeated	&= ~BTN_SELECT; // unset	
 							pad.is_pressed		&= ~BTN_START; // unset
 							pad.just_repeated	&= ~BTN_START; // unset						
 							}
-					if ((selectstartstatus[i-1] == 1) && (selectstartlaststatus[i-1] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[i-1]=0;}				
+					if ((selectstartstatus[i-1] == 1) && (selectstartlaststatus[i-1] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[i-1]=0;}	
+					if (code==RAW_A)		{ btn = BTN_B; 			id = BTN_ID_B; }
+					if (code==RAW_B)		{ btn = BTN_A; 			id = BTN_ID_A; }
 				} else { //internal controls, standard behavior
-					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
-				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
+					if 		(code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
+				    else if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
+					else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
+					else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
 				}
 
 				//LOG_info("key event: %i (%i)\n", code,pressed);fflush(stdout);
@@ -160,10 +163,9 @@ void PLAT_pollInput(void) {
 	 			else if (code==RAW_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
 				else if (code==RAW_LEFT)	{ btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
 				else if (code==RAW_RIGHT)	{ btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
-				else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
-				else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
-				else if (code==RAW_X)		{ btn = BTN_X; 			id = BTN_ID_X; }
-				else if (code==RAW_Y)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
+				else if (code==RAW_X)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
+				else if (code==RAW_Y)		{ btn = BTN_X; 			id = BTN_ID_X; }
+				
 				else if (code==RAW_MENU)	{ 
 							btn = BTN_MENU; 		id = BTN_ID_MENU; 
 							// hack to generate a pwr button
@@ -187,7 +189,6 @@ void PLAT_pollInput(void) {
 				else if (code==RAW_R2)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
 				else if (code==RAW_PLUS)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
 				else if (code==RAW_MINUS)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
-				if (selectstartstatus[i] == 3) { btn = BTN_MENU; 		id = BTN_ID_MENU; }
 			}
 			if (type==EV_ABS) {
 				if (code==1) {
