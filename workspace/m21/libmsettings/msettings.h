@@ -1,6 +1,7 @@
 #ifndef __msettings_h__
 #define __msettings_h__
 
+void preInitSettings(void);
 void InitSettings(void);
 void QuitSettings(void);
 

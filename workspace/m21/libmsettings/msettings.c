@@ -40,8 +40,9 @@ static int shm_fd = -1;
 static int disp_fd = -1;
 static int is_host = 0;
 static int shm_size = sizeof(Settings);
+static int preinitialized = 0;
 
-void InitSettings(void) {
+void preInitSettings(void) {
 	//printf("InitSettings\n");system("sync");
 	sprintf(SettingsPath, "%s/msettings.bin", getenv("USERDATA_PATH"));
 	shm_fd = shm_open(SHM_KEY, O_RDWR | O_CREAT | O_EXCL, 0644); // see if it exists
@@ -72,6 +73,10 @@ void InitSettings(void) {
 		// settings->jack = 0;
 		// settings->hdmi = 0;
 	}
+	preinitialized = 1;
+}
+void InitSettings(void) {
+	if (!preinitialized) preInitSettings();
 	
 	printf("brightness: %i \nspeaker: %i\n", settings->brightness, settings->speaker); fflush(stdout);
 	

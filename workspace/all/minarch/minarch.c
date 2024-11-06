@@ -51,6 +51,7 @@ static int flipThreadStarted = 0;
 static int coreThreadStarted = 0;
 static int flipThreadPaused = 0;
 static int coreThreadPaused = 0;
+static int watchdogThreadCounter = 0;
 static int render = 0;
 static int rendering = 0;
 static int firstmenu = 0;
@@ -58,15 +59,15 @@ static int processors = 0;
 static int Founddiskcontrol = 0;
 static int config_load_done = 0;
 static int wait_for_thread = 0;
-unsigned char *mutedaudiodata;
+uint32_t *mutedaudiodata;
 
-static pthread_t		core_pt, flip_pt;
-static pthread_mutex_t	core_mx, flip_mx;
-static pthread_cond_t	core_rq, core2_rq, flip_rq, flip2_rq; 
+static pthread_t		core_pt, flip_pt, watchdog_pt;
+static pthread_mutex_t	core_mx, flip_mx, watchdog_mx;
+static pthread_cond_t	core_rq, flip_rq; 
 static struct mybackbuffer	backbuffer;
 static void* coreThread(void *arg);
 static void* flipThread(void *arg);
-
+static void* watchdogThread(void *arg);
 
 char pwractionstr[256];
 
@@ -2832,6 +2833,9 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 
 //static uint32_t last_callback_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
+	pthread_mutex_lock(&watchdog_mx); //if nothing for 10secs then quit as probably the game load has failed
+	watchdogThreadCounter=0;
+	pthread_mutex_unlock(&watchdog_mx);
 //	LOG_info("video_refresh_callback width:%i height:%i pitch:%i\n",width,height,pitch);system("sync");
 	if (!data) return; //frameskip activated?
 	//if ((!thread_video)&&(wait_for_thread)) return; //prboom sends frames before thread_video started....
@@ -2882,20 +2886,21 @@ static void video_refresh_callback(const void *data, unsigned width, unsigned he
 
 // NOTE: sound must be disabled for fast forward to work...
 static void audio_sample_callback(int16_t left, int16_t right) {
-	if (!fast_forward) SND_batchSamples(&(const SND_Frame){left,right}, 1);
+	if (fast_forward) return;
+#ifdef M21
+	if (GetVolume()) SND_batchSamples(&(const SND_Frame){left,right}, 1);
+	else SND_batchSamples(&(const SND_Frame){0,0}, 1);
+#else
+	SND_batchSamples(&(const SND_Frame){left,right}, 1);
+#endif
 }
 static size_t audio_sample_batch_callback(const int16_t *data, size_t frames) { 
-#ifdef M21
 	if (fast_forward) return frames;
+#ifdef M21	
 	if (GetVolume()) return SND_batchSamples((const SND_Frame*)data, frames);
-	else {
-		//audio muted
-		memset(mutedaudiodata,0,frames*4);
-		return SND_batchSamples((const SND_Frame*)mutedaudiodata, frames);
-	} 
+	else return SND_batchSamples((const SND_Frame*)mutedaudiodata, frames);
 #else
-	if (!fast_forward) return SND_batchSamples((const SND_Frame*)data, frames);
-	else return frames;
+	return SND_batchSamples((const SND_Frame*)data, frames);
 #endif
 };
 
@@ -4943,6 +4948,20 @@ static void* coreThread(void *arg) {
 	pthread_exit(NULL);
 }
 
+static void* watchdogThread(void *arg) {
+	LOG_info("watchdogThread started now\n");system("sync");
+	while (!quit) {
+		sleep(1);
+		pthread_mutex_lock(&watchdog_mx);
+		watchdogThreadCounter++;
+		if (watchdogThreadCounter > 10) {
+			LOG_info("Watchdog triggered\n");system("sync");
+			quit = 1;
+		}
+		pthread_mutex_unlock(&watchdog_mx);
+	}
+	pthread_exit(NULL);
+}
 
 int main(int argc , char* argv[]) {
 	LOG_info("MinArch\n");
@@ -4957,7 +4976,7 @@ int main(int argc , char* argv[]) {
 	char tag_name[MAX_PATH];
 	int resume_slot;
 
-	mutedaudiodata = malloc(sizeof(uint32_t)*11025);
+	mutedaudiodata = calloc(2000,sizeof(uint32_t));
 
 	//backbuffer.pixels = (uint16_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint16_t));
 	backbuffer.pixels = (uint32_t*)malloc(MAX_WIDTH*MAX_HEIGHT*sizeof(uint32_t));
@@ -4976,7 +4995,9 @@ int main(int argc , char* argv[]) {
 	
 	LOG_info("rom_path: %s\n", rom_path);
 
-	
+#ifdef M21
+	preInitSettings();
+#endif	
 	if (exists(PWR_SLEEP_PATH)){
 		sprintf(pwractionstr,"SLP");
 	} else {
@@ -4995,7 +5016,12 @@ int main(int argc , char* argv[]) {
 	if (!HAS_POWER_BUTTON) PWR_disableSleep();
 	MSG_init();
 	
+	// Start watchdog thread 
+	watchdog_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+	pthread_create(&watchdog_pt, NULL, &watchdogThread, NULL);
+
 	// Overrides_init();
+
 	
 	Core_open(core_path, tag_name);
 	Game_open(rom_path);
@@ -5127,7 +5153,8 @@ finish:
 
 	Game_close();
 	Core_unload();
-	
+	pthread_cancel(_pt);
+	pthread_join(watchdog_pt,NULL);
 	Core_quit();
 	Core_close();
 	
