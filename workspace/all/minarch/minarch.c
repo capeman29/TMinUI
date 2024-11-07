@@ -51,7 +51,6 @@ static int flipThreadStarted = 0;
 static int coreThreadStarted = 0;
 static int flipThreadPaused = 0;
 static int coreThreadPaused = 0;
-static int watchdogThreadCounter = 0;
 static int render = 0;
 static int rendering = 0;
 static int firstmenu = 0;
@@ -59,15 +58,16 @@ static int processors = 0;
 static int Founddiskcontrol = 0;
 static int config_load_done = 0;
 static int wait_for_thread = 0;
+static int loadgamesuccess = 0;
 uint32_t *mutedaudiodata;
 
-static pthread_t		core_pt, flip_pt, watchdog_pt;
-static pthread_mutex_t	core_mx, flip_mx, watchdog_mx;
+static pthread_t		core_pt, flip_pt;
+static pthread_mutex_t	core_mx, flip_mx;
 static pthread_cond_t	core_rq, flip_rq; 
 static struct mybackbuffer	backbuffer;
 static void* coreThread(void *arg);
 static void* flipThread(void *arg);
-static void* watchdogThread(void *arg);
+
 
 char pwractionstr[256];
 
@@ -2833,9 +2833,6 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 
 //static uint32_t last_callback_time = 0;
 static void video_refresh_callback(const void *data, unsigned width, unsigned height, size_t pitch) {
-	pthread_mutex_lock(&watchdog_mx); //if nothing for 10secs then quit as probably the game load has failed
-	watchdogThreadCounter=0;
-	pthread_mutex_unlock(&watchdog_mx);
 //	LOG_info("video_refresh_callback width:%i height:%i pitch:%i\n",width,height,pitch);system("sync");
 	if (!data) return; //frameskip activated?
 	//if ((!thread_video)&&(wait_for_thread)) return; //prboom sends frames before thread_video started....
@@ -2989,7 +2986,7 @@ void Core_load(void) {
 	game_info.data = game.data;
 	game_info.size = game.size;
 	
-	core.load_game(&game_info);
+	loadgamesuccess = core.load_game(&game_info);
 	
 	SRAM_read();
 	RTC_read();
@@ -4948,20 +4945,6 @@ static void* coreThread(void *arg) {
 	pthread_exit(NULL);
 }
 
-static void* watchdogThread(void *arg) {
-	LOG_info("watchdogThread started now\n");system("sync");
-	while (!quit) {
-		sleep(1);
-		pthread_mutex_lock(&watchdog_mx);
-		watchdogThreadCounter++;
-		if (watchdogThreadCounter > 10) {
-			LOG_info("Watchdog triggered\n");system("sync");
-			quit = 1;
-		}
-		pthread_mutex_unlock(&watchdog_mx);
-	}
-	pthread_exit(NULL);
-}
 
 int main(int argc , char* argv[]) {
 	LOG_info("MinArch\n");
@@ -5015,10 +4998,6 @@ int main(int argc , char* argv[]) {
 	PWR_init();
 	if (!HAS_POWER_BUTTON) PWR_disableSleep();
 	MSG_init();
-	
-	// Start watchdog thread 
-	watchdog_mx = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
-	pthread_create(&watchdog_pt, NULL, &watchdogThread, NULL);
 
 	// Overrides_init();
 
@@ -5074,7 +5053,7 @@ int main(int argc , char* argv[]) {
 	GFX_flip(screen);
 
 	sec_start = SDL_GetTicks();
-	quit = 0; //quick fix for prboom on miyoomini...needs further info
+	quit = !loadgamesuccess;
 	while (!quit) {
 		GFX_startFrame();
 
@@ -5153,8 +5132,6 @@ finish:
 
 	Game_close();
 	Core_unload();
-	pthread_cancel(_pt);
-	pthread_join(watchdog_pt,NULL);
 	Core_quit();
 	Core_close();
 	
