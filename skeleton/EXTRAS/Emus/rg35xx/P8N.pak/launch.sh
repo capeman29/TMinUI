@@ -16,7 +16,7 @@ overclock.elf $CPU_SPEED_GAME
 
 cp "${progdir}/patch/mypatch.conf" /usr/share/alsa/alsa.conf.d/mypatch.conf
 
-HOME="${progdir}" "${progdir}/pico8_dyn" -v -run "${1}"  &> $LOGS_PATH/P8N.txt
+HOME="${progdir}" "${BIOS_PATH}/P8/pico8_dyn" -v -run "${1}"  &> $LOGS_PATH/P8N.txt
 #restore previous state
 rm -rf /usr/share/alsa/alsa.conf.d/mypatch.conf
 overclock.elf $CPU_SPEED_MENU
