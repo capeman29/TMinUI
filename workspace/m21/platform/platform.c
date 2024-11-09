@@ -232,7 +232,7 @@ void PLAT_pollInput(void) {
 
 int PLAT_shouldWake(void) {
 	static struct input_event event;
-	if (inputs[0] > 0) {
+	if (inputs[0] >= 0) {
 		while (read(inputs[0], &event, sizeof(event))==sizeof(event)) {
 		if (event.type==EV_KEY && event.code==RAW_MENU && event.value==0) {
 			return 1;
