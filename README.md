@@ -14,6 +14,61 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+## Release 10/11/2024
+ALL: 
+- changed Pico8 native scripts so from now the pico8_dyn and pico8.dat must be copied under Bios/P8, in this way in case of shared sdcard You need to copy the files just once.
+
+ALL:
+- patched libretro fbneo core to back in the menu in case of load game failure, standard behavior is stucking on a screen (not well readable because in 32bit pixel format) and it was forced to reboot the device, now the error is handled and, in case, just read the log file, somewhere at the end of the file it is reported the error occoured, most of the time are missing file/bios in the romset.
+- Have a look here: https://raw.githubusercontent.com/libretro/FBNeo/master/gamelist.txt to see all supported roms and related dependencies.
+
+ALL (Multidisc games on Minarch PBP file):
+- Enabled multidisc pbp files handling, auto reset core in case of manual disc change, auto load the disc requested by the state loaded.
+It is strongly suggested to convert m3u/cue/bin folders for multidisc games to a single pbp file, I suggest psxpackager (https://github.com/RupertAvery/PSXPackager/releases/tag/v1.6.3) to do that. For apple silicon users use the intel version as the arm64 version is not working.
+- m3u/cue/bin folders are still working but there are a couple of issues related to boxart and state preview in the minui menu. Everything work in the in game menu. This need much work to be fixed, I won't as I personally use only pbp files but patches are welcome.
+
+MIYOOMINI(+):
+- removed the audioserver.txt error file report in the sdcard root, I did to debug pico8 sound now useless as the bug has been fixed months ago.
+
+SJGAM M21:
+- Enabled the external controller (SJGAM proprietary only), only one external controller can be used at the moment as minarch does not support more than 2 players. 
+- Enabled HDMI output including audio to HDMI, at the moment it stretches the image fullscreen, so in case of 16:9 monitors is not the best, I'll have a look soon to keep a better aspect ratio.
+- Fixed audio not muted at minimum volume level.
+- Swapped face buttons layout from the silly ABXY (clockwise) on the handheld and BAXY in the external controllers to the more common anbernic/miyoo ABYX, I know it doesn't reflect the printed letter on the buttons but I prefer that way.
+
+## Release 04/11/2024
+
+MIYOO A30:
+Releases for Miyoo A30 are temporary suspended as it needs (much) more work to get it working properly with the latest minarch, basically it must be removed the SDL2 engine in place of direct framebuffer engine as rg35xx,miyoomini and m21 do.
+
+CORE_THREAD_VIDEO:
+I reviewed the thread core engine as based on time profiling while trying to optimize the m21 I realized the existing thread implementation can be improved.
+Since most of the time is spent for upscaling I decided to split the current core thread is 2 threads, now:
+
+the core thread generates the frame and copy it to a buffer then return to generate the next frame (which will come after 16.6msec to get 60fps)
+
+The render thread upscales according to the selected scaler (up to 12msecs) the frame then draws the buffer content to the screen (< 2msecs) so it is easier for a multicore soc get everything upscaled keeping 60fps.
+This allows the m21 performing very well. BR2 on PS1 can run at 56fps a 1x scale, ok no full speed but definitely playable. it is expected that most games are now able to run at 60fps upscaled 2x or 3x. it is just a matter to find the balance between scaler and cpu speed.
+
+DEBUG HUD:
+The debug info now shows also the bpp value (16 or 32), the rendered fps/generated fps, the number of cpu and load on each cpu and T0/T1 to inform if thread_video is enabled or not.
+
+SCAN and GRID effects:
+taken from MinUI as is, I'm not a fan of these artifacts on a 3.5" but here You are if You like.
+
+32BPP Pixel Format support:
+Enabled also 32bpp pixel format to let more arcades games to run. It can enabled in the in menu frontend options but You need to restart the game.
+
+PRBOOM (DOOM):
+thanks to the minarch rework now prboom is able to run also on minarch.
+
+RETROARCH:
+minarch is becoming featured and powerful, I'm considering to drop retroarch as there are no more reasons to keep it.
+
+SHARING SAVES:
+I aligned the cores of each devices and now the saves (made by minarch) can be shared across devices in case You have a single sdcard for all devices.
+Shutting down doing a quicksave and putting that sdcard in another device let You recover the game at boot, nice.
+
 ## Release 08/10/2024
 
 # New Features:
