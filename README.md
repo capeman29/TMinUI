@@ -31,7 +31,7 @@ MIYOOMINI(+):
 - removed the audioserver.txt error file report in the sdcard root, I did to debug pico8 sound now useless as the bug has been fixed months ago.
 
 SJGAM M21:
-- Enabled the external controller (SJGAM proprietary only), only one external controller can be used at the moment as minarch does not support more than 2 players. 
+- Enabled the external controller (SJGAM proprietary only), only one external controller can be used at the moment as minarch does not support more than 1 player. 
 - Enabled HDMI output including audio to HDMI, at the moment it stretches the image fullscreen, so in case of 16:9 monitors is not the best, I'll have a look soon to keep a better aspect ratio.
 - Fixed audio not muted at minimum volume level.
 - Swapped face buttons layout from the silly ABXY (clockwise) on the handheld and BAXY in the external controllers to the more common anbernic/miyoo ABYX, I know it doesn't reflect the printed letter on the buttons but I prefer that way.
