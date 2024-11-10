@@ -56,6 +56,8 @@ static int rendering = 0;
 static int firstmenu = 0;
 static int processors = 0;
 static int Founddiskcontrol = 0;
+static int NumDiscsDetected = 0;
+static int coreDiscManaged = 0;
 static int config_load_done = 0;
 static int wait_for_thread = 0;
 static int loadgamesuccess = 0;
@@ -416,21 +418,64 @@ static void Game_close(void) {
 	VIB_setStrength(0); // just in case
 }
 
+static struct retro_disk_control_callback disk_control;
 static struct retro_disk_control_ext_callback disk_control_ext;
-static void Game_changeDisc(char* path) {
+static void Game_changeDisc(int index,  char* path) {
+	LOG_info("Game_changeDisc start gamepath=%s -> path=%s\n", game.path, path);
+	if (!coreDiscManaged){
+		if (exactMatch(game.path, path)) return;
+	}
+	if (!exists(path)) return;
 	
-	if (exactMatch(game.path, path) || !exists(path)) return;
-	
-	Game_close();
-	Game_open(path);
-	
-	struct retro_game_info game_info = {};
-	game_info.path = game.path;
-	game_info.data = game.data;
-	game_info.size = game.size;
-	
-	disk_control_ext.replace_image_index(0, &game_info);
+	if (!coreDiscManaged) {
+		LOG_info("Game_changeDisc 2a\n");
+		Game_close();
+		LOG_info("Game_changeDisc 2b\n");
+		Game_open(path);
+	}	
+
+		struct retro_game_info game_info = {};
+		game_info.path = game.path;
+		game_info.data = game.data;
+		game_info.size = game.size;
+	//int _index = coreDiscManaged ? index : 0;
+	if (Founddiskcontrol == 2) {
+		if (coreDiscManaged) {
+			//LOG_info("1ChangeDisc: founddiskcontrol=%d, coreDiscManaged=%d with index=%d, path=%s\n", Founddiskcontrol, coreDiscManaged, index, path);
+			disk_control.set_eject_state(true);
+			disk_control.set_image_index(index);
+			disk_control.set_eject_state(false);
+			
+		} else {
+			//LOG_info("2ChangeDisc: founddiskcontrol=%d, coreDiscManaged=%d with index=%d, path=%s\n", Founddiskcontrol, coreDiscManaged, index, path);
+			disk_control.replace_image_index(index, &game_info);
+		
+		}
+	} else {
+		if (coreDiscManaged) {
+			//LOG_info("3ChangeDisc: founddiskcontrol=%d, coreDiscManaged=%d with index=%d, current_index=%d, path=%s\n", Founddiskcontrol, coreDiscManaged, index,disk_control_ext.get_image_index() ,path);
+			
+		
+		} else {
+			//LOG_info("4ChangeDisc: founddiskcontrol=%d, coreDiscManaged=%d with index=%d, path=%s\n", Founddiskcontrol, coreDiscManaged, index, path);
+			disk_control_ext.replace_image_index(index, &game_info);		
+		}
+		if (disk_control_ext.set_eject_state(true)) {
+			//	LOG_info("3ChangeDisc: disk_control_ext.set_eject_state(true) SUCCESS!!!!\n");
+			};
+		disk_control_ext.set_image_index(index);
+		if (disk_control_ext.set_eject_state(false)){
+			//LOG_info("3ChangeDisc: disk_control_ext.set_eject_state(false) SUCCESS!!!!\n");
+			}
+	}	
 	putFile(CHANGE_DISC_PATH, path); // MinUI still needs to know this to update recents.txt
+	//putInt(CHANGE_DISC_INDEX_PATH, _index);
+	//Game_close();
+	//core.reset();
+	//status = STATUS_RESET;
+	//show_menu = 0;
+	//Game_open(path);
+	
 }
 
 ///////////////////////////////////////
@@ -1942,9 +1987,9 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 			(const struct retro_disk_control_callback *)data;
 
 		if (var) {
-			memset(&disk_control_ext, 0, sizeof(struct retro_disk_control_ext_callback));
-			memcpy(&disk_control_ext, var, sizeof(struct retro_disk_control_callback));
-			Founddiskcontrol = 1;
+			memset(&disk_control, 0, sizeof(struct retro_disk_control_callback));
+			memcpy(&disk_control, var, sizeof(struct retro_disk_control_callback));
+			Founddiskcontrol = 2;
 		}
 		break;
 	}
@@ -2092,6 +2137,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 			(const struct retro_disk_control_ext_callback *)data;
 
 		if (var) {
+			memset(&disk_control_ext, 0, sizeof(struct retro_disk_control_ext_callback));
 			memcpy(&disk_control_ext, var, sizeof(struct retro_disk_control_ext_callback));
 			Founddiskcontrol = 1;
 		}
@@ -3004,7 +3050,18 @@ void Core_load(void) {
 	if (a<=0) a = (double)av_info.geometry.base_width / av_info.geometry.base_height;
 	core.aspect_ratio = a;
 	coreloaded = 1;
-	if (Founddiskcontrol) LOG_info("RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE - NumDiscs = %i\n", disk_control_ext.get_num_images());
+	if (Founddiskcontrol==1) {
+		NumDiscsDetected = disk_control_ext.get_num_images();	
+		LOG_info("\n\nRETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE - NumDiscs = %i\n", NumDiscsDetected);
+	} else if (Founddiskcontrol==2) {
+		NumDiscsDetected = disk_control.get_num_images();
+		LOG_info("\n\nRETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE - NumDiscs = %i\n", NumDiscsDetected);
+	}
+	if (NumDiscsDetected>1){
+		coreDiscManaged = 1;
+		LOG_info("NumDisksDetected = %i\nMultidisk detected by core - switch to libretro disk control\n\n", NumDiscsDetected);
+	}
+
 	LOG_info("aspect_ratio: %f (%ix%i) fps: %f\n", a, av_info.geometry.base_width,av_info.geometry.base_height, core.fps);system("sync");
 }
 void Core_reset(void) {
@@ -3062,6 +3119,7 @@ static struct {
 	char base_path[256];
 	char bmp_path[256];
 	char txt_path[256];
+	char txt_path_slot[256];
 	int disc;
 	int total_discs;
 	int slot;
@@ -3205,8 +3263,16 @@ void Menu_init(void) {
 	sprintf(menu.slot_path, "%s/%s.txt", menu.minui_dir, game.fullname);
 	
 	if (simple_mode) menu.items[ITEM_OPTS] = "Reset";
-	
-	if (game.m3u_path[0]) {
+
+	if (coreDiscManaged){  //the core has detected multidisc pbp game
+		menu.total_discs = NumDiscsDetected;	//set the num of discs detected
+		for (int i = 0; i < menu.total_discs; i++) {
+			menu.disc_paths[i] = strdup(game.path); //copy the game path for each disc path, in this case all are the same
+		}
+		menu.disc = disk_control_ext.get_image_index();  //get the current disc index
+	}
+
+	if (game.m3u_path[0]) {  //in case of m3u file the core doesn't detects it so coreDiscManaged is not set
 		char* tmp;
 		strcpy(menu.base_path, game.m3u_path);
 		tmp = strrchr(menu.base_path, '/') + 1;
@@ -3226,10 +3292,11 @@ void Menu_init(void) {
 				tmp = disc_path + strlen(disc_path);
 				strcpy(tmp, line);
 				
+				// for every valid line in the m3u fill the disc_paths array
 				// found a valid disc path
 				if (exists(disc_path)) {
 					menu.disc_paths[menu.total_discs] = strdup(disc_path);
-					// matched our current disc
+					// matched our current disc					
 					if (exactMatch(disc_path, game.path)) {
 						menu.disc = menu.total_discs;
 					}
@@ -3237,9 +3304,20 @@ void Menu_init(void) {
 				}
 			}
 			fclose(file);
+			if (menu.total_discs > 1) {
+				struct retro_game_info game_info = {};
+				coreDiscManaged = 1;
+				NumDiscsDetected = menu.total_discs;
+				for (int i = 0; i < menu.total_discs; i++) {
+					LOG_info("Disc %d: %s\n", i+1, menu.disc_paths[i]);
+					game_info.path = menu.disc_paths[i];
+					if (i>0) disk_control_ext.replace_image_index(i, &game_info);
+				}
+			}
 		}
 	}
 }
+
 void Menu_quit(void) {
 	SDL_FreeSurface(menu.overlay);
 }
@@ -4257,7 +4335,10 @@ static void Menu_updateState(void) {
 	} else {
 		sprintf(slotstr,"%d.",menu.slot);
 	}
-
+	char *tmpname = game.fullname;
+	if (game.m3u_path[0]) {
+		getDisplayNameParens(game.m3u_path, tmpname);	
+	} 
 	//sprintf(menu.bmp_path, "%s/%s.state%spng", menu.minui_dir, game.basename, slotstr);
 	sprintf(menu.bmp_path, "%s/%s.state%spng", core.states_dir, game.fullname, slotstr);
 	sprintf(menu.txt_path, "%s/%s%stxt", menu.minui_dir, game.fullname, slotstr);
@@ -4276,6 +4357,7 @@ static void Menu_saveState(void) {
 	if (menu.total_discs) {
 		char* disc_path = menu.disc_paths[menu.disc];
 		putFile(menu.txt_path, disc_path + strlen(menu.base_path));
+		putInt(menu.txt_path_slot, menu.disc);
 	}
 	
 	SDL_Surface* bitmap = menu.bitmap;
@@ -4297,17 +4379,25 @@ static void Menu_loadState(void) {
 
 	Menu_updateState();
 	
-	if (menu.save_exists && menu.total_discs) {
+	//now useless as state loads right disk on its own?
+
+	if (menu.save_exists && menu.total_discs) {  
 		char slot_disc_name[256];
 		getFile(menu.txt_path, slot_disc_name, 256);
 		
 		char slot_disc_path[256];
 		if (slot_disc_name[0]=='/') strcpy(slot_disc_path, slot_disc_name);
 		else sprintf(slot_disc_path, "%s%s", menu.base_path, slot_disc_name);
-		
+		int next_index=0;
 		char* disc_path = menu.disc_paths[menu.disc];
+		for (int i=0; i<menu.total_discs; i++) {
+			if (exactMatch(slot_disc_path, menu.disc_paths[i])) {
+				next_index = i;
+				break;
+			}
+		}
 		if (!exactMatch(slot_disc_path, disc_path)) {
-			Game_changeDisc(slot_disc_path);
+			Game_changeDisc(next_index,slot_disc_path);
 		}
 	}
 	
@@ -4429,6 +4519,9 @@ static void Menu_loop(void) {
 	int rom_disc = -1;
 	char disc_name[16];
 	if (menu.total_discs) {
+		if (coreDiscManaged) {
+			menu.disc = disk_control_ext.get_image_index();
+		}		
 		rom_disc = menu.disc;
 		sprintf(disc_name, "Disc %i", menu.disc+1);
 	}
@@ -4502,10 +4595,14 @@ static void Menu_loop(void) {
 		else if (PAD_justPressed(BTN_A)) {
 			switch(selected) {
 				case ITEM_CONT:
+				LOG_info("MENU: Num discs=%d Changing disc from %d to %d - %s\n", menu.total_discs,rom_disc, menu.disc, menu.disc_paths[menu.disc]);
 				if (menu.total_discs && rom_disc!=menu.disc) {
 						status = STATUS_DISC;
 						char* disc_path = menu.disc_paths[menu.disc];
-						Game_changeDisc(disc_path);
+						LOG_info("MENU: Changing disc from %d to %d - %s\n", rom_disc, menu.disc, disc_path);
+						Game_changeDisc(menu.disc,disc_path);
+						sleep(2);
+						core.reset();
 					}
 					else {
 						status = STATUS_CONT;
