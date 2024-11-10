@@ -69,7 +69,7 @@ wait_for_device() {
         sleep 0.2
         elapsed_time=$(( $(date +%s) - start_time ))
         if [ "$elapsed_time" -ge 4 ]; then
-        echo "FAILED">>$SDCARD_PATH/audioserver.txt
+        #echo "FAILED">>$SDCARD_PATH/audioserver.txt
             return 1
         fi
     done
