@@ -38,32 +38,107 @@
 #define RAW_PLUS	12 //SDL_SCANCODE_MINUS
 #define RAW_MINUS	11 //SDL_SCANCODE_0
 
-#define NUM_INPUTS 2
+static int inputs[NUM_CONTROLLERS] = {-1};
 
-static int inputs[NUM_INPUTS] = {-1};
+/*
+typedef struct _controller_def{
+    int type; //dev/input/event or /dev/input/js
+    int num_device; // /dev/input/event/X or /dev/input/jsX
+    int dpad_type; //digital or analog
+    int up;     // the button raw values
+    int down;
+    int left;
+    int right;
+    int a;
+    int b;
+    int x;
+    int y;
+    int l1;
+    int l2;
+    int l3;
+    int r1;
+    int r2;
+    int r3;
+    int select;
+    int start;
+    int menu;
+    int plus;
+    int minus;  // end of button raw values;
+} controller_def;
+*/
 
+void PLAT_initControllers(void){
+	//init handheld controllers
+	char controller_device[32];
+	if (NUM_CONTROLLERS > CONTROLLER_0) {
+		controllers[CONTROLLER_0].type = CONTROLLER_EV;
+		controllers[CONTROLLER_0].num_device = 1;
+		sprintf(controller_device, "/dev/input/%s%d",  controllers[CONTROLLER_0].type == CONTROLLER_EV ? "event" : "js", controllers[CONTROLLER_0].num_device);
+		controllers[CONTROLLER_0].fd_controller = open(controller_device,O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+		controllers[CONTROLLER_0].dpad_type = INPUT_IS_DIGITAL;
+		controllers[CONTROLLER_0].up = RAW_UP;
+		controllers[CONTROLLER_0].down = RAW_DOWN;
+		controllers[CONTROLLER_0].left = RAW_LEFT;
+		controllers[CONTROLLER_0].right = RAW_RIGHT;
+		controllers[CONTROLLER_0].a = RAW_A;
+		controllers[CONTROLLER_0].b = RAW_B;
+		controllers[CONTROLLER_0].x = RAW_X;
+		controllers[CONTROLLER_0].y = RAW_Y;
+		controllers[CONTROLLER_0].l1 = RAW_L1;
+		controllers[CONTROLLER_0].l2 = RAW_L2;
+		//controllers[CONTROLLER_0].l3 = -1;
+		controllers[CONTROLLER_0].r1 = RAW_R1;
+		controllers[CONTROLLER_0].r2 = RAW_R2;
+		//controllers[CONTROLLER_0].r3 = -1;
+		controllers[CONTROLLER_0].select = RAW_SELECT;
+		controllers[CONTROLLER_0].start = RAW_START;
+		controllers[CONTROLLER_0].menu = RAW_MENU;
+		controllers[CONTROLLER_0].plus = RAW_PLUS;
+		controllers[CONTROLLER_0].minus = RAW_MINUS;
+	}	
+}
+
+void PLAT_initControllersMap(void) {
+	//set the controllers map to players. maybe one it will be adjustable in the in game menu and available as option
+	if ((NUM_CONTROLLERS > CONTROLLER_0) && (inputs[CONTROLLER_0]>=0)) {
+		controllers_map[PLAYER_1] = 1 << CONTROLLER_0; //player 1 uses controller 0 (handheld) 
+	}	
+	if ((NUM_CONTROLLERS > CONTROLLER_1) && (inputs[CONTROLLER_1]>=0)) {
+		controllers_map[PLAYER_1] |= 1 << CONTROLLER_1; //player 1 uses controller the first external controller /dev/input/event2
+	}
+	if ((MAX_NUM_PLAYERS > PLAYER_2) && (NUM_CONTROLLERS>CONTROLLER_2) && (inputs[CONTROLLER_2]>=0)){
+		controllers_map[PLAYER_2] = 1 << CONTROLLER_2; //player 2 uses only controller 2. /dev/input/event3
+	}
+	if ((MAX_NUM_PLAYERS > PLAYER_3) && (NUM_CONTROLLERS>CONTROLLER_3) && (inputs[CONTROLLER_3]>=0)){ //This doesn't exists in SJGAM M21
+		controllers_map[PLAYER_3] = 1 << CONTROLLER_3; //player 3 uses only controller 3. /dev/input/event4
+	}
+	if ((MAX_NUM_PLAYERS > PLAYER_4) && (NUM_CONTROLLERS>CONTROLLER_4) && (inputs[CONTROLLER_4]>=0)){ //This doesn't exists in SJGAM M21
+		controllers_map[PLAYER_4] = 1 << CONTROLLER_4; //player 4 uses only controller 4. /dev/input/event5
+	}
+}
 void PLAT_initInput(void) {
 	LOG_info("PLAT_initInput\n");
 	char path[64];
-	for (int i=0; i<NUM_INPUTS; i++) {
+	for (int i=CONTROLLER_0; i<NUM_CONTROLLERS; i++) {
 		if (inputs[i]>=0) {
 			close(inputs[i]);
 			inputs[i] = -1;
 		}
 	}
-	for (int i=0; i<NUM_INPUTS; i++) {
+	for (int i=CONTROLLER_0; i<NUM_CONTROLLERS; i++) {
 		sprintf(path, "/dev/input/event%d", i+1);
 		inputs[i] = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 		if (inputs[i] < 0) {
 			LOG_info("failed to open /dev/input/event%d with error \n", i+1);system("sync");
 		}
 	}
+	PLAT_initControllersMap();
 	LOG_info("PLAT_initInput success!\n");
 	fflush(stdout);
 }
 void PLAT_quitInput(void) {
 	LOG_info("PLAT_quitInput\n");
-	for (int i=0; i<NUM_INPUTS; i++) {
+	for (int i=CONTROLLER_0; i<NUM_CONTROLLERS; i++) {
 		if (inputs[i]>=0) {
 			close(inputs[i]);
 			inputs[i] = -1;
@@ -87,141 +162,146 @@ static int PWR_Pressed = 0;
 static int PWR_Actions = 0;
 static uint32_t PWR_Tick = 0;
 #define PWR_TIMEOUT 2000
-int last_dpad_used[2];
-int selectstartstatus[2] = {0}; 
-int selectstartlaststatus[2] = {0}; 
-
-
+int last_dpad_used[MAX_NUM_PLAYERS][2];
+int selectstartstatus[MAX_NUM_PLAYERS][2] = {0}; 
+int selectstartlaststatus[MAX_NUM_PLAYERS][2] = {0}; 
 
 void PLAT_pollInput(void) {
 
-	if (inputs[0]<0) {
-		LOG_info("ERROR as inputs<0\n");
+	if (inputs[CONTROLLER_0]<0) {
+		LOG_info("ERROR as first inputs<0\n");
 		fflush(stdout);
 		return;
 	}
 
+	uint32_t tick[MAX_NUM_PLAYERS]; 
 	// reset transient state
-	pad.just_pressed = BTN_NONE;
-	pad.just_released = BTN_NONE;
-	pad.just_repeated = BTN_NONE;
-
-	uint32_t tick = SDL_GetTicks();
-	for (int i=0; i<BTN_ID_COUNT; i++) {
-		int _btn = 1 << i;
-		if ((pad.is_pressed & _btn) && (tick>=pad.repeat_at[i])) {
-			pad.just_repeated |= _btn; // set
-			pad.repeat_at[i] += PAD_REPEAT_INTERVAL;
+	for (int x = PLAYER_1; x < MAX_NUM_PLAYERS; x++) {
+		pad[x].just_pressed = BTN_NONE;
+		pad[x].just_released = BTN_NONE;
+		pad[x].just_repeated = BTN_NONE;
+		tick[x] = SDL_GetTicks();
+		for (int i=0; i<BTN_ID_COUNT; i++) {
+			int _btn = 1 << i;
+			if ((pad[x].is_pressed & _btn) && (tick[x]>=pad[x].repeat_at[i])) {
+				pad[x].just_repeated |= _btn; // set
+				pad[x].repeat_at[i] += PAD_REPEAT_INTERVAL;
+			}
 		}
 	}
-	
+
 	// the actual poll
-	int input;
-	static struct input_event event;
-	for (int i=0; i<NUM_INPUTS; i++) {
-		while (read(inputs[i], &event, sizeof(event))==sizeof(event)) {
-			if (event.type!=EV_KEY && event.type!=EV_ABS) continue;
+	//int input;
 
-			int btn = BTN_NONE;
-			int pressed = 0; // 0=up,1=down
-			int id = -1;
-			int type = event.type;
-			int code = event.code;
-			int value = event.value;
-			//printf("/dev/input/event%d: Type %d event: SCANCODE/AXIS=%i, PRESSED/AXIS_VALUE=%i\n", i,type, code, value);system("sync");
-			// TODO: tmp, hardcoded, missing some buttons
-			if (type==EV_KEY) {
-				if (value>1) continue; // ignore repeats
-			
-				pressed = value;
+	for (int x = PLAYER_1; x < MAX_NUM_PLAYERS; x++) {		
+		for (int i=0; i<NUM_CONTROLLERS; i++) {
+			if (controllers_map[x] & (1 << i)) {  //poll only inputs enabled for the current player
+				struct input_event event;
+				while (read(inputs[i], &event, sizeof(event))==sizeof(event)) {
+					if (event.type!=EV_KEY && event.type!=EV_ABS) continue;
 
-				if (i > 0) { //external controllers
-				//special handling as the sjgam external controller does not provide menu button but only select+start, 
-				//let's find a way to simulate menu button when select+start is detected
-					if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[i-1]++ : selectstartstatus[i-1]--; } 
-				    if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[i-1]++ : selectstartstatus[i-1]--;}
-					if (selectstartstatus[i-1] == 2) {
-							btn = BTN_MENU;  id = BTN_ID_MENU; 
-							selectstartlaststatus[i-1]=1; 
-							pad.is_pressed		&= ~BTN_SELECT; // unset
-							pad.just_repeated	&= ~BTN_SELECT; // unset	
-							pad.is_pressed		&= ~BTN_START; // unset
-							pad.just_repeated	&= ~BTN_START; // unset						
+					int btn = BTN_NONE;
+					int pressed = 0; // 0=up,1=down
+					int id = -1;
+					int type = event.type;
+					int code = event.code;
+					int value = event.value;
+					//printf("/dev/input/event%d: Type %d event: SCANCODE/AXIS=%i, PRESSED/AXIS_VALUE=%i\n", i,type, code, value);system("sync");
+					// TODO: tmp, hardcoded, missing some buttons
+					if (type==EV_KEY) {
+						if (value>1) continue; // ignore repeats
+					
+						pressed = value;
+
+						if (i > 0) { //external controllers
+						//special handling as the sjgam external controller does not provide menu button but only select+start, 
+						//let's find a way to simulate menu button when select+start is detected
+							if (code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; pressed ? selectstartstatus[x][i-1]++ : selectstartstatus[x][i-1]--; } 
+							if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; pressed ? selectstartstatus[x][i-1]++ : selectstartstatus[x][i-1]--;}
+							if (selectstartstatus[x][i-1] == 2) {
+									btn = BTN_MENU;  id = BTN_ID_MENU; 
+									selectstartlaststatus[x][i-1]=1; 
+									pad[x].is_pressed		&= ~BTN_SELECT; // unset
+									pad[x].just_repeated	&= ~BTN_SELECT; // unset	
+									pad[x].is_pressed		&= ~BTN_START; // unset
+									pad[x].just_repeated	&= ~BTN_START; // unset						
+									}
+							if ((selectstartstatus[x][i-1] == 1) && (selectstartlaststatus[x][i-1] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[x][i-1]=0;}	
+							if (code==RAW_A)		{ btn = BTN_B; 			id = BTN_ID_B; }
+							if (code==RAW_B)		{ btn = BTN_A; 			id = BTN_ID_A; }
+						} 
+						else { //internal controls, standard behavior
+							if 		(code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
+							else if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
+							else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
+							else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
+						}
+
+						//LOG_info("key event: %i (%i)\n", code,pressed);fflush(stdout);
+							if (code==RAW_UP) 		{ btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
+						else if (code==RAW_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
+						else if (code==RAW_LEFT)	{ btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
+						else if (code==RAW_RIGHT)	{ btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
+						else if (code==RAW_X)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
+						else if (code==RAW_Y)		{ btn = BTN_X; 			id = BTN_ID_X; }
+						
+						else if (code==RAW_MENU)	{ 
+									btn = BTN_MENU; 		id = BTN_ID_MENU; 
+									// hack to generate a pwr button
+									if (pressed){
+										PWR_Pressed = 1;
+										PWR_Tick = SDL_GetTicks();
+										PWR_Actions = 0;		
+										//printf("pwr pressed\n");				
+									} else {						
+										if ( (PWR_Pressed) && (!PWR_Actions) && (SDL_GetTicks() - PWR_Tick > PWR_TIMEOUT)) {
+											//pwr button pressed for more than PWR_TIMEOUT ms (3s default)
+											btn = BTN_POWEROFF; 		id = BTN_ID_POWEROFF;
+											PWR_Pressed = 0;	
+											//printf("pwr released and pwr button event generated\n");			
+										} 
+									}					
 							}
-					if ((selectstartstatus[i-1] == 1) && (selectstartlaststatus[i-1] == 1)) {btn = BTN_MENU; 	id = BTN_ID_MENU; selectstartlaststatus[i-1]=0;}	
-					if (code==RAW_A)		{ btn = BTN_B; 			id = BTN_ID_B; }
-					if (code==RAW_B)		{ btn = BTN_A; 			id = BTN_ID_A; }
-				} 
-				else { //internal controls, standard behavior
-					if 		(code==RAW_START)	{ btn = BTN_START; 		id = BTN_ID_START; } 
-				    else if (code==RAW_SELECT)	{ btn = BTN_SELECT; 	id = BTN_ID_SELECT; }
-					else if (code==RAW_A)		{ btn = BTN_A; 			id = BTN_ID_A; }
-					else if (code==RAW_B)		{ btn = BTN_B; 			id = BTN_ID_B; }
-				}
+						else if (code==RAW_L1)		{ btn = BTN_L1; 		id = BTN_ID_L1; }
+						else if (code==RAW_L2)		{ btn = BTN_L2; 		id = BTN_ID_L2; }
+						else if (code==RAW_R1)		{ btn = BTN_R1; 		id = BTN_ID_R1; }
+						else if (code==RAW_R2)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
+						else if (code==RAW_PLUS)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
+						else if (code==RAW_MINUS)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
+					}
+					if (type==EV_ABS) {
+						if (code==1) {
+							if (value==0)	{ last_dpad_used[x][1] = 0; pressed = 1; btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
+							if (value==255)	{ last_dpad_used[x][1] = 255; pressed = 1; btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
+							if (value==128)	{ pressed = 0; 
+								if (last_dpad_used[x][1] == 0) { btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
+								else { btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
+							}
+						}
+						if (code==0) {
+							if (value==0)	{ last_dpad_used[x][0] = 0; pressed = 1; btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
+							if (value==255)	{ last_dpad_used[x][0] = 255; pressed = 1; btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
+							if (value==128)	{ pressed = 0; 
+											if (last_dpad_used[x][0] == 0) { btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
+											else { btn = BTN_DPAD_RIGHT; 	id = BTN_ID_DPAD_RIGHT; }
+							}
+						}
+					}
+					if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) PWR_Actions = 1;
+					if (btn==BTN_NONE) continue;
 
-				//LOG_info("key event: %i (%i)\n", code,pressed);fflush(stdout);
-				     if (code==RAW_UP) 		{ btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
-	 			else if (code==RAW_DOWN)	{ btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
-				else if (code==RAW_LEFT)	{ btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
-				else if (code==RAW_RIGHT)	{ btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
-				else if (code==RAW_X)		{ btn = BTN_Y; 			id = BTN_ID_Y; }
-				else if (code==RAW_Y)		{ btn = BTN_X; 			id = BTN_ID_X; }
-				
-				else if (code==RAW_MENU)	{ 
-							btn = BTN_MENU; 		id = BTN_ID_MENU; 
-							// hack to generate a pwr button
-							if (pressed){
-								PWR_Pressed = 1;
-								PWR_Tick = SDL_GetTicks();
-								PWR_Actions = 0;		
-								//printf("pwr pressed\n");				
-							} else {						
-								if ( (PWR_Pressed) && (!PWR_Actions) && (SDL_GetTicks() - PWR_Tick > PWR_TIMEOUT)) {
-									//pwr button pressed for more than PWR_TIMEOUT ms (3s default)
-									btn = BTN_POWEROFF; 		id = BTN_ID_POWEROFF;
-									PWR_Pressed = 0;	
-									//printf("pwr released and pwr button event generated\n");			
-								} 
-							}					
+					if (!pressed) {
+						pad[x].is_pressed		&= ~btn; // unset
+						pad[x].just_repeated	&= ~btn; // unset
+						pad[x].just_released	|= btn; // set
 					}
-				else if (code==RAW_L1)		{ btn = BTN_L1; 		id = BTN_ID_L1; }
-				else if (code==RAW_L2)		{ btn = BTN_L2; 		id = BTN_ID_L2; }
-				else if (code==RAW_R1)		{ btn = BTN_R1; 		id = BTN_ID_R1; }
-				else if (code==RAW_R2)		{ btn = BTN_R2; 		id = BTN_ID_R2; }
-				else if (code==RAW_PLUS)	{ btn = BTN_PLUS; 		id = BTN_ID_PLUS; }
-				else if (code==RAW_MINUS)	{ btn = BTN_MINUS; 		id = BTN_ID_MINUS; }
-			}
-			if (type==EV_ABS) {
-				if (code==1) {
-					if (value==0)	{ last_dpad_used[1] = 0; pressed = 1; btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
-					if (value==255)	{ last_dpad_used[1] = 255; pressed = 1; btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
-					if (value==128)	{ pressed = 0; 
-									  if (last_dpad_used[1] == 0) { btn = BTN_DPAD_UP; 	id = BTN_ID_DPAD_UP; }
-									  else { btn = BTN_DPAD_DOWN; 	id = BTN_ID_DPAD_DOWN; }
+					else if ((pad[x].is_pressed & btn)==BTN_NONE) {
+						pad[x].just_pressed	|= btn; // set
+						pad[x].just_repeated	|= btn; // set
+						pad[x].is_pressed		|= btn; // set
+						pad[x].repeat_at[id]	= tick[x] + PAD_REPEAT_DELAY;
 					}
-				}
-				if (code==0) {
-					if (value==0)	{ last_dpad_used[0] = 0; pressed = 1; btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
-					if (value==255)	{ last_dpad_used[0] = 255; pressed = 1; btn = BTN_DPAD_RIGHT; id = BTN_ID_DPAD_RIGHT; }
-					if (value==128)	{ pressed = 0; 
-									if (last_dpad_used[0] == 0) { btn = BTN_DPAD_LEFT; 	id = BTN_ID_DPAD_LEFT; }
-									else { btn = BTN_DPAD_RIGHT; 	id = BTN_ID_DPAD_RIGHT; }
-					}
-				}
-			}
-			if ((btn!=BTN_NONE)&&(btn!=BTN_MENU)) PWR_Actions = 1;
-			if (btn==BTN_NONE) continue;
-
-			if (!pressed) {
-				pad.is_pressed		&= ~btn; // unset
-				pad.just_repeated	&= ~btn; // unset
-				pad.just_released	|= btn; // set
-			}
-			else if ((pad.is_pressed & btn)==BTN_NONE) {
-				pad.just_pressed	|= btn; // set
-				pad.just_repeated	|= btn; // set
-				pad.is_pressed		|= btn; // set
-				pad.repeat_at[id]	= tick + PAD_REPEAT_DELAY;
+				}	
 			}
 		}
 	}
@@ -232,16 +312,18 @@ void PLAT_pollInput(void) {
 
 int PLAT_shouldWake(void) {
 	static struct input_event event;
-	if (inputs[0] >= 0) {
-		while (read(inputs[0], &event, sizeof(event))==sizeof(event)) {
-		if (event.type==EV_KEY && event.code==RAW_MENU && event.value==0) {
-			return 1;
+	for (int i=0; i<NUM_CONTROLLERS; i++) {
+		if (controllers_map[PLAYER_1] & (1 << i)) {  //poll only inputs enabled for the current player
+			while (read(inputs[i], &event, sizeof(event))==sizeof(event)) {
+				if (event.type==EV_KEY && event.code==RAW_MENU && event.value==0) {
+					return 1;
+				}
+			}
 		}
-	}	
-	return 0;
 	}
-	
+	return 0;
 }
+
 
 static struct VID_Context {
 	int fdfb; // /dev/fb0 handler

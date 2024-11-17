@@ -205,6 +205,22 @@ void SND_quit(void);
 
 ///////////////////////////////
 
+enum {
+	PLAYER_1 = 0,
+	PLAYER_2,
+	PLAYER_3,
+	PLAYER_4
+};
+
+enum {
+	CONTROLLER_0 = 0,
+	CONTROLLER_1,
+	CONTROLLER_2,
+	CONTROLLER_3,
+	CONTROLLER_4	
+};
+
+
 typedef struct PAD_Axis {
 		int x;
 		int y;
@@ -218,7 +234,7 @@ typedef struct PAD_Context {
 	PAD_Axis laxis;
 	PAD_Axis raxis;
 } PAD_Context;
-extern PAD_Context pad;
+extern PAD_Context pad[MAX_NUM_PLAYERS];
 
 #define PAD_REPEAT_DELAY	300
 #define PAD_REPEAT_INTERVAL 100

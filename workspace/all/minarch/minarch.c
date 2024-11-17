@@ -833,7 +833,7 @@ static ButtonMapping button_label_mapping[] = { // used to lookup the retro_id a
 	{"R3",		RETRO_DEVICE_ID_JOYPAD_R3,		BTN_ID_R3},
 	{NULL,0,0}
 };
-static ButtonMapping core_button_mapping[RETRO_BUTTON_COUNT+1] = {0};
+static ButtonMapping core_button_mapping[NUM_CONTROLLERS][RETRO_BUTTON_COUNT+1] = {0};
 
 static const char* device_button_names[LOCAL_BUTTON_COUNT] = {
 	[BTN_ID_DPAD_UP]	= "UP",
@@ -912,6 +912,15 @@ static char* gamepad_values[] = {
 	NULL,
 };
 
+static char* gamepadNum_values[] = {
+	"0",
+	"1",
+	"2",
+	"3",
+	"4",
+	NULL,
+};
+
 
 enum {
 	CONFIG_NONE,
@@ -925,8 +934,9 @@ static struct Config {
 	char* user_cfg; // minarch.cfg or game.cfg based on user preference
 	OptionList frontend;
 	OptionList core;
-	ButtonMapping* controls;
+	ButtonMapping *controls[NUM_CONTROLLERS];
 	ButtonMapping* shortcuts;
+	int controller_map_abxy_to_rstick[NUM_CONTROLLERS];
 	int loaded;
 	int initialized;
 } config = {
@@ -1036,7 +1046,36 @@ static struct Config {
 			{NULL},
 		},
 	},
-	.controls = default_button_mapping,
+	.controls[CONTROLLER_0] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_0] = 0,
+#if NUM_CONTROLLERS == CONTROLLER_4+1
+	.controls[CONTROLLER_4] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_4] = 0,
+	.controls[CONTROLLER_3] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_3] = 0,
+	.controls[CONTROLLER_2] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_2] = 0,
+	.controls[CONTROLLER_1] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_1] = 0,
+#endif
+#if NUM_CONTROLLERS == CONTROLLER_3+1
+	.controls[CONTROLLER_3] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_3] = 0,
+	.controls[CONTROLLER_2] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_2] = 0,
+	.controls[CONTROLLER_1] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_1] = 0,
+#endif
+#if NUM_CONTROLLERS == CONTROLLER_2+1
+	.controls[CONTROLLER_2] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_2] = 0,
+	.controls[CONTROLLER_1] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_1] = 0,
+#endif
+#if NUM_CONTROLLERS == CONTROLLER_1+1
+	.controls[CONTROLLER_1] = default_button_mapping,
+	.controller_map_abxy_to_rstick[CONTROLLER_1] = 0,
+#endif
 	.shortcuts = (ButtonMapping[]){
 		[SHORTCUT_SAVE_STATE]			= {"Save State",		-1, BTN_ID_NONE, 0},
 		[SHORTCUT_LOAD_STATE]			= {"Load State",		-1, BTN_ID_NONE, 0},
@@ -1149,70 +1188,97 @@ static void Config_init(void) {
 	char* tmp = config.default_cfg;
 	char* tmp2;
 	char* key;
+	char value[256];
 	
 	char button_name[128];
 	char button_id[128];
 	int i = 0;
-	while ((tmp = strstr(tmp, "bind "))) {
-		tmp += 5; // tmp now points to the button name (plus the rest of the line)
-		key = tmp;
-		tmp = strstr(tmp, " = ");
-		if (!tmp) break;
-		
-		int len = tmp-key;
-		strncpy(button_name, key, len);
-		button_name[len] = '\0';
-		
-		tmp += 3;
-		strncpy(button_id, tmp, 128);
-		tmp2 = strchr(button_id, '\n');
-		if (!tmp2) tmp2 = strchr(button_id, '\r');
-		if (tmp2) *tmp2 = '\0';
-		
-		int retro_id = -1;
-		int local_id = -1;
-		
-		tmp2 = strrchr(button_id, ':');
-		int remap = 0;
-		if (tmp2) {
+	int this_controller = 0;
+
+	// check controller number
+
+	for (int x = 0; x < NUM_CONTROLLERS; x++) {
+		tmp = config.default_cfg;
+		char controllervalue[256];
+		//LOG_info("Config_init C%i cfg=%s\n",x, tmp);fflush(stdout);
+		sprintf(controllervalue, "ABXYtoRStick C%d", x);
+		LOG_info("Config_init c%i controllervaluestring=%s\n",x, controllervalue);fflush(stdout);
+		if (Config_getValue(tmp,controllervalue,value,NULL)) {
+			LOG_info("Config_init c%i controllervalue=%s\n",x, value);fflush(stdout);		
+			if (strstr(value, "On")){
+				config.controller_map_abxy_to_rstick[x] = 1;
+			} else {
+				config.controller_map_abxy_to_rstick[x] = 0;	
+			}
+		}
+		LOG_info("Config_init c%i controller_map_abxy_to_rstick=%i\n",x, config.controller_map_abxy_to_rstick[x]);fflush(stdout);
+		controllervalue[0]='\0';
+		sprintf(controllervalue, "bind C%d ", x);
+		LOG_info("Config_init c%i controllervaluestring=%s\n",x, controllervalue);fflush(stdout);
+		while ((tmp = strstr(tmp, controllervalue))) {
+			tmp += 8; // tmp now points to the button name (plus the rest of the line)
+			key = tmp;
+			tmp = strstr(tmp, " = ");
+			if (!tmp) break;
+			
+			int len = tmp-key; 
+
+			strncpy(button_name, key, len);
+			button_name[len] = '\0';
+			
+			tmp += 3;
+			strncpy(button_id, tmp, 128);
+			tmp2 = strchr(button_id, '\n');
+			if (!tmp2) tmp2 = strchr(button_id, '\r');
+			if (tmp2) *tmp2 = '\0';
+			
+			int retro_id = -1;
+			int local_id = -1;
+			
+			tmp2 = strrchr(button_id, ':');
+			int remap = 0;
+			if (tmp2) {
+				for (int j=0; button_label_mapping[j].name; j++) {
+					ButtonMapping* button = &button_label_mapping[j];
+					if (!strcmp(tmp2+1,button->name)) {
+						retro_id = button->retro;
+						break;
+					}
+				}
+				*tmp2 = '\0';
+			}
 			for (int j=0; button_label_mapping[j].name; j++) {
 				ButtonMapping* button = &button_label_mapping[j];
-				if (!strcmp(tmp2+1,button->name)) {
-					retro_id = button->retro;
+				if (!strcmp(button_id,button->name)) {
+					local_id = button->local;
+					if (retro_id==-1) retro_id = button->retro;
 					break;
 				}
 			}
-			*tmp2 = '\0';
+			
+			tmp += strlen(button_id); // prepare to continue search
+			
+			LOG_info("\tController %i bind %s (%s) %i:%i\n", x, button_name, button_id, local_id, retro_id);
+			
+			// TODO: test this without a final line return
+			tmp2 = calloc(strlen(button_name)+1, sizeof(char));
+			strcpy(tmp2, button_name);
+			ButtonMapping* button = &core_button_mapping[x][i++];
+			button->name = tmp2;
+			button->retro = retro_id;
+			button->local = local_id;
 		}
-		for (int j=0; button_label_mapping[j].name; j++) {
-			ButtonMapping* button = &button_label_mapping[j];
-			if (!strcmp(button_id,button->name)) {
-				local_id = button->local;
-				if (retro_id==-1) retro_id = button->retro;
-				break;
-			}
-		}
-		
-		tmp += strlen(button_id); // prepare to continue search
-		
-		LOG_info("\tbind %s (%s) %i:%i\n", button_name, button_id, local_id, retro_id);
-		
-		// TODO: test this without a final line return
-		tmp2 = calloc(strlen(button_name)+1, sizeof(char));
-		strcpy(tmp2, button_name);
-		ButtonMapping* button = &core_button_mapping[i++];
-		button->name = tmp2;
-		button->retro = retro_id;
-		button->local = local_id;
-	};
-	
+	}
 	config.initialized = 1;
 }
 static void Config_quit(void) {
 	if (!config.initialized) return;
-	for (int i=0; core_button_mapping[i].name; i++) {
-		free(core_button_mapping[i].name);
+	for (int j=0;j<NUM_CONTROLLERS;j++) {
+		for (int i=0; core_button_mapping[j][i].name; i++) {
+		free(core_button_mapping[j][i].name);
+		}
 	}
+	
 }
 static void Config_readOptionsString(char* cfg) {
 	if (!cfg) return;
@@ -1247,31 +1313,35 @@ static void Config_readControlsString(char* cfg) {
 	char key[256];
 	char value[256];
 	char* tmp;
-	for (int i=0; config.controls[i].name; i++) {
-		ButtonMapping* mapping = &config.controls[i];
-		sprintf(key, "bind %s", mapping->name);
-		sprintf(value, "NONE");
-		
-		if (!Config_getValue(cfg, key, value, NULL)) continue;
-		if ((tmp = strrchr(value, ':'))) *tmp = '\0'; // this is a binding artifact in default.cfg, ignore
-		
-		int id = -1;
-		for (int j=0; button_labels[j]; j++) {
-			if (!strcmp(button_labels[j],value)) {
-				id = j - 1;
-				break;
+	//ciclo for
+	for (int j=0; j<NUM_CONTROLLERS; j++) {
+		LOG_info("Config_readControlsString start controller %i\n", j);fflush(stdout);
+		for (int i=0; config.controls[j][i].name; i++) {
+			ButtonMapping* mapping = &config.controls[j][i];
+			sprintf(key, "bind C%i %s", j,mapping->name);
+			sprintf(value, "NONE");
+			
+			if (!Config_getValue(cfg, key, value, NULL)) continue;
+			if ((tmp = strrchr(value, ':'))) *tmp = '\0'; // this is a binding artifact in default.cfg, ignore
+			
+			int id = -1;
+			for (int j=0; button_labels[j]; j++) {
+				if (!strcmp(button_labels[j],value)) {
+					id = j - 1;
+					break;
+				}
 			}
+			// LOG_info("\t%s (%i)\n", value, id);
+			
+			int mod = 0;
+			if (id>=LOCAL_BUTTON_COUNT) {
+				id -= LOCAL_BUTTON_COUNT;
+				mod = 1;
+			}
+			
+			mapping->local = id;
+			mapping->mod = mod;
 		}
-		// LOG_info("\t%s (%i)\n", value, id);
-		
-		int mod = 0;
-		if (id>=LOCAL_BUTTON_COUNT) {
-			id -= LOCAL_BUTTON_COUNT;
-			mod = 1;
-		}
-		
-		mapping->local = id;
-		mapping->mod = mod;
 	}
 	
 	for (int i=0; config.shortcuts[i].name; i++) {
@@ -1368,12 +1438,15 @@ static void Config_write(int override) {
 	}
 
 	if (has_custom_controllers) fprintf(file, "%s = %i\n", "minarch_gamepad_type", gamepad_type);
-
-	for (int i=0; config.controls[i].name; i++) {
-		ButtonMapping* mapping = &config.controls[i];
-		int j = mapping->local + 1;
-		if (mapping->mod) j += LOCAL_BUTTON_COUNT;
-		fprintf(file, "bind %s = %s\n", mapping->name, button_labels[j]);
+	//ciclo for
+	for (int j=0; j<NUM_CONTROLLERS; j++){
+		fprintf(file, "ABXYtoRStick C%d = %d\n", j,config.controller_map_abxy_to_rstick[j]);
+		for (int i=0; config.controls[j][i].name; i++) {
+			ButtonMapping* mapping = &config.controls[j][i];
+			int x = mapping->local + 1;
+			if (mapping->mod) x += LOCAL_BUTTON_COUNT;
+			fprintf(file, "bind C%d %s = %s\n", j, mapping->name, button_labels[x]);
+		}
 	}
 	for (int i=0; config.shortcuts[i].name; i++) {
 		ButtonMapping* mapping = &config.shortcuts[i];
@@ -1412,11 +1485,14 @@ static void Config_restore(void) {
 		gamepad_type = 0;
 		core.set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
 	}
-
-	for (int i=0; config.controls[i].name; i++) {
-		ButtonMapping* mapping = &config.controls[i];
-		mapping->local = mapping->default_;
-		mapping->mod = 0;
+	//ciclo for
+	for (int j=0; j<NUM_CONTROLLERS; j++) {
+		config.controller_map_abxy_to_rstick[j] = 0;
+		for (int i=0; config.controls[j][i].name; i++) {
+			ButtonMapping* mapping = &config.controls[j][i];
+			mapping->local = mapping->default_;
+			mapping->mod = 0;
+		}
 	}
 	for (int i=0; config.shortcuts[i].name; i++) {
 		ButtonMapping* mapping = &config.shortcuts[i];
@@ -1674,7 +1750,15 @@ static int setFastForward(int enable) {
 	return enable;
 }
 
-static uint32_t buttons = 0; // RETRO_DEVICE_ID_JOYPAD_* buttons
+
+
+int PAD_isPressedMP(int player, int btn) {
+	return pad[player].is_pressed & btn; 	
+}
+
+
+static uint32_t buttons[MAX_NUM_PLAYERS] = {0}; // RETRO_DEVICE_ID_JOYPAD_* buttons
+static int16_t analogs[MAX_NUM_PLAYERS][4] = {0};
 static int ignore_menu = 0;
 static void input_poll_callback(void) {
 	PAD_poll();
@@ -1793,27 +1877,49 @@ static void input_poll_callback(void) {
 	// TODO: then check for button
 	// TODO: only modify if absent from array
 	// TODO: the shortcuts loop above should also contribute to the array
-	
-	buttons = 0;
-	for (int i=0; config.controls[i].name; i++) {
-		ButtonMapping* mapping = &config.controls[i];
-		int btn = 1 << mapping->local;
-		if (btn==BTN_NONE) continue; // present buttons can still be unbound
-		if (PAD_isPressed(btn) && (!mapping->mod || PAD_isPressed(BTN_MENU))) {
-			buttons |= 1 << mapping->retro;
-			if (mapping->mod) ignore_menu = 1;
+	//LOG_info("check for segfaults\n");fflush(stdout);
+	for (int x=PLAYER_1; x<MAX_NUM_PLAYERS;x++){
+		buttons[x] = 0;
+		analogs[x][0]=0;
+		analogs[x][1]=0;
+		analogs[x][2]=0;
+		analogs[x][3]=0;
+
+		for (int i=0; config.controls[x][i].name; i++) {
+			ButtonMapping* mapping = &config.controls[x][i];
+			int btn = 1 << mapping->local;
+			if (btn==BTN_NONE) continue; // present buttons can still be unbound
+			if (PAD_isPressedMP(x,btn) && (!mapping->mod || PAD_isPressedMP(x,BTN_MENU))) {
+				buttons[x] |= 1 << mapping->retro;
+				if (mapping->mod) ignore_menu = 1;
+					
+
+				if (config.controller_map_abxy_to_rstick[x]) {
+					//	 if (btn==BTN_LEFT) 	analogs[0]= 0x7fff; 
+					//else if (btn==BTN_RIGHT) 	analogs[0]= -0x7fff;
+					//else if (btn==BTN_DOWN) 	analogs[1]= 0x7fff;
+					//else if (btn==BTN_UP) 		analogs[1]= -0x7fff;
+					/*else*/ if (btn==BTN_A)	analogs[x][2]= 0x7fff; 
+					else if (btn==BTN_Y) 		analogs[x][2]= -0x7fff;
+					else if (btn==BTN_B) 		analogs[x][3]= 0x7fff;
+					else if (btn==BTN_X) 		analogs[x][3]= -0x7fff;
+				}
+			}
+			//  && !PWR_ignoreSettingInput(btn, show_setting)
 		}
-		//  && !PWR_ignoreSettingInput(btn, show_setting)
-	}
-	
+	}	
 	// if (buttons) LOG_info("buttons: %i\n", buttons);
 }
 static int16_t input_state_callback(unsigned port, unsigned device, unsigned index, unsigned id) {
 	// id == RETRO_DEVICE_ID_JOYPAD_MASK or RETRO_DEVICE_ID_JOYPAD_*
-	if (port == 0 && device == RETRO_DEVICE_JOYPAD && index == 0) {
-		if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return buttons;
-		return (buttons >> id) & 1;
+	if (port < MAX_NUM_PLAYERS && device == RETRO_DEVICE_JOYPAD && index == 0) {
+		if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return buttons[port];
+		return (buttons[port] >> id) & 1;
 	}
+	//add here the handling for analogs
+	if (port< MAX_NUM_PLAYERS && device == RETRO_DEVICE_ANALOG){
+		return analogs[port][index*2+id];
+	}	
 	return 0;
 }
 ///////////////////////////////
@@ -1823,8 +1929,11 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 	if (input_initialized) return;
 
 	LOG_info("Input_init\n");
-	
-	config.controls = core_button_mapping[0].name ? core_button_mapping : default_button_mapping;
+	//ciclo for
+	for (int j=0; j<NUM_CONTROLLERS;j++){
+		config.controls[j] = core_button_mapping[j][0].name ? core_button_mapping[j] : default_button_mapping;
+	}
+	//config.controls[CONTROLLER_0] = core_button_mapping[0].name ? core_button_mapping : default_button_mapping;
 	
 	puts("---------------------------------");
 
@@ -1840,11 +1949,11 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 
 			// TODO: don't ignore unavailable buttons, just override them to BTN_ID_NONE!
 			if (var->id>=RETRO_BUTTON_COUNT) {
-				printf("UNAVAILABLE: %s\n", var->description); fflush(stdout);
+				printf("PORT %d UNAVAILABLE: %s\n", var->port,var->description); fflush(stdout);
 				continue;
 			}
 			else {
-				printf("PRESENT    : %s\n", var->description); fflush(stdout);
+				printf("PORT %d PRESENT    : %s\n", var->port,var->description); fflush(stdout);
 			}
 			present[var->id] = 1;
 			core_button_names[var->id] = var->description;
@@ -1862,19 +1971,19 @@ static void Input_init(const struct retro_input_descriptor *vars) {
 	}
 	
 	puts("---------------------------------");
+	for (int j=0; j<NUM_CONTROLLERS;j++){
+		for (int i=0; config.controls[j][i].name; i++) {
+			ButtonMapping* mapping = &config.controls[j][i];
+			mapping->default_ = mapping->local;
 
-	for (int i=0; config.controls[i].name; i++) {
-		ButtonMapping* mapping = &config.controls[i];
-		mapping->default_ = mapping->local;
-
-		// ignore mappings that aren't available in this core
-		if (core_mapped && !present[mapping->retro]) {
-			mapping->ignore = 1;
-			continue;
+			// ignore mappings that aren't available in this core
+			if (core_mapped && !present[mapping->retro]) {
+				mapping->ignore = 1;
+				continue;
+			}
+			LOG_info("Controller%d %s: <%s> (%i:%i)\n", j, mapping->name, (mapping->local==BTN_ID_NONE ? "NONE" : device_button_names[mapping->local]), mapping->local, mapping->retro);
 		}
-		LOG_info("%s: <%s> (%i:%i)\n", mapping->name, (mapping->local==BTN_ID_NONE ? "NONE" : device_button_names[mapping->local]), mapping->local, mapping->retro);
 	}
-	
 	puts("---------------------------------");
 	input_initialized = 1;
 }
@@ -1978,7 +2087,7 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		break;
 	}
 	case RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS: { /* 11 */
-		//puts("RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS\n");
+		puts("RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS\n");
 		Input_init((const struct retro_input_descriptor *)data);
 		return false;
 	} break;
@@ -2045,6 +2154,7 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 		break;
 	}
 case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
+		puts("RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES");
 		unsigned *out = (unsigned *)data;
 		if (out)
 			*out = (1 << RETRO_DEVICE_JOYPAD) | (1 << RETRO_DEVICE_ANALOG);
@@ -2063,7 +2173,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 		break;
 	}
 	case RETRO_ENVIRONMENT_SET_CONTROLLER_INFO: { /* 35 */
-		// LOG_info("RETRO_ENVIRONMENT_SET_CONTROLLER_INFO\n");
+		puts("RETRO_ENVIRONMENT_SET_CONTROLLER_INFO");
 		const struct retro_controller_info *infos = (const struct retro_controller_info *)data;
 		if (infos) {
 			// TODO: store to gamepad_values/gamepad_labels for gamepad_device
@@ -2074,7 +2184,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 					has_custom_controllers = 1;
 					break;
 				}
-				// printf("\t%i: %s\n", type->id, type->desc);
+				printf("\tSupported controller %i: %s\n", type->id, type->desc);
 			}
 		}
 		fflush(stdout);
@@ -2092,6 +2202,7 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	// RETRO_ENVIRONMENT_GET_AUDIO_VIDEO_ENABLE (47 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 	// RETRO_ENVIRONMENT_GET_INPUT_BITMASKS (51 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 	case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS: { /* 51 | RETRO_ENVIRONMENT_EXPERIMENTAL */
+		puts("RETRO_ENVIRONMENT_GET_INPUT_BITMASKS");
 		bool *out = (bool *)data;
 		if (out)
 			*out = true;
@@ -2145,6 +2256,14 @@ case RETRO_ENVIRONMENT_GET_INPUT_DEVICE_CAPABILITIES: {
 	}
 	// TODO: RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION 59
 	// TODO: used by mgba, (but only during frameskip?)
+
+	case RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS: { //61
+		puts("RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS");
+		unsigned *out =	(unsigned *)data;
+		if (out) *out = MAX_NUM_PLAYERS;
+		return true;
+		break;
+	} 
 	// case RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK: { /* 62 */
 	// 	LOG_info("RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK\n");
 	// 	const struct retro_audio_buffer_status_callback *cb = (const struct retro_audio_buffer_status_callback *)data;
@@ -2600,6 +2719,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	
 	if (scaling==SCALE_NATIVE || scaling==SCALE_CROPPED) {
 		// this is the same whether fit or oversized
+		LOG_info("SCALE_NATIVE!!!!!\n");
 		scale = MIN(DEVICE_WIDTH/src_w, DEVICE_HEIGHT/src_h);
 		if (!scale) {
 			sprintf(scaler_name, "forced crop");
@@ -2621,6 +2741,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		// TODO: or is it just that I'm trying to cram 4 logical rects into 2 rect arguments
 		// TODO: eg. src.size + src.clip + dst.size + dst.clip
 		else if (scaling==SCALE_CROPPED) {
+			LOG_info("SCALE_CROPPED!!!!!\n");
 			int scale_x = CEIL_DIV(DEVICE_WIDTH, src_w);
 			int scale_y = CEIL_DIV(DEVICE_HEIGHT, src_h);
 			scale = MIN(scale_x, scale_y);
@@ -2655,6 +2776,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 			}
 		}
 		else {
+			LOG_info("SCALE_NATIVE_2696!!!!!\n");
 			sprintf(scaler_name, "integer");
 			int scaled_w = src_w * scale;
 			int scaled_h = src_h * scale;
@@ -2666,8 +2788,10 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		}
 	}
 	else if (fit) {
+		LOG_info("FIT!!!!!\n");
 		// these both will use a generic nn scaler
 		if (scaling==SCALE_FULLSCREEN) {
+			LOG_info("SCALE_FULLSCREEN!!!!!\n");
 			sprintf(scaler_name, "full fit");
 			dst_w = DEVICE_WIDTH;
 			dst_h = DEVICE_HEIGHT;
@@ -2676,6 +2800,8 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		}
 		else {
 			double scale_f = MIN(((double)DEVICE_WIDTH)/aspect_w, ((double)DEVICE_HEIGHT)/aspect_h);
+			LOG_info("SCALE_2720!!!!!\n");
+			
 			LOG_info("scale_f:%f\n", scale_f);
 			
 			sprintf(scaler_name, "aspect fit");
@@ -2688,6 +2814,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		}
 	}
 	else {
+		LOG_info("SCALE_2734!!!!!\n");
 		int scale_x = CEIL_DIV(DEVICE_WIDTH, src_w);
 		int scale_y = CEIL_DIV(DEVICE_HEIGHT,src_h);
 		
@@ -2696,9 +2823,17 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		if (r && r<8) scale_y -= 1;
 		
 		scale = MAX(scale_x, scale_y);
-		if (scale * src_w > MAX_WIDTH)  //needed for performaneces reasons TODO: set 920 for everything
-			scale = scale_x;
-		// if (scale>4) scale = 4;
+		scale = 1;
+		while ((scale * src_w <= MAX_WIDTH) && (scale * src_h <= MAX_HEIGHT)) scale++;
+		//while ((src_w * src_h * (scale-1) * 4 ) < (MAX_WIDTH * MAX_HEIGHT)) scale++;
+		if (scale > 1)scale--;
+
+		LOG_info("MAXIMUM SCALE DETECTED = %d\n", scale);
+	//	if ((scale * src_w > MAX_WIDTH) && (scale * src_h > MAX_HEIGHT))  //needed for performaneces reasons TODO: set 920 for everything
+	//		scale = MIN(scale_x, scale_y);
+	
+	
+		 if (scale>4) scale = 4;
 		// if (scale>2) scale = 4; // TODO: restore, requires sanity checking
 		
 		int scaled_w = src_w * scale;
@@ -3125,12 +3260,14 @@ static struct {
 	int slot;
 	int save_exists;
 	int preview_exists;
+	int controller;
 } menu = {
 	.bitmap = NULL,
 	.disc = -1,
 	.total_discs = 0,
 	.save_exists = 0,
 	.preview_exists = 0,
+	.controller = 0,
 	
 	.items = {
 		[ITEM_CONT] = "Continue",
@@ -3251,6 +3388,7 @@ int makeBoxart(SDL_Surface *image, char *filename) {
 
 
 void Menu_init(void) {
+	LOG_info("Menu_init\n");fflush(stdout);
 	menu.overlay = SDL_CreateRGBSurface(SDL_SWSURFACE,DEVICE_WIDTH,DEVICE_HEIGHT,FIXED_DEPTH,RGBA_MASK_AUTO);
 	SDLX_SetAlpha(menu.overlay, SDL_SRCALPHA, 0x80);
 	SDL_FillRect(menu.overlay, NULL, 0);
@@ -3259,9 +3397,9 @@ void Menu_init(void) {
 	getEmuName(game.path, emu_name);
 	sprintf(menu.minui_dir, SHARED_USERDATA_PATH "/.minui/%s", emu_name);
 	mkdir(menu.minui_dir, 0755);
-
-	sprintf(menu.slot_path, "%s/%s.txt", menu.minui_dir, game.fullname);
 	
+	sprintf(menu.slot_path, "%s/%s.txt", menu.minui_dir, game.fullname);
+	LOG_info("End of Menu_init1\n");fflush(stdout);
 	if (simple_mode) menu.items[ITEM_OPTS] = "Reset";
 
 	if (coreDiscManaged){  //the core has detected multidisc pbp game
@@ -3271,7 +3409,7 @@ void Menu_init(void) {
 		}
 		menu.disc = disk_control_ext.get_image_index();  //get the current disc index
 	}
-
+	LOG_info("End of Menu_init2\n");fflush(stdout);
 	if (game.m3u_path[0]) {  //in case of m3u file the core doesn't detects it so coreDiscManaged is not set
 		char* tmp;
 		strcpy(menu.base_path, game.m3u_path);
@@ -3531,7 +3669,7 @@ int OptionControls_bind(MenuList* list, int i) {
 		return MENU_CALLBACK_NOP;
 	}
 	
-	ButtonMapping* button = &config.controls[item->id];	
+	ButtonMapping* button = &config.controls[menu.controller][item->id];	
 	
 	int bound = 0;
 	while (!bound) {
@@ -3562,7 +3700,7 @@ static int OptionControls_unbind(MenuList* list, int i) {
 	MenuItem* item = &list->items[i];
 	if (item->values!=button_labels) return MENU_CALLBACK_NOP;
 	
-	ButtonMapping* button = &config.controls[item->id];
+	ButtonMapping* button = &config.controls[menu.controller][item->id];
 	button->local = -1;
 	button->mod = 0;
 	return MENU_CALLBACK_NOP;
@@ -3576,6 +3714,19 @@ static int OptionControls_optionChanged(MenuList* list, int i) {
 		int device = strtol(gamepad_values[item->value], NULL, 0);
 		core.set_controller_port_device(0, device);
 	}
+	return MENU_CALLBACK_NOP;
+}
+static int OptionControls_controllerChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	if (item->values!=gamepadNum_values) return MENU_CALLBACK_NOP;
+	menu.controller = item->value;
+	return MENU_CALLBACK_NOP;
+}
+
+static int OptionControls_controllermapABXYChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	if (item->values!=onoff_labels) return MENU_CALLBACK_NOP;
+	config.controller_map_abxy_to_rstick[menu.controller] = item->value;
 	return MENU_CALLBACK_NOP;
 }
 static MenuList OptionControls_menu = {
@@ -3596,33 +3747,42 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		// TODO: where do I free this?
 		OptionControls_menu.items = calloc(RETRO_BUTTON_COUNT+1+has_custom_controllers, sizeof(MenuItem));
 		int k = 0;
-		
-		if (has_custom_controllers) {
-			MenuItem* item = &OptionControls_menu.items[k++];
-			item->name = "Controller";
-			item->desc = "Select the type of controller.";
-			item->value = gamepad_type;
-			item->values = gamepad_labels;
-			item->on_change = OptionControls_optionChanged;
-		}
-		
-		for (int j=0; config.controls[j].name; j++) {
-			ButtonMapping* button = &config.controls[j];
-			if (button->ignore) continue;
+		for (int x=0; x<NUM_CONTROLLERS; x++) {
+			//special flag for mapping btn as right stick
+			MenuItem* item2 = &OptionControls_menu.items[k++];
+			sprintf(item2->name, "ABXYtoRStick C%i", x);
+			//item2->name = "Map ABXY to rstick";
+			item2->desc = "Map face buttons to the right stick.";
+			item2->value = config.controller_map_abxy_to_rstick[x];
+			item2->values = onoff_labels,
+			item2->on_change = OptionControls_controllermapABXYChanged;
+
+			if (has_custom_controllers) {
+				MenuItem* item = &OptionControls_menu.items[k++];
+				item->name = "Controller";
+				item->desc = "Select the type of controller.";
+				item->value = gamepad_type;
+				item->values = gamepad_labels;
+				item->on_change = OptionControls_optionChanged;
+			}
 			
-			LOG_info("\t%s (%i:%i)\n", button->name, button->local, button->retro);
-			
-			MenuItem* item = &OptionControls_menu.items[k++];
-			item->id = j;
-			item->name = button->name;
-			item->desc = NULL;
-			item->value = button->local + 1;
-			if (button->mod) item->value += LOCAL_BUTTON_COUNT;
-			item->values = button_labels;
+			for (int j=0; config.controls[x][j].name; j++) {
+				ButtonMapping* button = &config.controls[x][j];
+				if (button->ignore) continue;
+				MenuItem* item = &OptionControls_menu.items[k++];
+				item->id = j;
+				item->name = button->name;
+				item->desc = NULL;
+				item->value = button->local + 1;
+				if (button->mod) item->value += LOCAL_BUTTON_COUNT;
+				item->values = button_labels;
+				LOG_info("\tController %i -> %s (%i:%i)\n", x, button->name, button->local, button->retro);
+			}
 		}
 	}
 	else {
 		// update values
+		
 		int k = 0;
 		
 		if (has_custom_controllers) {
@@ -3630,13 +3790,14 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 			item->value = gamepad_type;
 		}
 		
-		for (int j=0; config.controls[j].name; j++) {
-			ButtonMapping* button = &config.controls[j];
+		for (int j=0; config.controls[menu.controller][j].name; j++) {
+			ButtonMapping* button = &config.controls[menu.controller][j];
 			if (button->ignore) continue;
 			
 			MenuItem* item = &OptionControls_menu.items[k++];
 			item->value = button->local + 1;
 			if (button->mod) item->value += LOCAL_BUTTON_COUNT;
+			LOG_info("\tController %i update -> %s (%i:%i)\n", menu.controller, button->name, button->local, button->retro);
 		}
 	}
 	Menu_options(&OptionControls_menu);
@@ -3791,6 +3952,7 @@ static void OptionSaveChanges_updateDesc(void) {
 #define OPTION_PADDING 8
 
 static int Menu_options(MenuList* list) {
+	LOG_info("enter menu options\n");fflush(stdout);
 	MenuItem* items = list->items;
 	int type = list->type;
 
@@ -4342,7 +4504,7 @@ static void Menu_updateState(void) {
 	//sprintf(menu.bmp_path, "%s/%s.state%spng", menu.minui_dir, game.basename, slotstr);
 	sprintf(menu.bmp_path, "%s/%s.state%spng", core.states_dir, game.fullname, slotstr);
 	sprintf(menu.txt_path, "%s/%s%stxt", menu.minui_dir, game.fullname, slotstr);
-	
+	sprintf(menu.txt_path_slot, "%s/%s%s_disc_txt", menu.minui_dir, game.fullname, slotstr,menu.disc);
 	menu.save_exists = exists(save_path);
 	menu.preview_exists = menu.save_exists && exists(menu.bmp_path);
 
@@ -4382,22 +4544,27 @@ static void Menu_loadState(void) {
 	//now useless as state loads right disk on its own?
 
 	if (menu.save_exists && menu.total_discs) {  
-		char slot_disc_name[256];
-		getFile(menu.txt_path, slot_disc_name, 256);
-		
-		char slot_disc_path[256];
-		if (slot_disc_name[0]=='/') strcpy(slot_disc_path, slot_disc_name);
-		else sprintf(slot_disc_path, "%s%s", menu.base_path, slot_disc_name);
-		int next_index=0;
-		char* disc_path = menu.disc_paths[menu.disc];
-		for (int i=0; i<menu.total_discs; i++) {
-			if (exactMatch(slot_disc_path, menu.disc_paths[i])) {
-				next_index = i;
-				break;
+		if (coreDiscManaged) {
+			Game_changeDisc(getInt(menu.txt_path_slot),game.path);
+			sleep(2);
+		} else {
+			char slot_disc_name[256];
+			getFile(menu.txt_path, slot_disc_name, 256);
+			
+			char slot_disc_path[256];
+			if (slot_disc_name[0]=='/') strcpy(slot_disc_path, slot_disc_name);
+			else sprintf(slot_disc_path, "%s%s", menu.base_path, slot_disc_name);
+			int next_index=0;
+			char* disc_path = menu.disc_paths[menu.disc];
+			for (int i=0; i<menu.total_discs; i++) {
+				if (exactMatch(slot_disc_path, menu.disc_paths[i])) {
+					next_index = i;
+					break;
+				}
 			}
-		}
-		if (!exactMatch(slot_disc_path, disc_path)) {
-			Game_changeDisc(next_index,slot_disc_path);
+			if (!exactMatch(slot_disc_path, disc_path)) {
+				Game_changeDisc(next_index,slot_disc_path);
+			}
 		}
 	}
 	

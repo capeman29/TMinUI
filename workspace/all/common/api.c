@@ -1087,72 +1087,75 @@ void SND_quit(void) { // plat_sound_finish
 
 ///////////////////////////////
 
-PAD_Context pad;
+PAD_Context pad[MAX_NUM_PLAYERS];
 
 #define AXIS_DEADZONE 0x4000
 void PAD_setAnalog(int neg_id,int pos_id,int value,int repeat_at) {
 	int neg = 1 << neg_id;
 	int pos = 1 << pos_id;	
 	if (value>AXIS_DEADZONE) { // pressing
-		if (!(pad.is_pressed&pos)) { // not pressing
-			pad.is_pressed 		|= pos; // set
-			pad.just_pressed	|= pos; // set
-			pad.just_repeated	|= pos; // set
-			pad.repeat_at[pos_id]= repeat_at;
+		if (!(pad[PLAYER_1].is_pressed&pos)) { // not pressing
+			pad[PLAYER_1].is_pressed 		|= pos; // set
+			pad[PLAYER_1].just_pressed	|= pos; // set
+			pad[PLAYER_1].just_repeated	|= pos; // set
+			pad[PLAYER_1].repeat_at[pos_id]= repeat_at;
 
-			if (pad.is_pressed&neg) { // was pressing opposite
-				pad.is_pressed 		&= ~neg; // unset
-				pad.just_repeated 	&= ~neg; // unset
-				pad.just_released	|=  neg; // set
+			if (pad[PLAYER_1].is_pressed&neg) { // was pressing opposite
+				pad[PLAYER_1].is_pressed 		&= ~neg; // unset
+				pad[PLAYER_1].just_repeated 	&= ~neg; // unset
+				pad[PLAYER_1].just_released	|=  neg; // set
 			}
 		}
 	}
 	else if (value<-AXIS_DEADZONE) { // pressing
-		if (!(pad.is_pressed&neg)) { // not pressing
-			pad.is_pressed		|= neg; // set
-			pad.just_pressed	|= neg; // set
-			pad.just_repeated	|= neg; // set
-			pad.repeat_at[neg_id]= repeat_at;
+		if (!(pad[PLAYER_1].is_pressed&neg)) { // not pressing
+			pad[PLAYER_1].is_pressed		|= neg; // set
+			pad[PLAYER_1].just_pressed	|= neg; // set
+			pad[PLAYER_1].just_repeated	|= neg; // set
+			pad[PLAYER_1].repeat_at[neg_id]= repeat_at;
 
-			if (pad.is_pressed&pos) { // was pressing opposite
-				pad.is_pressed 		&= ~pos; // unset
-				pad.just_repeated 	&= ~pos; // unset
-				pad.just_released	|=  pos; // set
+			if (pad[PLAYER_1].is_pressed&pos) { // was pressing opposite
+				pad[PLAYER_1].is_pressed 		&= ~pos; // unset
+				pad[PLAYER_1].just_repeated 	&= ~pos; // unset
+				pad[PLAYER_1].just_released	|=  pos; // set
 			}
 		}
 	}
 	else { // not pressing
-		if (pad.is_pressed&neg) { // was pressing
-			pad.is_pressed 		&= ~neg; // unset
-			pad.just_repeated	&=  neg; // unset
-			pad.just_released	|=  neg; // set
+		if (pad[PLAYER_1].is_pressed&neg) { // was pressing
+			pad[PLAYER_1].is_pressed 		&= ~neg; // unset
+			pad[PLAYER_1].just_repeated	&=  neg; // unset
+			pad[PLAYER_1].just_released	|=  neg; // set
 		}
-		if (pad.is_pressed&pos) { // was pressing
-			pad.is_pressed 		&= ~pos; // unset
-			pad.just_repeated	&=  pos; // unset
-			pad.just_released	|=  pos; // set
+		if (pad[PLAYER_1].is_pressed&pos) { // was pressing
+			pad[PLAYER_1].is_pressed 		&= ~pos; // unset
+			pad[PLAYER_1].just_repeated	&=  pos; // unset
+			pad[PLAYER_1].just_released	|=  pos; // set
 		}
 	}
 }
 
 void PAD_reset(void) {
-	pad.just_pressed = BTN_NONE;
-	pad.is_pressed = BTN_NONE;
-	pad.just_released = BTN_NONE;
-	pad.just_repeated = BTN_NONE;
+	for (int i=PLAYER_1; i<MAX_NUM_PLAYERS; i++) {
+		pad[i].just_pressed = BTN_NONE;
+		pad[i].is_pressed = BTN_NONE;
+		pad[i].just_released = BTN_NONE;
+		pad[i].just_repeated = BTN_NONE;
+	}
+	
 }
 void PAD_poll_SDL(void) {
 	// reset transient state
-	pad.just_pressed = BTN_NONE;
-	pad.just_released = BTN_NONE;
-	pad.just_repeated = BTN_NONE;
+	pad[PLAYER_1].just_pressed = BTN_NONE;
+	pad[PLAYER_1].just_released = BTN_NONE;
+	pad[PLAYER_1].just_repeated = BTN_NONE;
 
 	uint32_t tick = SDL_GetTicks();
 	for (int i=0; i<BTN_ID_COUNT; i++) {
 		int btn = 1 << i;
-		if ((pad.is_pressed & btn) && (tick>=pad.repeat_at[i])) {
-			pad.just_repeated |= btn; // set
-			pad.repeat_at[i] += PAD_REPEAT_INTERVAL;
+		if ((pad[PLAYER_1].is_pressed & btn) && (tick>=pad[PLAYER_1].repeat_at[i])) {
+			pad[PLAYER_1].just_repeated |= btn; // set
+			pad[PLAYER_1].repeat_at[i] += PAD_REPEAT_INTERVAL;
 		}
 	}
 	
@@ -1234,15 +1237,15 @@ void PAD_poll_SDL(void) {
 				int state = hats[id];
 				btn = 1 << id;
 				if (state==0) {
-					pad.is_pressed		&= ~btn; // unset
-					pad.just_repeated	&= ~btn; // unset
-					pad.just_released	|= btn; // set
+					pad[PLAYER_1].is_pressed		&= ~btn; // unset
+					pad[PLAYER_1].just_repeated	&= ~btn; // unset
+					pad[PLAYER_1].just_released	|= btn; // set
 				}
-				else if (state==1 && (pad.is_pressed & btn)==BTN_NONE) {
-					pad.just_pressed	|= btn; // set
-					pad.just_repeated	|= btn; // set
-					pad.is_pressed		|= btn; // set
-					pad.repeat_at[id]	= tick + PAD_REPEAT_DELAY;
+				else if (state==1 && (pad[PLAYER_1].is_pressed & btn)==BTN_NONE) {
+					pad[PLAYER_1].just_pressed	|= btn; // set
+					pad[PLAYER_1].just_repeated	|= btn; // set
+					pad[PLAYER_1].is_pressed		|= btn; // set
+					pad[PLAYER_1].repeat_at[id]	= tick + PAD_REPEAT_DELAY;
 				}
 			}
 			btn = BTN_NONE; // already handled, force continue
@@ -1264,15 +1267,15 @@ void PAD_poll_SDL(void) {
 				pressed = val>0;
 			}
 			
-			else if (axis==AXIS_LX) { pad.laxis.x = val; PAD_setAnalog(BTN_ID_ANALOG_LEFT, BTN_ID_ANALOG_RIGHT, val, tick+PAD_REPEAT_DELAY); }
-			else if (axis==AXIS_LY) { pad.laxis.y = val; PAD_setAnalog(BTN_ID_ANALOG_UP,   BTN_ID_ANALOG_DOWN,  val, tick+PAD_REPEAT_DELAY); }
-			else if (axis==AXIS_RX) pad.raxis.x = val;
-			else if (axis==AXIS_RY) pad.raxis.y = val;
+			else if (axis==AXIS_LX) { pad[PLAYER_1].laxis.x = val; PAD_setAnalog(BTN_ID_ANALOG_LEFT, BTN_ID_ANALOG_RIGHT, val, tick+PAD_REPEAT_DELAY); }
+			else if (axis==AXIS_LY) { pad[PLAYER_1].laxis.y = val; PAD_setAnalog(BTN_ID_ANALOG_UP,   BTN_ID_ANALOG_DOWN,  val, tick+PAD_REPEAT_DELAY); }
+			else if (axis==AXIS_RX) pad[PLAYER_1].raxis.x = val;
+			else if (axis==AXIS_RY) pad[PLAYER_1].raxis.y = val;
 
 			// axis will fire off what looks like a release
 			// before the first press but you can't release
 			// a button that wasn't pressed
-			if (!pressed && btn!=BTN_NONE && !(pad.is_pressed & btn)) {
+			if (!pressed && btn!=BTN_NONE && !(pad[PLAYER_1].is_pressed & btn)) {
 				// LOG_info("cancel: %i\n", axis);
 				btn = BTN_NONE;
 			}
@@ -1282,15 +1285,15 @@ void PAD_poll_SDL(void) {
 		if (btn==BTN_NONE) continue;
 		
 		if (!pressed) {
-			pad.is_pressed		&= ~btn; // unset
-			pad.just_repeated	&= ~btn; // unset
-			pad.just_released	|= btn; // set
+			pad[PLAYER_1].is_pressed		&= ~btn; // unset
+			pad[PLAYER_1].just_repeated	&= ~btn; // unset
+			pad[PLAYER_1].just_released	|= btn; // set
 		}
-		else if ((pad.is_pressed & btn)==BTN_NONE) {
-			pad.just_pressed	|= btn; // set
-			pad.just_repeated	|= btn; // set
-			pad.is_pressed		|= btn; // set
-			pad.repeat_at[id]	= tick + PAD_REPEAT_DELAY;
+		else if ((pad[PLAYER_1].is_pressed & btn)==BTN_NONE) {
+			pad[PLAYER_1].just_pressed	|= btn; // set
+			pad[PLAYER_1].just_repeated	|= btn; // set
+			pad[PLAYER_1].is_pressed		|= btn; // set
+			pad[PLAYER_1].repeat_at[id]	= tick + PAD_REPEAT_DELAY;
 		}
 	}
 }
@@ -1313,14 +1316,14 @@ int PAD_wake_SDL(void) {
 	return 0;
 }
 
-int PAD_anyJustPressed(void)	{ return pad.just_pressed!=BTN_NONE; }
-int PAD_anyPressed(void)		{ return pad.is_pressed!=BTN_NONE; }
-int PAD_anyJustReleased(void)	{ return pad.just_released!=BTN_NONE; }
+int PAD_anyJustPressed(void)	{ return pad[PLAYER_1].just_pressed!=BTN_NONE; }
+int PAD_anyPressed(void)		{ return pad[PLAYER_1].is_pressed!=BTN_NONE; }
+int PAD_anyJustReleased(void)	{ return pad[PLAYER_1].just_released!=BTN_NONE; }
 
-int PAD_justPressed(int btn)	{ return pad.just_pressed & btn; }
-int PAD_isPressed(int btn)		{ return pad.is_pressed & btn; }
-int PAD_justReleased(int btn)	{ return pad.just_released & btn; }
-int PAD_justRepeated(int btn)	{ return pad.just_repeated & btn; }
+int PAD_justPressed(int btn)	{ return pad[PLAYER_1].just_pressed & btn; }
+int PAD_isPressed(int btn)		{ return pad[PLAYER_1].is_pressed & btn; }
+int PAD_justReleased(int btn)	{ return pad[PLAYER_1].just_released & btn; }
+int PAD_justRepeated(int btn)	{ return pad[PLAYER_1].just_repeated & btn; }
 
 int PAD_tappedMenu(uint32_t now) {
 	#define MENU_DELAY 250 // also in PWR_update()

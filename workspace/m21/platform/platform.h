@@ -112,8 +112,8 @@
 #define FIXED_PITCH		(FIXED_WIDTH * FIXED_BPP)
 #define FIXED_SIZE		(FIXED_PITCH * FIXED_HEIGHT)
 
-#define MAX_WIDTH 900
-#define MAX_HEIGHT 1440
+#define MAX_WIDTH 1280
+#define MAX_HEIGHT 720
 #define MAX_DEPTH 32 
 
 #define ARGB_MASK_8888	0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
@@ -125,6 +125,49 @@
 #define MUTE_VOLUME_RAW 0
 #define HAS_NEON
 
+#define MAX_NUM_PLAYERS 1
+#define NUM_CONTROLLERS 3
+static uint8_t controllers_map[MAX_NUM_PLAYERS];
+
+#define CONTROLLER_EV   0
+#define CONTROLLER_JS   1
+#define INPUT_IS_DIGITAL    0
+#define INPUT_IS_ANALOG     1
+
+typedef struct _controller_def{
+    char name[50];  //maybe useless?
+    uint16_t type; //dev/input/event or /dev/input/js
+    uint16_t num_device; // /dev/input/event/X or /dev/input/jsX
+    uint16_t fd_controller; //file descriptor of this controller
+    uint16_t lstick_type; //digital or analog
+    uint16_t lstickvert;
+    uint16_t lstickhoriz;
+    uint16_t rstick_type; //digital or analog
+    uint16_t rstickvert;
+    uint16_t rstickhoriz;
+    uint16_t dpad_type; //digital or analog
+    uint16_t up;     // the button raw values
+    uint16_t down;
+    uint16_t left;
+    uint16_t right;
+    uint16_t a;
+    uint16_t b;
+    uint16_t x;
+    uint16_t y;
+    uint16_t l1;
+    uint16_t l2;
+    uint16_t l3;
+    uint16_t r1;
+    uint16_t r2;
+    uint16_t r3;
+    uint16_t select;
+    uint16_t start;
+    uint16_t menu;
+    uint16_t plus;
+    uint16_t minus;  // end of button raw values;
+} controller_def;
+
+static controller_def controllers[NUM_CONTROLLERS] = {-1};
 ///////////////////////////////
 
 #endif
