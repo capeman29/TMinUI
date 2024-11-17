@@ -123,4 +123,7 @@ extern int is_plus;
 
 ///////////////////////////////
 
+#define MAX_NUM_PLAYERS 1
+#define NUM_CONTROLLERS 1
+
 #endif

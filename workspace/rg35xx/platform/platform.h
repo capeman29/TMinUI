@@ -120,6 +120,10 @@
 #define MUTE_VOLUME_RAW 0
 #define HAS_NEON
 
+#define MAX_NUM_PLAYERS 1
+#define NUM_CONTROLLERS 1
+//static uint8_t controllers_map[MAX_NUM_PLAYERS];
+
 ///////////////////////////////
 
 #endif
