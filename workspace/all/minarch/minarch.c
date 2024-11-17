@@ -3633,9 +3633,9 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 	LOG_info("OptionControls_openMenu\n");
 
 	if (OptionControls_menu.items==NULL) {
-		
+	//	LOG_info("OptionControls_openMenu Create\n");
 		// TODO: where do I free this?
-		OptionControls_menu.items = calloc(RETRO_BUTTON_COUNT+1+has_custom_controllers, sizeof(MenuItem));
+		OptionControls_menu.items = calloc(RETRO_BUTTON_COUNT+2+has_custom_controllers, sizeof(MenuItem));
 		int k = 0;
 		
 		MenuItem* item2 = &OptionControls_menu.items[k++];
@@ -3658,9 +3658,7 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		for (int j=0; config.controls[j].name; j++) {
 			ButtonMapping* button = &config.controls[j];
 			if (button->ignore) continue;
-			
-			LOG_info("\t%s (%i:%i)\n", button->name, button->local, button->retro);
-			
+						
 			MenuItem* item = &OptionControls_menu.items[k++];
 			item->id = j;
 			item->name = button->name;
@@ -3668,10 +3666,12 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 			item->value = button->local + 1;
 			if (button->mod) item->value += LOCAL_BUTTON_COUNT;
 			item->values = button_labels;
+			LOG_info("\t%s (%i:%i)\n", button->name, button->local, button->retro);
 		}
 	}
 	else {
 		// update values
+		//LOG_info("OptionControls_openMenu Refresh\n");
 		int k = 0;
 		
 		MenuItem* item2 = &OptionControls_menu.items[k++];
