@@ -929,6 +929,7 @@ static struct Config {
 	ButtonMapping* shortcuts;
 	int loaded;
 	int initialized;
+	int controller_map_abxy_to_rstick;
 } config = {
 	.frontend = { // (OptionList)
 		.count = FE_OPT_COUNT,
@@ -1048,6 +1049,7 @@ static struct Config {
 		[SHORTCUT_HOLD_FF]				= {"Hold FF",			-1, BTN_ID_NONE, 0},
 		{NULL}
 	},
+	.controller_map_abxy_to_rstick = 0,
 };
 static int Config_getValue(char* cfg, const char* key, char* out_value, int* lock) {
 	char* tmp = cfg;
@@ -1233,6 +1235,14 @@ static void Config_readOptionsString(char* cfg) {
 		core.set_controller_port_device(0, device);
 	}
 
+	if (Config_getValue(cfg,"MapABXYtoRightStick",value,NULL)) {
+		if (strstr(value, "On")){
+				config.controller_map_abxy_to_rstick = 1;
+			} else {
+				config.controller_map_abxy_to_rstick = 0;	
+			}
+	}
+
 	for (int i=0; config.core.options[i].key; i++) {
 		Option* option = &config.core.options[i];
 		if (!Config_getValue(cfg, option->key, value, &option->lock)) continue;
@@ -1369,6 +1379,8 @@ static void Config_write(int override) {
 
 	if (has_custom_controllers) fprintf(file, "%s = %i\n", "minarch_gamepad_type", gamepad_type);
 
+	fprintf(file,"%s = %s\n", "MapABXYtoRightStick", config.controller_map_abxy_to_rstick ? "On" : "Off");
+
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		int j = mapping->local + 1;
@@ -1412,6 +1424,8 @@ static void Config_restore(void) {
 		gamepad_type = 0;
 		core.set_controller_port_device(0, RETRO_DEVICE_JOYPAD);
 	}
+
+	config.controller_map_abxy_to_rstick = 0;
 
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
@@ -1675,6 +1689,7 @@ static int setFastForward(int enable) {
 }
 
 static uint32_t buttons = 0; // RETRO_DEVICE_ID_JOYPAD_* buttons
+static uint16_t analogs[4] = {0};
 static int ignore_menu = 0;
 static void input_poll_callback(void) {
 	PAD_poll();
@@ -1795,6 +1810,10 @@ static void input_poll_callback(void) {
 	// TODO: the shortcuts loop above should also contribute to the array
 	
 	buttons = 0;
+	analogs[0] = 0;
+	analogs[1] = 0;
+	analogs[2] = 0;
+	analogs[3] = 0;
 	for (int i=0; config.controls[i].name; i++) {
 		ButtonMapping* mapping = &config.controls[i];
 		int btn = 1 << mapping->local;
@@ -1802,10 +1821,20 @@ static void input_poll_callback(void) {
 		if (PAD_isPressed(btn) && (!mapping->mod || PAD_isPressed(BTN_MENU))) {
 			buttons |= 1 << mapping->retro;
 			if (mapping->mod) ignore_menu = 1;
+
+			if (config.controller_map_abxy_to_rstick == 1) {
+				//	 if (btn==BTN_LEFT) 	analogs[0]= 0x7fff; 
+				//else if (btn==BTN_RIGHT) 	analogs[0]= -0x7fff;
+				//else if (btn==BTN_DOWN) 	analogs[1]= 0x7fff;
+				//else if (btn==BTN_UP) 		analogs[1]= -0x7fff;
+				/*else*/ if (btn==BTN_A)	analogs[2]= 0x7fff; 
+				else if (btn==BTN_Y) 		analogs[2]= -0x7fff;
+				else if (btn==BTN_B) 		analogs[3]= 0x7fff;
+				else if (btn==BTN_X) 		analogs[3]= -0x7fff;
+			}
 		}
 		//  && !PWR_ignoreSettingInput(btn, show_setting)
-	}
-	
+	}	
 	// if (buttons) LOG_info("buttons: %i\n", buttons);
 }
 static int16_t input_state_callback(unsigned port, unsigned device, unsigned index, unsigned id) {
@@ -1814,6 +1843,9 @@ static int16_t input_state_callback(unsigned port, unsigned device, unsigned ind
 		if (id == RETRO_DEVICE_ID_JOYPAD_MASK) return buttons;
 		return (buttons >> id) & 1;
 	}
+	if (port == 0 && device == RETRO_DEVICE_ANALOG && config.controller_map_abxy_to_rstick == 1){
+		return analogs[index*2+id];
+	}	
 	return 0;
 }
 ///////////////////////////////
@@ -3578,6 +3610,15 @@ static int OptionControls_optionChanged(MenuList* list, int i) {
 	}
 	return MENU_CALLBACK_NOP;
 }
+
+static int OptionControls_mapABXYChanged(MenuList* list, int i) {
+	MenuItem* item = &list->items[i];
+	if (item->values!=onoff_labels) return MENU_CALLBACK_NOP;
+	config.controller_map_abxy_to_rstick = item->value;
+
+	return MENU_CALLBACK_NOP;
+}
+ 
 static MenuList OptionControls_menu = {
 	.type = MENU_INPUT,
 	.desc = "Press A to set and X to clear."
@@ -3597,6 +3638,14 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		OptionControls_menu.items = calloc(RETRO_BUTTON_COUNT+1+has_custom_controllers, sizeof(MenuItem));
 		int k = 0;
 		
+		MenuItem* item2 = &OptionControls_menu.items[k++];
+		item2->name = "MapABXYtoRightStick";
+		item2->desc = "Map ABXY buttons to right stick.";
+		item2->value = config.controller_map_abxy_to_rstick;
+		item2->values = onoff_labels;
+		item2->on_change = OptionControls_mapABXYChanged;
+
+
 		if (has_custom_controllers) {
 			MenuItem* item = &OptionControls_menu.items[k++];
 			item->name = "Controller";
@@ -3625,6 +3674,9 @@ static int OptionControls_openMenu(MenuList* list, int i) {
 		// update values
 		int k = 0;
 		
+		MenuItem* item2 = &OptionControls_menu.items[k++];
+		item2->value = config.controller_map_abxy_to_rstick;
+
 		if (has_custom_controllers) {
 			MenuItem* item = &OptionControls_menu.items[k++];
 			item->value = gamepad_type;
