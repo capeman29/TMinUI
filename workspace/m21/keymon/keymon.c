@@ -23,8 +23,23 @@
 #define PRESSED		1
 #define REPEAT		2
 
-#define INPUT_COUNT 1
+#define INPUT_COUNT 4
+#define JS_COUNT 3
 static int inputs[INPUT_COUNT];
+static int jsinputs[JS_COUNT];
+
+
+struct js_event {
+		uint32_t time;     /* event timestamp in milliseconds */
+		int16_t value;    /* value */
+		uint8_t type;      /* event type */
+		uint8_t number;    /* axis/button number */
+	};
+#define JS_EVENT_BUTTON         0x01    /* button pressed/released */
+#define JS_EVENT_AXIS           0x02    /* joystick moved */
+#define JS_EVENT_INIT           0x80    /* initial state of device */
+
+struct js_event jsev;
 static struct input_event ev;
 FILE *file_log;
 
@@ -32,11 +47,18 @@ int main (int argc, char *argv[]) {
 	InitSettings();
 	// TODO: will require two inputs
 	// input_fd = open("/dev/input/event0", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	inputs[0] = open("/dev/input/event1", O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	if (inputs[0] < 0) {
-		printf("KEYMON: failed to open /dev/input/event1 with error \n");system("sync");
-		return -1;
+	char path[INPUT_COUNT][32];
+	char jspath[JS_COUNT][32];
+	for (int i=0; i<INPUT_COUNT; i++) {
+		sprintf(path[i], "/dev/input/event%i", i);
+		inputs[i] = open(path[i], O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	}
+	
+	for (int i=0; i<JS_COUNT; i++) {
+		sprintf(jspath[i], "/dev/input/js%i", i);
+		jsinputs[i] = open(jspath[i], O_RDONLY | O_NONBLOCK| O_CLOEXEC);
+	}
+
 	//printf("opened /dev/input/event1\n");system("sync");
 
 	uint32_t input;
@@ -64,12 +86,29 @@ int main (int argc, char *argv[]) {
 		now = tod.tv_sec * 1000 + tod.tv_usec / 1000;
 		if (now-then>1000) ignore = 1; // ignore input that arrived during sleep
 		
+
+		for (int x=0; x<JS_COUNT; x++) {
+		//	if (fcntl(jsinputs[x], F_GETFD) <	0) {
+		//		printf("Reopening /dev/input/js%i\n", x);fflush(stdout);
+		//		jsinputs[x] = open(jspath[x], O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+		//	}
+			while (read (jsinputs[x], &jsev, sizeof(jsev)) == sizeof(jsev)) {
+				//if (jsev.type >= 0) {
+					printf("/dev/input/js%i: type:%i number:%i value:%i\n", x, jsev.type, jsev.number, jsev.value); fflush(stdout);
+				//}
+			}			
+		}
+
+
+
+
+
 		for (int i=0; i<INPUT_COUNT; i++) {
 			int input_fd = inputs[i];
 			while(read(input_fd, &ev, sizeof(ev))==sizeof(ev)) {
 				if (ignore) continue;
 				val = ev.value;
-
+				printf("/dev/input/event%i: type:%i code:%i value:%i\n\n", i, ev.type,ev.code,ev.value); fflush(stdout);
 				if (( ev.type != EV_KEY ) || ( val > REPEAT )) continue;
 	//			printf("Code: %i (%i)\n", ev.code, val); fflush(stdout);
 				switch (ev.code) {
