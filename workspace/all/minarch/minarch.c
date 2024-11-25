@@ -2589,6 +2589,7 @@ static uint32_t sec_start = 0;
 
 static void selectScaler(int src_w, int src_h, int src_p) {
 	LOG_info("SelectScaler IN %d %d %d\n", src_w, src_h, src_p);
+	int max_scale = 1;
 	char scaler_type[20];
 	switch(screen_scaling) {
 		case SCALE_ASPECT: strcpy(scaler_type,"Scaler ASPECT"); break;
@@ -2598,6 +2599,12 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		default: strcpy(scaler_type,"Scaler Unknown"); break;
 	}
 
+	int max_xscale = 6;
+	while (max_xscale * src_w > MAX_WIDTH) max_xscale--;
+	int max_yscale = 6;
+	while (max_yscale * src_h > MAX_HEIGHT) max_yscale--;
+	max_scale = MIN(max_xscale, max_yscale);
+	LOG_info("MAX xscaler = %d - MAX yscaler = %d - MAX scaler = %d\n", max_xscale, max_yscale, max_scale);
 	int src_x,src_y,dst_x,dst_y,dst_w,dst_h,dst_p,scale;
 	double aspect;
 	if (core.aspect_ratio < 0.1) { //tmp fix to let prboom start on miyoomini/my282
@@ -2633,6 +2640,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	if (scaling==SCALE_NATIVE || scaling==SCALE_CROPPED) {
 		// this is the same whether fit or oversized
 		scale = MIN(DEVICE_WIDTH/src_w, DEVICE_HEIGHT/src_h);
+		scale = MIN(scale, max_scale);
 		if (!scale) {
 			sprintf(scaler_name, "forced crop");
 			dst_w = DEVICE_WIDTH;
@@ -2656,6 +2664,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 			int scale_x = CEIL_DIV(DEVICE_WIDTH, src_w);
 			int scale_y = CEIL_DIV(DEVICE_HEIGHT, src_h);
 			scale = MIN(scale_x, scale_y);
+			scale = MIN(scale, max_scale);
 
 			sprintf(scaler_name, "cropped");
 			dst_w = DEVICE_WIDTH;
@@ -2728,8 +2737,8 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 		if (r && r<8) scale_y -= 1;
 		
 		scale = MAX(scale_x, scale_y);
-		if (scale * src_w > MAX_WIDTH)  //needed for performaneces reasons TODO: set 920 for everything
-			scale = scale_x;
+		scale = MIN(scale, max_scale);
+		//if (scale>max_scale) scale = max_scale;
 		// if (scale>4) scale = 4;
 		// if (scale>2) scale = 4; // TODO: restore, requires sanity checking
 		
