@@ -1,110 +1,134 @@
-MinUI is a minimal launcher for the RGB30, Trimui Smart (and Pro), Miyoo Mini (and Plus), M17, and RG35XX (and Plus/H)--all from the same SD card. Why? Why not?
+MyMinUI is a minimal launcher for the Miyoo Mini (and Plus), RG35XX Original and the SJGAM M21 based on MinUI ()
 
 Source:
-https://github.com/shauninman/minui
+https://github.com/Turro75/MyMinUI
 
 ----------------------------------------
 Installing
 
-PREFACE
+# Miyoo Mini:
 
-MinUI has two essential parts: an installer/updater zip archive named "MinUI.zip" and a bootstrap file or folder with names that vary by platform.
+Format as FAT32 a micro sdcard with enough space to contains all Your games, the volume name assigned to the partition doesn't matter.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-miyoomini.zip) there is a folder called "miyoo" copy that folder as is in the FAT32 partition created above.
+Copy also the whole release zip file (leave it zipped) in the FAT32 partition created above.
 
-On devices that support two SD cards (eg. RG35XX) I will use the name "TF1" to refer to the card that goes into slot one of the device. All other instances of "SD card" or "primary card" refer to the card that goes into the second slot or to the sole SD card of devices that only support a single card. To be able to use MinUI from a single SD card on multiple devices you must install it on the second card of devices that support two SD cards.
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
-The primary card should be a reputable brand and freshly formatted as FAT32.
 
-CAVEATS
+# Miyoo Mini Plus:
 
-While MinUI can be updated from any device once installed, some devices require (minor) changes to NAND or TF1 (via the aforementioned bootstrap file or folder) and therefore need to be installed from the specific device before using. The same is true when trying to use an existing card in a new device of the same type. When in doubt, follow the installation instructions; if all the necessary bits are already installed, the installer will just act as an updater instead.
+Format as FAT32 a micro sdcard with enough space to contains all Your games, the volume name assigned to the partition doesn't matter.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-miyoomini.zip) there is a folder called "miyoo354" copy that folder as is in the FAT32 partition created above.
+Copy also the whole release zip file (leave it zipped) in the FAT32 partition created above.
 
-ALL
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
-Preload the "Bios" and "Roms" folders then copy both to the root of your primary card.
 
-RGB30
+# Miyoo A30:
 
-MinUI is meant to be used with Moss installed on the SD card that goes into the left slot (labeled TF-OS) of the RGB30. Download and flash the latest version:
+Format as FAT32 a micro sdcard with enough space to contains all Your games, the volume name assigned to the partition doesn't matter.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-my282.zip) there is a folder called "miyoo" copy that folder as is in the FAT32 partition created above.
+Copy also the whole release zip file (leave it zipped) in the FAT32 partition created above.
 
-	https://github.com/shauninman/Moss/releases/
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown.
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
-Copy "MinUI.zip" (without unzipping) to the root of the SD card that goes into the right slot (labeled TFGAME) of the RGB30.
 
-TRIMUI SMART / TRIMUI SMART PRO
+# SJGAM M21:
 
-Copy the "trimui" folder and "MinUI.zip" (without unzipping) to the root of the SD card.
+Format as FAT32 (it is also supported exFAT if You like) a micro sdcard with enough space to contains all Your games, the volume name assigned to the partition doesn't matter.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-m21.zip) there is a folder called "m21" copy that folder as is in the FAT32 partition created above.
+Move (or copy) the file m21/emulationstation to the root of the FAT32 partition created above.
+Copy also the whole release zip file (leave it zipped) in the FAT32 partition created above.
 
-MIYOO MINI
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
+Once installation process is completed switch off the PWR switch to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
-Copy the "miyoo" folder and "MinUI.zip" (without unzipping) to the root of the SD card.
 
-MIYOO MINI PLUS
+# RG35XX OG (2022-2023) Single SDCard method:
 
-Copy the "miyoo354" folder and "MinUI.zip" (without unzipping) to the root of the SD card.
+Download the debloated stock ambernic image (TF1.img) from the legacy MinUI repo: https://github.com/shauninman/MinUI-Legacy-RG35XX/releases/download/stock-tf1-20230309/TF1.img.zip
+Unzip then flash TF1.img to a micro sdcard with enough space to contains all Your games, use the flasher You like. 
 
-M17
+This creates 4 partitions in the sdcard, 2 of them are visible only in Linux os while the "misc" and "ROMS" FAT32 partitions are both visible in Macos as well as Windows.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-rg35xx.zip) there is a folder called "rg35xx" that contains a file called "dmenu.bin" copy this file to the "misc" partition.
+The "ROMS" partition just created is limited to 3GB, use a partition manager to resize the partition to fill the remaining sdcard available space. 
+Copy also the whole release zip file (leave it zipped) to the "ROMS" partition.
 
-Copy the "em_ui.sh" file and "MinUI.zip" (without unzipping) to the root of the SD card.
+Put the sdcard in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
+Once installation process is completed press the PWR button to shutdown the device, remove the sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the sdcard in the device and play Your games. 
 
-RG35XX
 
-MinUI is meant to be installed over a fresh copy of the stock Anbernic firmware. You can use the stock TF1 card, reports of its poor quality are greatly exaggerated and, as long as you are using the recommended two card setup, no userdata is stored on it.
+# RG35XX OG (2022-2023) Two SDCard method:
 
-Copy "/rg35xx/dmenu.bin" (just the file) to the root of the MISC partition of the TF1 card. Copy "MinUI.zip" (without unzipping) to the root of the TF2 card.
+Download the debloated stock ambernic image (TF1.img) from the legacy MinUI repo: https://github.com/shauninman/MinUI-Legacy-RG35XX/releases/download/stock-tf1-20230309/TF1.img.zip
+Unzip then flash TF1.img to a micro sdcard (at least 8GB no need to be bigger than that), I personally use BalenaEtcher on macos, use the flasher You like. 
 
-RG35XX PLUS / H
+This creates 4 partitions in the FIRST sdcard, 2 of them are visible only in Linux os while the "misc" and "ROMS" FAT32 partitions are both visible in Macos as well as Windows.
+in the release file (i.e. MyMinUI-YYYYMMDDb-0-rg35xx.zip) there is a folder called "rg35xx" that contains a file called "dmenu.bin" copy this file to the "misc" partition.
 
-MinUI is meant to be installed over a fresh copy of the stock Anbernic firmware. You can use the stock TF1 card, reports of its poor quality are greatly exaggerated and, as long as you are using the recommended two card setup, no userdata is stored on it.
+Format the SECOND sdcard as FAT32, it is also supported exFAT if You like.
+Copy the whole release zip file (leave it zipped) to the partition of the SECOND sdcard.
 
-Copy "/rg35xxplus/dmenu.bin" (just the file) to the root of the "NO NAME" partition (FAT32 with an "anbernic" folder) of the TF1 card. Copy "MinUI.zip" (without unzipping) to the root of the TF2 card.
+Put both sdcards (sdcard flashed with TF1.img in the TF1 slot...) in the device and boot, a screen reporting "Installing MyMinUI..." is shown, after a while the device will reboot, again "Installing MyMinUI..." screen then after a while (be patient in this stage as the swap creation process takes time)
+Once installation process is completed press the PWR button to shutdown the device, remove the second sdcard and insert it in the pc, now You can fill the bios and roms folders with Your files. Put the second sdcard in the device and play Your games. 
 
-GKD PIXEL / GKD MINI
+The TF1 sdcard is used to boot MinUI while the second is used to store minui, all files are in TF2.
 
-Backup your stock SD card (not just the "ROMS" partition but the entire thing). If you like to live on the edge just create a folder named "stock" on the "ROMS" partition and copy everything into that folder.
+# Share sdcard across other devices:
 
-Copy the "gkdpixel" folder and "MinUI.zip" (without unzipping) to the root of the "ROMS" partition of the SD card. (On the GKD Mini should be TF1.)
+Well You can setup a single sdcard that can run on all 4 supported devices.
 
-Boot stock, navigate to the "APP" folder and launch "file manager". Then use the d-pad and A button to navigate to "/media/roms/gkdpixel". Highlight the "install.sh" file and press A to open a menu and select "Execute" to install MinUI.
+Only two requirements:
+
+1)  The shared sdcard must be formatted as FAT32.
+2)  In case one of the shared devices is an RG35XX OG You must use Two sdcard method.
+
+There is no specific sequence to follow, You can add a device at any time, just follow the instructions provided for each device.
+
+The devices will share bios, roms and saves folders.
+Some saved state files may work across devices (i.e. doom), but not all so don't expect support on that in case. If I'll move to a single setup file device independent I'll keep them separated per device.
+
+The pico8 native binary files must be copied under the Tools/<devicename>/splore folder for each device. 
 
 ----------------------------------------
 Updating
 
 ALL
 
-Copy "MinUI.zip" (without unzipping) to the root of the SD card containing your Roms.
+Copy "MyMinUI-YYYYMMDDb-0-<PLATFORM>.zip" (without unzipping) to the root of the SD card containing your Roms.
 
 ----------------------------------------
 Shortcuts
 
-For devices without a dedicated MENU button
 
-	RGB30: use L3 or R3 for MENU
-	M17:   use + or - for MENU
-
-RGB30 / MIYOO MINI PLUS / RG35XX (PLUS) / TRIMUI SMART PRO / GKD PIXEL
+ MIYOO MINI PLUS / RG35XX / M21
   
   Brightness: MENU + VOLUME UP
                   or VOLUME DOWN
   
-MIYOO MINI / TRIMUI SMART / M17
+MIYOO MINI 
 
   Volume: SELECT + L or R
   Brightness: START + L or R1
 
-RGB30 / MIYOO MINI (PLUS) / RG35XX (PLUS) / TRIMUI SMART PRO / GKD PIXEL
+MIYOO MINI (PLUS) / RG35XX 
   
   Sleep: POWER
   Wake: POWER
   
-TRIMUI SMART / M17
+M21
   
-  Sleep: MENU (twice)
+  Sleep: 2 mins timeout
   Wake: MENU
+  Power Off: keep pressed MENU for more than 2 secs, then when screen is dark switch off Power switch.
 
 ----------------------------------------
 Quicksave & auto-resume
 
-MinUI will create a quicksave when powering off in-game. The next time you power on the device it will automatically resume from where you left off. A quicksave is created when powering off manually or automatically after a short sleep. On devices without a POWER button (eg. the Trimui Smart or M17) press the MENU button twice to put the device to sleep before flipping the POWER switch.
+MyMinUI will create a quicksave when powering off in-game. The next time you power on the device it will automatically resume from where you left off. A quicksave is created when powering off manually or automatically after a short sleep. On devices without a POWER button (M21) press the MENU button twice to put the device to sleep before flipping the POWER switch.
 
 ----------------------------------------
 Roms
@@ -113,22 +137,46 @@ Included in this zip is a "Roms" folder containing folders for each console MinU
 
 When one or more folder share the same display name (eg. "Game Boy Advance (GBA)" and "Game Boy Advance (MGBA)") they will be combined into a single menu item containing the roms from both folders (continuing the previous example, "Game Boy Advance"). This allows opening specific roms with an alternate pak.
 
+Recommended Rom version for Arcade:
+  FBN: it requires the FinalBurn Neo - Arcade ROM Set (Full Non-Merged)
+       support hiscore.dat when placed in the Bios/FBN folder
+  MAME: it requires MAME 2003-Plus Reference Full Non-Merged Romsets
+       support hiscore.dat when placed in the Bios/MAME folder
+
 ----------------------------------------
 Bios
 
-Some emulators require or perform much better with official bios. MinUI is strictly BYOB. Place the bios for each system in a folder that matches the tag in the corresponding "Roms" folder name (eg. bios for "Sony PlayStation (PS)" roms goes in "/Bios/PS/"),
+Some emulators require or perform much better with official bios. MyMinUI is strictly BYOB. Place the bios for each system in a folder that matches the tag in the corresponding "Roms" folder name (eg. bios for "Sony PlayStation (PS)" roms goes in "/Bios/PS/"),
 
 Bios file names are case-sensitive:
 
-   FC: disksys.rom
-   GB: gb_bios.bin
+  FC:  disksys.rom
+  GB:  gb_bios.bin
   GBA: gba_bios.bin
   GBC: gbc_bios.bin
-   MD: bios_CD_E.bin
+  MD:  bios_CD_E.bin
        bios_CD_J.bin
-	   bios_CD_U.bin
-   PS: psxonpsp660.bin
-	
+	     bios_CD_U.bin
+       bios_MD.bin
+  GG:  bios.gg
+  PS:  psxonpsp660.bin
+  DOOM: prboom.wad (included in the release)
+  MGBA: gba_bios.bin
+  PCE: syscard3.pce
+  PKM: bios.min
+  SGB: sgb.bios
+  P8N: pico8.dat  (only for native Pico8)
+       pico8_dyn
+	A5200: 5200.rom
+         ATARIBAS.ROM
+  A7800: 7800 BIOS (U).rom
+  NG: neogeo.zip
+  NGCD: files below placed in a folder named neocd within the bios folder
+        000-lo.lo or ng-lo.rom
+        neocd_f.rom or neocd.bin or uni-bioscd.rom 
+
+
+
 ----------------------------------------
 Disc-based games
 
@@ -152,7 +200,7 @@ The m3u file would contain just:
   Policenauts (Japan) (Disc 1).cue
   Policenauts (Japan) (Disc 2).cue
 
-MinUI also supports chd files and official pbp files (multi-disc pbp files larger than 2GB are not supported). Regardless of the multi-disc file format used, every disc of the same game share the same memory card and save state slots.
+MyMinUI also supports chd files and official pbp files (recommended). Regardless of the multi-disc file format used, every disc of the same game share the same memory card and save state slots.
 
 ----------------------------------------
 Collections
@@ -165,6 +213,18 @@ A collection is just a text file containing an ordered list of full paths to rom
   /Roms/GBA/Metroid Fusion.gba
 
 ----------------------------------------
+There are 3 working modes Standard, Simple and Fancy, to select the mode press menu then up-down to switch the current mode.
+
+Standard mode (Default)
+ 
+Same look & feel of MinUI keeping addtitional MyMinUI features.
+
+----------------------------------------
+Fancy mode
+ 
+a little bit reworked layout that allows to show boxart and saved state previews.
+
+----------------------------------------
 Simple mode
 
 Not simple enough for you (or maybe your kids)? MinUI has a simple mode that hides the Tools folder and replaces Options in the in-game menu with Reset. Perfect for handing off to littles (and olds too I guess). Just create an empty file named "enable-simple-mode" (no extension) in "/.userdata/shared/".
@@ -175,7 +235,25 @@ Advanced
 MinUI can automatically run a user-authored shell script on boot. Just place a file named "auto.sh" in "/.userdata/<DEVICE>/".
 
 ----------------------------------------
+Tools
+
+Several tools are provided:
+Files -> Dingux commander with editing mode enabled
+Input -> quick control input checker
+Clear Recent -> empty the recent list
+Splore -> starts splore the P8 native cart manager (only offline)
+Clock -> set current system Clock
+ToggleSleepMode -> change PWR button behavior from sleep to power off (Default) and viceversa
+ToggleSeekPageTriggers -> allow page scrolling by Left/Right (Default) or L2/R2
+ToggleHideState -> Hide saved state preview (Default OFF)
+ToggleHideBOXARTifState -> If state is present the BOXART below is not shown (Default OFF) 
+Convert BoxArt -> Utility to convert images in the format You like, refer to BOXART.md for details
+Retroarch -> launch retroarch (not on M21) without any games
+----------------------------------------
+
 Thanks
+
+BIG BIG Thank to ShaunInman for sharing his amazing work on MinUI from which I based MyMinUI.
 
 To eggs, for his NEON scalers, years of top-notch example code, and patience in the face of my endless questions.
 
