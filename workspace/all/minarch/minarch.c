@@ -2779,7 +2779,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 				double aspect_hr = ((double)aspect_h) / DEVICE_HEIGHT;
 				dst_w = scaled_w;
 				dst_h = scaled_h / aspect_hr;
-
+				//if (dst_h%8) dst_h -= dst_h%8;
 				dst_y = (dst_h - scaled_h) / 2;
 			}
 			else if (core_aspect<fixed_aspect) {
@@ -4526,10 +4526,16 @@ static char* getAlias(char* path, char* alias) {
 }
 
 static void Menu_loop(void) {
+
 	if (thread_video) {
-		while ((render!=0) || (rendering!=0)) {
+		int rendering2 = 1500;
+		while (((render!=0) || (rendering!=0)) && (rendering2>0)) { 
+			//LOG_info("rendering in Menu_loop render = %i - rendering = %i\n",render,rendering);system("sync");
 			usleep(1000);
-			}
+			rendering2--; //waiting a bit ensure that menu won't crash even on some cores (i.e. dosbox)
+		}
+		rendering = 0;
+		render = 0;
 	}
 //#ifdef M21
 	if (firstmenu) PLAT_clearAll();
@@ -4942,9 +4948,9 @@ static void Menu_loop(void) {
 			pthread_mutex_lock(&core_mx);
 			should_run_core = 1;
 			pthread_mutex_unlock(&core_mx);
-			pthread_mutex_lock(&flip_mx);
-			should_run_flip = 1;
-			pthread_mutex_unlock(&flip_mx);			
+			//pthread_mutex_lock(&flip_mx);
+			//should_run_flip = 1;
+			//pthread_mutex_unlock(&flip_mx);			
 		} else {
 			video_refresh_callback(renderer.src, renderer.true_w, renderer.true_h, renderer.src_p);
 		}
@@ -5225,15 +5231,14 @@ int main(int argc , char* argv[]) {
 		//if (0 == 1) {
 			pthread_mutex_lock(&core_mx);
 			pthread_cond_wait(&core_rq,&core_mx);
+			rendering = 0;
 			pthread_mutex_unlock(&core_mx);
 			//if (backbuffer) {
-				//pthread_mutex_lock(&flip_mx);
-				render = 1;
+			pthread_mutex_lock(&flip_mx);
+			render = 1;
 				//LOG_info("%05d: Start Rendering BackBuffer!\n", fps_ticks);system("sync");
-				rendering = 0;
-				pthread_cond_signal(&flip_rq);
-								
-				//pthread_mutex_unlock(&flip_mx);						
+			pthread_cond_signal(&flip_rq);
+			pthread_mutex_unlock(&flip_mx);						
 			//}
 			//core_rq = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 			
