@@ -79,7 +79,6 @@ enum {
 	SCALE_NATIVE,
 	SCALE_ASPECT,
 	SCALE_FULLSCREEN,
-	SCALE_FULLSCREEN1X,
 #ifdef CROP_OVERSCAN
 	SCALE_CROPPED,
 #endif
@@ -93,6 +92,7 @@ enum {
 
 // default frontend options
 static int screen_scaling = SCALE_ASPECT;
+static int screen_max_scale = 5; //6x
 static int screen_effect = EFFECT_NONE;
 static int allow_32bpp = 0;
 static int screen_sharpness = SHARPNESS_SOFT;
@@ -719,11 +719,19 @@ static char* scaling_labels[] = {
 	"Native",
 	"Aspect",
 	"Fullscreen",
-	"Fullscreen1X",
 #ifdef CROP_OVERSCAN
 	"Cropped",
 #endif
 	NULL
+};
+static char* max_scaling_labels[] = {
+	"1x",
+	"2x",
+	"3x",
+	"4x",
+	"5x",
+	"6x",
+	NULL,
 };
 static char* effect_labels[] = {
 	"None",
@@ -759,6 +767,7 @@ static char* max_ff_labels[] = {
 
 enum {
 	FE_OPT_SCALING,
+	FE_OPT_MAX_SCALE,
 	FE_OPT_32BPP,
 	FE_OPT_EFFECT,
 	FE_OPT_SHARPNESS,
@@ -948,6 +957,16 @@ static struct Config {
 				.values = scaling_labels,
 				.labels = scaling_labels,
 			},
+			[FE_OPT_MAX_SCALE] = {
+				.key	= "minarch_screen_max_scale",
+				.name	= "Max Upscale",
+				.desc	= "Select the maximum upscale factor.",
+				.default_value = 5, // 6x
+				.value = 5, // 6x
+				.count = 6,
+				.values = max_scaling_labels,
+				.labels = max_scaling_labels,
+			},
 			[FE_OPT_32BPP] = {
 				.key	= "minarch_allow_32bpp",
 				.name	= "Allow 32bpp",
@@ -1092,6 +1111,11 @@ static void Config_syncFrontend(char* key, int value) {
 		
 		renderer.dst_p = 0;
 		i = FE_OPT_SCALING;
+	}
+	else if (exactMatch(key,config.frontend.options[FE_OPT_MAX_SCALE].key)) {
+		screen_max_scale = value;
+		renderer.dst_p = 0;
+		i = FE_OPT_MAX_SCALE;
 	}
 	else if (exactMatch(key,config.frontend.options[FE_OPT_32BPP].key)) {
 		allow_32bpp = value;
@@ -2589,13 +2613,12 @@ static uint32_t sec_start = 0;
 
 static void selectScaler(int src_w, int src_h, int src_p) {
 	LOG_info("SelectScaler IN %d %d %d\n", src_w, src_h, src_p);
-	int max_scale = 1;
+	int max_scale = 6;
 	char scaler_type[20];
 	switch(screen_scaling) {
 		case SCALE_ASPECT: strcpy(scaler_type,"Scaler ASPECT"); break;
 		case SCALE_NATIVE: strcpy(scaler_type,"Scaler NATIVE"); break;
 		case SCALE_FULLSCREEN: strcpy(scaler_type,"Scaler FULLSCREEN"); break;
-		case SCALE_FULLSCREEN1X: strcpy(scaler_type,"Scaler FULLSCREEN1X"); break;
 		default: strcpy(scaler_type,"Scaler Unknown"); break;
 	}
 
@@ -2604,6 +2627,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	int max_yscale = 6;
 	while (max_yscale * src_h > MAX_HEIGHT) max_yscale--;
 	max_scale = MIN(max_xscale, max_yscale);
+	max_scale = MIN(max_scale, screen_max_scale+1);
 	LOG_info("MAX xscaler = %d - MAX yscaler = %d - MAX scaler = %d\n", max_xscale, max_yscale, max_scale);
 	int src_x,src_y,dst_x,dst_y,dst_w,dst_h,dst_p,scale;
 	double aspect;
@@ -2807,15 +2831,6 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	}
 
 	renderer.aspect = (scaling==SCALE_NATIVE||scaling==SCALE_CROPPED)?0:(scaling==SCALE_FULLSCREEN?-1:core.aspect_ratio);
-	if (screen_scaling == SCALE_FULLSCREEN1X) {
-		dst_w = src_w;
-		dst_h = src_h;
-		dst_p = src_p;
-		dst_x = src_x;
-		dst_y = src_y;
-		scale = 1;
-		renderer.aspect = -1; 
-	}
 	// TODO: need to sanity check scale and demands on the buffer
 	
 	// LOG_info("aspect: %ix%i (%f)\n", aspect_w,aspect_h,core.aspect_ratio);
