@@ -14,6 +14,16 @@ You can find the latest release here: https://github.com/Turro75/MyMinUI/release
 
 # New features of MyMinUI:
 
+## Release 01/12/2024
+ALL: Added DosBox-pure, TyrQuake, Atari 2600 cores
+
+Minarch: Removed Fullscreen1X, replaced by a more generic setting where it can be selected the maximum allowed upscale regardless the aspectratio, super useful for performances tuning.
+
+M21: Add core auto screen rotation feature to minarch (only m21 for now) for vertical arcade games (i.e. 1943, karate champ, etc...)
+
+Miyoo mini: revert lumon.elf to fix a drastic issue reported from user on github, thanks for the fix!
+
+
 ## Release 10/11/2024
 ALL: 
 - changed Pico8 native scripts so from now the pico8_dyn and pico8.dat must be copied under Bios/P8, in this way in case of shared sdcard You need to copy the files just once.
