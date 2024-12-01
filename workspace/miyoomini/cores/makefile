@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES+= beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo prboom puae mame2003-plus neocd
-CORES += retroarch bmp2png a5200 a7800 a2600 dosbox
+CORES += retroarch bmp2png a5200 a7800 a2600 dosbox tyrquake
 
 
 ###############################
@@ -12,6 +12,8 @@ CORES += retroarch bmp2png a5200 a7800 a2600 dosbox
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+tyrquake_REPO = https://github.com/libretro/tyrquake
+tyrquake_CORE = tyrquake_libretro.so
 
 dosbox_REPO = https://github.com/libretro/dosbox-pure.git
 dosbox_CORE = dosbox_libretro.so
