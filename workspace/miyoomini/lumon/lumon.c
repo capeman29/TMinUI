@@ -7,7 +7,7 @@
 #include <mi_common.h>
 #include <mi_disp.h>
 
-#define LUMONCFG_PATH "/mnt/SDCARD/.system/miyoomini/lumon.cfg"
+/* #define LUMONCFG_PATH "/mnt/SDCARD/.system/miyoomini/lumon.cfg"
 #define LUMONLOG_PATH "/mnt/SDCARD/.system/miyoomini/lumon.log"
 
 MI_DISP_LcdParam_t mylcdparams;
@@ -122,15 +122,15 @@ int readLumonCfg(char * filecfg){
 		return 1;
     }
 	return 0;
-}
+} */
 
 
 
 
 int main(void) {
 
-	mylog = fopen(LUMONLOG_PATH,"w");
-	if (mylog) fprintf(mylog, "Starting Lumon.elf\n");
+/* 	mylog = fopen(LUMONLOG_PATH,"w");
+	if (mylog) fprintf(mylog, "Starting Lumon.elf\n"); */
 	MI_DISP_DEV dev = 0;
 	
 	MI_DISP_PubAttr_t attrs;
@@ -143,7 +143,11 @@ int main(void) {
 	
 	MI_DISP_Enable(dev);
 	
-	MI_DISP_LcdParam_t lcdparams;
+	MI_DISP_LcdParam_t params;
+	memset(&params,0,sizeof(MI_DISP_LcdParam_t));
+	MI_DISP_GetLcdParam(dev, &params);
+
+/* 	MI_DISP_LcdParam_t lcdparams;
 	memset(&lcdparams,0,sizeof(MI_DISP_LcdParam_t));
 	MI_DISP_GetLcdParam(dev, &lcdparams);
 	memset(&mylcdparams,0,sizeof(MI_DISP_LcdParam_t));
@@ -210,18 +214,25 @@ int main(void) {
 	if (mylog) fprintf(mylog,"READ CON = %d\n", lcdparams.stCsc.u32Contrast);
 	if (mylog) fprintf(mylog,"READ SAT = %d\n", lcdparams.stCsc.u32Saturation);
 	if (mylog) fprintf(mylog,"READ HUE = %d\n", lcdparams.stCsc.u32Hue);
-	if (mylog) fprintf(mylog,"READ SHP = %d\n\n", lcdparams.u32Sharpness);
+	if (mylog) fprintf(mylog,"READ SHP = %d\n\n", lcdparams.u32Sharpness); */
 
-	if (mylog) fprintf(mylog,"NEW RED = %d\n", tempparams.u16RedColor);
+/* 	if (mylog) fprintf(mylog,"NEW RED = %d\n", tempparams.u16RedColor);
 	if (mylog) fprintf(mylog,"NEW BLU = %d\n", tempparams.u16BlueColor);
 	if (mylog) fprintf(mylog,"NEW GRN = %d\n", tempparams.u16GreenColor);
 	if (mylog) fprintf(mylog,"NEW REDOFF = %d\n", tempparams.u16RedOffset);
 	if (mylog) fprintf(mylog,"NEW BLUOFF = %d\n", tempparams.u16BlueOffset);
 	if (mylog) fprintf(mylog,"NEW GRNOFF = %d\n", tempparams.u16GreenOffset);
+		if (mylog) fclose(mylog); */
+
+	params.stCsc.u32Luma = 45;
+	params.stCsc.u32Contrast = 50;
+	params.stCsc.u32Hue = 50;
+	params.stCsc.u32Saturation = 45;
+	params.u32Sharpness = 0;
 	
+	MI_DISP_SetLcdParam(dev,&params);
+
+	while (1) pause();
 	
-	if (mylog) fclose(mylog);
-	//while (1) pause();
-	
-	// MI_DISP_Disable(dev);
+	//MI_DISP_Disable(dev);
 }

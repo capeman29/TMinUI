@@ -88,7 +88,7 @@ fi
 
 #######################################
 
-lumon.elf #& # adjust lcd luma and saturation //wait for command executed before continuing
+lumon.elf & # adjust lcd luma and saturation //wait for command executed before continuing
 # I edited it to allow adjusting screen params and color temperature
 
 if $IS_PLUS; then

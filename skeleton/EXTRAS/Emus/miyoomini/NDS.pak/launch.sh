@@ -111,9 +111,13 @@ fi
 #killall -9 keymon.elf
 sleep 0.2
 if $IS_PLUS; then
-    /customer/app/audioserver -60 &
+	/customer/app/audioserver -60 & # &> $SDCARD_PATH/audioserver.txt &
+	export LD_PRELOAD=/customer/lib/libpadsp.so
 else
-    ${SDCARD_PATH}/.system/miyoomini/bin/audioserver.mod -60 &
+	if [ -f /customer/lib/libpadsp.so ]; then
+	    LD_PRELOAD=as_preload.so audioserver.mod &
+	    export LD_PRELOAD=libpadsp.so
+	fi
 fi
 wait_for_device &
 overclock.elf $CPU_SPEED_MENU
