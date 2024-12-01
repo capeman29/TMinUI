@@ -1980,6 +1980,18 @@ static bool environment_callback(unsigned cmd, void *data) { // copied from pico
 	// LOG_info("environment_callback: %i\n", cmd);
 	
 	switch(cmd) {
+	case RETRO_ENVIRONMENT_SET_ROTATION: { // 1 wait to activate until rotation render is working
+		int *out = (int *)data;
+		if (out)
+			renderer.rotate = *out;
+			LOG_info("RETRO_ENVIRONMENT_SET_ROTATION set to %i\n", renderer.rotate);
+#ifdef M21
+		return true;
+#else
+		return false;
+#endif
+		break;
+	}
 	case RETRO_ENVIRONMENT_GET_OVERSCAN: { /* 2 */
 		bool *out = (bool *)data;
 		if (out)
@@ -2866,7 +2878,7 @@ static void selectScaler(int src_w, int src_h, int src_p) {
 	
 	// if (screen->w!=dst_w || screen->h!=dst_w || screen->pitch!=dst_p) {
 		LOG_info("SelectScaler call GFX_resize %ix%i_%i+%i-%i\n",dst_w,dst_h,dst_p,dst_x,dst_y);system("sync");
-		screen = GFX_resize(dst_w,dst_h,dst_p);
+		screen = GFX_resizeGame(dst_w,dst_h,dst_p);
 	// }
 	
 }
@@ -2929,7 +2941,7 @@ static void video_refresh_callback_main(const void *data, unsigned width, unsign
 	
 	renderer.dst = screen->pixels;
 	GFX_blitRenderer(&renderer);
-	GFX_flip(screen);
+	//GFX_flip(screen);
 	last_flip_time = SDL_GetTicks();
 }
 
@@ -4947,7 +4959,7 @@ static void Menu_loop(void) {
 	if (!quit) {
 
 		LOG_info("Menu_loop exit from menu call GFX_resize %i %i %i\n", restore_w, restore_h, restore_p);system("sync");
-		screen = GFX_resize(restore_w,restore_h,restore_p);
+		screen = GFX_resizeGame(restore_w,restore_h,restore_p);
 		GFX_setEffect(screen_effect);
 		GFX_clear(screen);
 		
@@ -5145,6 +5157,8 @@ int main(int argc , char* argv[]) {
 	backbuffer.w = MAX_WIDTH;
 	backbuffer.h = MAX_HEIGHT;
 	backbuffer.pitch = MAX_WIDTH*sizeof(uint32_t);
+
+	renderer.rotate = 0; //set default rotation to 0 deg
 #ifdef M21 //if hdmi cable is detected the audio is routed to hdmi instead of speakers, specific for SJGAM M21.
 	PLAT_getAudioOutput();
 #endif
@@ -5232,6 +5246,10 @@ int main(int argc , char* argv[]) {
 	GFX_flip(screen);
 
 	sec_start = SDL_GetTicks();
+
+	if ((renderer.rotate % 2) == 1 ) {
+		core.aspect_ratio = 1.0 / core.aspect_ratio;
+	}
 	quit = !loadgamesuccess;
 	while (!quit) {
 		GFX_startFrame();

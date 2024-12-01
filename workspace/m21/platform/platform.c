@@ -18,7 +18,7 @@
 
 
 ///////////////////////////////
-
+void Main_Flip(void);
 
 #define RAW_UP		103 //SDL_SCANCODE_UP
 #define RAW_DOWN	108 //SDL_SCANCODE_DOWN
@@ -257,6 +257,7 @@ static struct VID_Context {
 	int pitch;  //sdl bpp
 	int sharpness; //let's see if it works
 	uint16_t* pixels;
+	int rotate;
 } vid;
 
 static int device_width;
@@ -266,6 +267,8 @@ static int device_pitch;
 static int lastw=0;
 static int lasth=0;
 static int lastp=0;
+
+static int finalrotate=0;
 
 void get_fbinfo(void){
     ioctl(vid.fdfb, FBIOGET_FSCREENINFO, &vid.finfo);
@@ -348,12 +351,146 @@ int M21_SDLFB_Flip(SDL_Surface *buffer, void * fbmmap, int linewidth) {
 	return 0;	
 }
 
+int M21_SDLFB_FlipRotate180(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y;
+	if (buffer->format->BitsPerPixel == 16) {
+		//ok start conversion assuming it is RGB565		
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + (buffer->w - x) + (buffer->h - y) * linewidth) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
+			}
+		}
+	}
+/*	//TODO Handle 24bpp images
+	if (buffer->format->BitsPerPixel == 24) {
+		//ok start conversion assuming it is RGB888
+		int x, y;
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w * 3; x+=3) {
+				uint8_t pixelred = *((uint8_t *)buffer->pixels + x + y * buffer->w);
+				uint8_t pixelgreen = *((uint8_t *)buffer->pixels + (x+1) + y * buffer->w);
+				uint8_t pixelblue = *((uint8_t *)buffer->pixels + (x+2) + y * buffer->w);
+				if (x % 3 == 0)	*((uint32_t *)fbmmap + (x/3) + y * linewidth) = 
+					(uint32_t)(0xFF000000 | (pixelred << 16) | (pixelgreen << 8)  | (pixelblue & 0xFF)) ;
+			}
+		}
+	}*/
+	if (buffer->format->BitsPerPixel == 32) {
+		//ok start conversion assuming it is ABGR888
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + (buffer->w - x) + (buffer->h - y) * linewidth) = 
+					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
+			}
+		}
+	}
+	return 0;	
+}
+
+int M21_SDLFB_FlipRotate90(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y;
+	if (buffer->format->BitsPerPixel == 16) {
+		//ok start conversion assuming it is RGB565		
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + y + (buffer->w - x - 1) * linewidth) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
+			}
+		}
+	}
+/*	//TODO Handle 24bpp images
+	if (buffer->format->BitsPerPixel == 24) {
+		//ok start conversion assuming it is RGB888
+		int x, y;
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w * 3; x+=3) {
+				uint8_t pixelred = *((uint8_t *)buffer->pixels + x + y * buffer->w);
+				uint8_t pixelgreen = *((uint8_t *)buffer->pixels + (x+1) + y * buffer->w);
+				uint8_t pixelblue = *((uint8_t *)buffer->pixels + (x+2) + y * buffer->w);
+				if (x % 3 == 0)	*((uint32_t *)fbmmap + (x/3) + y * linewidth) = 
+					(uint32_t)(0xFF000000 | (pixelred << 16) | (pixelgreen << 8)  | (pixelblue & 0xFF)) ;
+			}
+		}
+	}*/
+	if (buffer->format->BitsPerPixel == 32) {
+		//ok start conversion assuming it is ABGR888
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + y + (buffer->w - x - 1) * linewidth) = 
+					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
+			}
+		}
+	}
+	return 0;	
+}
+int M21_SDLFB_FlipRotate270(SDL_Surface *buffer, void * fbmmap, int linewidth) {
+	//copy a surface to the screen and flip it
+	//it must be the same resolution, the bpp16 is then converted to 32bpp
+	//fprintf(stdout,"Buffer has %d bpp\n", buffer->format->BitsPerPixel);fflush(stdout);
+
+	//the alpha channel must be set to 0xff
+	int thispitch = buffer->pitch/buffer->format->BytesPerPixel;
+	int x, y;
+	if (buffer->format->BitsPerPixel == 16) {
+		//ok start conversion assuming it is RGB565		
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint16_t pixel = *((uint16_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + (buffer->h- y -1) + (x  * linewidth)) = (uint32_t)(0xFF000000 | ((pixel & 0xF800) << 8) | ((pixel & 0x7E0) << 5) | ((pixel & 0x1F) << 3));
+			}
+		}
+	}
+/*	//TODO Handle 24bpp images
+	if (buffer->format->BitsPerPixel == 24) {
+		//ok start conversion assuming it is RGB888
+		int x, y;
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w * 3; x+=3) {
+				uint8_t pixelred = *((uint8_t *)buffer->pixels + x + y * buffer->w);
+				uint8_t pixelgreen = *((uint8_t *)buffer->pixels + (x+1) + y * buffer->w);
+				uint8_t pixelblue = *((uint8_t *)buffer->pixels + (x+2) + y * buffer->w);
+				if (x % 3 == 0)	*((uint32_t *)fbmmap + (x/3) + y * linewidth) = 
+					(uint32_t)(0xFF000000 | (pixelred << 16) | (pixelgreen << 8)  | (pixelblue & 0xFF)) ;
+			}
+		}
+	}*/
+	if (buffer->format->BitsPerPixel == 32) {
+		//ok start conversion assuming it is ABGR888
+		for (y = 0; y < buffer->h; y++) {
+			for (x = 0; x < buffer->w; x++) {
+				uint32_t pixel = *((uint32_t *)buffer->pixels + x + y * thispitch);
+				*((uint32_t *)fbmmap + (buffer->h- y -1) + (x  * linewidth)) = 
+					0xFF000000 | ((pixel & 0xFF0000) >> 16) | (pixel & 0xFF00)  | ((pixel & 0xFF) << 16);
+			}
+		}
+	}
+	return 0;	
+}
+
+
 SDL_Surface* PLAT_initVideo(void) {
 	
 	vid.fdfb = open("/dev/fb0", O_RDWR);
 	int w = FIXED_WIDTH;
 	int h = FIXED_HEIGHT;
 	int p = FIXED_PITCH;
+	vid.rotate = 0;
+	finalrotate = vid.rotate;
 
 	get_fbinfo();
     vid.vinfo.xres=FIXED_WIDTH;
@@ -426,22 +563,29 @@ void PLAT_setVsync(int vsync) {
 
 
 //static int hard_scale = 4; // TODO: base src size, eg. 160x144 can be 4
-static void resizeVideo(int w, int h, int p) {
-	//if (w==vid.width && h==vid.height && p==vid.pitch) return;
-	
+static void resizeVideo(int w, int h, int p, int game) {
+	if (w==vid.width && h==vid.height && p==vid.pitch) return;
+	int targetw = w;
+	int targeth = h;
+	if (game == 1){  //check final rotation only if in game
+		if (finalrotate % 2 == 1) {
+		targetw = h;
+		targeth = w;
+		}
+	}
 	// TODO: minarch disables crisp (and nn upscale before linear downscale) when native
-	if (w < 0) w = w* -1;
-	if (h < 0) h = h* -1;
+	if (targetw < 0) targetw = targetw* -1;
+	if (targeth < 0) targeth = targeth* -1;
 	
 	if (vid.screen) {
 		SDL_FreeSurface(vid.screen);
 	}
 	
 	get_fbinfo();
-    vid.vinfo.xres=w;
-    vid.vinfo.yres=h;
+    vid.vinfo.xres=targetw;
+    vid.vinfo.yres=targeth;
 	
-	vid.vinfo.yres_virtual=h;
+	vid.vinfo.yres_virtual=targeth;
 	vid.vinfo.xres_virtual=vid.vinfo.xres;
 	vid.vinfo.bits_per_pixel=32;
     set_fbinfo();
@@ -463,10 +607,14 @@ static int next_effect = EFFECT_NONE;
 static int effect_type = EFFECT_NONE;
 
 SDL_Surface* PLAT_resizeVideo(int w, int h, int p) {
-	resizeVideo(w,h,p);
+	resizeVideo(w,h,p,0);
 	return vid.screen;
 }
 
+SDL_Surface* PLAT_resizeVideoGame(int w, int h, int p) {
+	resizeVideo(w,h,p,1);
+	return vid.screen;
+}
 void PLAT_setVideoScaleClip(int x, int y, int width, int height) {
 	// buh
 }
@@ -519,16 +667,58 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 		effect_type = next_effect;
 		renderer->blit = PLAT_getScaler(renderer); // refresh the scaler
 	}
+	finalrotate = (vid.rotate + renderer->rotate) % 4;
+	//vid.rotate = vid.rotate%4;
 	void* dst = renderer->dst + (renderer->dst_y * renderer->dst_p) + (renderer->dst_x * FIXED_BPP);
 	((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
+	Main_Flip();
 }
 
+void Main_Flip(void) { //this rotates only the game frames
+if (finalrotate == 0) 
+	{
+		// No Rotation
+		M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+if (finalrotate== 1)
+	{
+		// 90 Rotation
+		M21_SDLFB_FlipRotate90(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+if (finalrotate == 2)
+	{
+		// 180 Rotation
+		M21_SDLFB_FlipRotate180(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+if (finalrotate == 3)
+	{
+		// 270 Rotation
+		M21_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+}	
 
-void PLAT_flip(SDL_Surface* IGNORED, int ignored) {
-	//uint32_t starttime=SDL_GetTicks();
-	M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
-	//printf("PLAT_flip: %i ms  | screen.w:%i screen.h:%i\n",SDL_GetTicks()-starttime, vid.screen->w, vid.screen->h);
-//	SDL_Flip(vid.screen);
+
+void PLAT_flip(SDL_Surface* IGNORED, int ignored) { //this rotates minarch menu + minui + tools
+	if (vid.rotate == 0) 
+	{
+		// No Rotation
+		M21_SDLFB_Flip(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+	if (vid.rotate == 1)
+	{
+		// 90 Rotation
+		M21_SDLFB_FlipRotate90(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+	if (vid.rotate == 2)
+	{
+		// 180 Rotation
+		M21_SDLFB_FlipRotate180(vid.screen, vid.fbmmap,vid.linewidth);
+	}
+	if (vid.rotate == 3)
+	{
+		// 270 Rotation
+		M21_SDLFB_FlipRotate270(vid.screen, vid.fbmmap,vid.linewidth);
+	}
 }
 
 ///////////////////////////////

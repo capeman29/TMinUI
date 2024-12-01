@@ -367,6 +367,10 @@ SDL_Surface* PLAT_resizeVideo(int w, int h, int pitch) {
 	return vid.screen;
 }
 
+SDL_Surface* PLAT_resizeVideoGame(int w, int h, int pitch) {
+	return PLAT_resizeVideo(w, h, pitch);
+}
+
 void PLAT_setVideoScaleClip(int x, int y, int width, int height) {
 	DE_setRect(vid.de_mem, x,y,width,height);
 }
@@ -430,6 +434,7 @@ void PLAT_blitRenderer(GFX_Renderer* renderer) {
 	}
 	void* dst = renderer->dst + (renderer->dst_y * renderer->dst_p) + (renderer->dst_x * FIXED_BPP);
 	((scaler_t)renderer->blit)(renderer->src,dst,renderer->src_w,renderer->src_h,renderer->src_p,renderer->dst_w,renderer->dst_h,renderer->dst_p);
+	PLAT_flip(NULL, 0);
 }
 
 void PLAT_flip(SDL_Surface* IGNORED, int sync) {

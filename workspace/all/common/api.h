@@ -114,6 +114,7 @@ typedef struct GFX_Renderer {
 	void* blit;
 	double aspect; // 0 for integer, -1 for fullscreen, otherwise aspect ratio, used for SDL2 accelerated scaling
 	int scale;
+	int rotate; // 0=0, 1=90, 2=180, 3=270
 	
 	// TODO: document this better
 	int true_w;
@@ -143,6 +144,7 @@ enum {
 
 SDL_Surface* GFX_init(int mode);
 #define GFX_resize PLAT_resizeVideo // (int w, int h, int pitch);
+#define GFX_resizeGame PLAT_resizeVideoGame // (int w, int h, int pitch);
 #define GFX_setScaleClip PLAT_setVideoScaleClip // (int x, int y, int width, int height)
 #define GFX_setNearestNeighbor PLAT_setNearestNeighbor // (int enabled)
 #define GFX_setSharpness PLAT_setSharpness // (int sharpness)
@@ -304,6 +306,7 @@ void PLAT_clearVideo(SDL_Surface* screen);
 void PLAT_clearAll(void);
 void PLAT_setVsync(int vsync);
 SDL_Surface* PLAT_resizeVideo(int w, int h, int pitch);
+SDL_Surface* PLAT_resizeVideoGame(int w, int h, int pitch);
 void PLAT_setVideoScaleClip(int x, int y, int width, int height);
 void PLAT_setNearestNeighbor(int enabled);
 void PLAT_setSharpness(int sharpness);
