@@ -1,6 +1,6 @@
 CORES = fceumm gambatte gpsp pcsx_rearmed picodrive snes9x2005_plus
 CORES += beetle-pce-fast beetle-vb fake-08 mednafen_supafaust mgba pokemini race fbneo mame2003-plus prboom puae retroarch
-CORES += neocd bmp2png a5200 a7800 a2600
+CORES += neocd bmp2png a5200 a7800 a2600 dosbox
 
 ###############################
 
@@ -11,6 +11,9 @@ CORES += neocd bmp2png a5200 a7800 a2600
 # *_FLAGS=
 # *_MAKEFILE=
 # *_BUILD_PATH=
+
+dosbox_REPO = https://github.com/libretro/dosbox-pure.git
+dosbox_CORE = dosbox_libretro.so
 
 a2600_REPO = https://github.com/libretro/stella2014-libretro
 a2600_CORE = stella2014_libretro.so
