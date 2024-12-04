@@ -222,7 +222,7 @@ static void getUniqueName(Entry* entry, char* out_name) {
 }
 
 static void Directory_index(Directory* self) {
-	int skip_index = exactMatch(FAUX_HIDDEN_PATH, self->path) || exactMatch(FAUX_RECENT_PATH, self->path) || exactMatch(FAUX_FAVORITE_PATH, self->path) || prefixMatch(COLLECTIONS_PATH, self->path); // not alphabetized
+	int skip_index = exactMatch(FAUX__PATH, self->path) || exactMatch(FAUX_RECENT_PATH, self->path) || exactMatch(FAUX_FAVORITE_PATH, self->path) || prefixMatch(COLLECTIONS_PATH, self->path); // not alphabetized
 	
 	Hash* map = NULL;
 	char map_path[256];
@@ -327,7 +327,7 @@ static Array* getDiscs(char* path);
 static Array* getEntries(char* path);
 static Array* getFavorites(void);
 
-static Array* getHiddens(void);
+static Array* gets(void);
 
 static Directory* Directory_new(char* path, int selected) {
 	char display_name[256];
@@ -345,8 +345,8 @@ static Directory* Directory_new(char* path, int selected) {
 	else if (exactMatch(path, FAUX_FAVORITE_PATH)) {
 		self->entries = getFavorites();
 	}
-	else if (exactMatch(path, FAUX_HIDDEN_PATH)) {
-		self->entries = getHiddens();
+	else if (exactMatch(path, FAUX__PATH)) {
+		self->entries = gets();
 	}
 	else if (!exactMatch(path, COLLECTIONS_PATH) && prefixMatch(COLLECTIONS_PATH, path) && suffixMatch(".txt", path)) {
 		self->entries = getCollection(path);
@@ -429,13 +429,13 @@ static int FavoriteArray_splice(Array* self, int index) {
 
 ///////////////////////////////////////
 
-typedef struct Hidden {
+typedef struct  {
 	char* path; // NOTE: this is without the SDCARD_PATH prefix!
 	int available;
-} Hidden;
+} ;
 
-static Hidden* Hidden_new(char* path) {
-	Hidden* self = malloc(sizeof(Hidden));
+static * _new(char* path) {
+	* self = malloc(sizeof());
 
 	char sd_path[256]; // only need to get emu name
 	sprintf(sd_path, "%s%s", SDCARD_PATH, path);
@@ -447,26 +447,26 @@ static Hidden* Hidden_new(char* path) {
 	self->available = hasEmu(emu_name);
 	return self;
 }
-static void Hidden_free(Hidden* self) {
+static void _free(* self) {
 	free(self->path);
 	free(self);
 }
 
-static int HiddenArray_indexOf(Array* self, char* str) {
+static int Array_indexOf(Array* self, char* str) {
 	for (int i=0; i<self->count; i++) {
-		Hidden* item = self->items[i];
+		* item = self->items[i];
 		if (exactMatch(item->path, str)) return i;
 	}
 	return -1;
 }
-static void HiddenArray_free(Array* self) {
+static void Array_free(Array* self) {
 	for (int i=0; i<self->count; i++) {
-		Hidden_free(self->items[i]);
+		_free(self->items[i]);
 	}
 	Array_free(self);
 }
 
-static int HiddenArray_splice(Array* self, int index) {
+static int Array_splice(Array* self, int index) {
 	if (index != -1) {
 		for(int i=index; i<self->count-1; i++) {
 			self->items[i] = self->items[i+1];
@@ -529,7 +529,7 @@ static Directory* top;
 static Array* stack; // DirectoryArray
 static Array* recents; // RecentArray
 static Array* favorites; // FavoriteArray
-static Array* hiddens; // HiddenArray
+static Array* s; // Array
 
 static int quit = 0;
 static int can_resume = 0;
@@ -752,22 +752,22 @@ static int hasRecents(void) {
 }
 
 
-static void saveHiddens(void) {
-	FILE* file = fopen(HIDDEN_PATH, "w");
+static void saves(void) {
+	FILE* file = fopen(_PATH, "w");
 	if (file) {
-		for (int i=0; i<hiddens->count; i++) {
-			Hidden* hidden = hiddens->items[i];
-			fputs(hidden->path, file);
+		for (int i=0; i<s->count; i++) {
+			*  = s->items[i];
+			fputs(->path, file);
 			putc('\n', file);
 		}
 		fclose(file);
 	}
 }
 
-static int hasHiddens(void) {
+static int hass(void) {
 	int has = 0;
 
-	FILE* file = fopen(HIDDEN_PATH, "r"); // newest at top
+	FILE* file = fopen(_PATH, "r"); // newest at top
 	if (file) {
 		char line[256];
 		while (fgets(line,256,file)!=NULL) {
@@ -778,42 +778,42 @@ static int hasHiddens(void) {
 			char sd_path[256];
 			sprintf(sd_path, "%s%s", SDCARD_PATH, line);
 			if (exists(sd_path)) {
-					Hidden* hidden = Hidden_new(line);
-					if (hidden->available) has += 1;
-					Array_push(hiddens, hidden);
+					*  = _new(line);
+					if (->available) has += 1;
+					Array_push(s, );
 			}
 		}
 		fclose(file);
 	}
 
-	saveHiddens();
+	saves();
 
 	//return has>0;
 	return 1; // Always show directory, even if empty.
 }
 
 
-static void toggleHidden(char* path) {
+static void toggle(char* path) {
 	//printf("TEST FAV: %s\n",path);
 	path += strlen(SDCARD_PATH); // makes paths platform agnostic
 	//printf("TEST FAV: %s\n",path);
-	int id = HiddenArray_indexOf(hiddens, path);
+	int id = Array_indexOf(s, path);
 	//printf("TEST FAV: %s / ID = %d\n",path,id);
 	if (id==-1) { // add
-		Array_unshift(hiddens, Hidden_new(path));
+		Array_unshift(s, _new(path));
 	}
 	else { // remove
-		HiddenArray_splice(hiddens, id);
+		Array_splice(s, id);
 	}
-	saveHiddens();
+	saves();
 }
 
-static int isHidden(char * parentpath, char *path) {
+static int is(char * parentpath, char *path) {
 	char fullpath[256];
 	parentpath += strlen(SDCARD_PATH); // makes paths platform agnostic
 	sprintf(fullpath,"%s/%s", parentpath, path);	
-	int id = HiddenArray_indexOf(hiddens, fullpath);
-	//printf("check if %s is hidden = %d\n", fullpath, id);
+	int id = Array_indexOf(s, fullpath);
+	//printf("check if %s is  = %d\n", fullpath, id);
 	return ++id;
 }
 
@@ -870,7 +870,7 @@ static int hasRoms(char* dir_name) {
 	// check for emu pak
 	if (!hasEmu(emu_name)) return has;
 	
-	// check for at least one non-hidden file (we're going to assume it's a rom)
+	// check for at least one non- file (we're going to assume it's a rom)
 	sprintf(rom_path, "%s/%s/", ROMS_PATH, dir_name);
 	DIR *dh = opendir(rom_path);
 	if (dh!=NULL) {
@@ -903,7 +903,7 @@ static Array* getRoot(void) {
 		Array* emus = Array_new();
 		while((dp = readdir(dh)) != NULL) {
 			if (hide(dp->d_name)) continue;
-			//if (isHidden(dp->d_name)) continue;
+			//if (is(dp->d_name)) continue;
 			if (hasRoms(dp->d_name)) {
 				strcpy(tmp, dp->d_name);
 				Array_push(emus, Entry_new(full_path, ENTRY_DIR));
@@ -999,7 +999,7 @@ static Array* getRoot(void) {
 	
 	char* tools_path = SDCARD_PATH "/Tools/" PLATFORM;
 	if (exists(tools_path) && !simple_mode) Array_push(root, Entry_new(tools_path, ENTRY_DIR));
-	if (hasHiddens()) Array_push(root, Entry_new(FAUX_HIDDEN_PATH, ENTRY_DIR));
+	if (hass()) Array_push(root, Entry_new(FAUX__PATH, ENTRY_DIR));
 	
 	return root;
 }
@@ -1022,14 +1022,14 @@ static Array* getRecents(void) {
 	return entries;
 }
 
-static Array* getHiddens(void) {
+static Array* gets(void) {
 	Array* entries = Array_new();
-	for (int i=0; i<hiddens->count; i++) {
-		Hidden* hidden = hiddens->items[i];
-		if (!hidden->available) continue;
+	for (int i=0; i<s->count; i++) {
+		*  = s->items[i];
+		if (!->available) continue;
 
 		char sd_path[256];
-		sprintf(sd_path, "%s%s", SDCARD_PATH, hidden->path);
+		sprintf(sd_path, "%s%s", SDCARD_PATH, ->path);
 		int type = suffixMatch(".pak", sd_path) ? ENTRY_PAK : ENTRY_ROM; // ???
 		Array_push(entries, Entry_new(sd_path, type));
 	}
@@ -1154,7 +1154,7 @@ static void addEntries(Array* entries, char* path) {
 		tmp = full_path + strlen(full_path);
 		while((dp = readdir(dh)) != NULL) {
 			if (hide(dp->d_name)) continue;
-			if (isHidden(path, dp->d_name)) continue;
+			if (is(path, dp->d_name)) continue;
 			strcpy(tmp, dp->d_name);
 			int is_dir = dp->d_type==DT_DIR;
 			int type;
@@ -1211,7 +1211,7 @@ static Array* getEntries(char* path){
 			// while loop so we can collate paths, see above
 			while((dp = readdir(dh)) != NULL) {
 				if (hide(dp->d_name)) continue;
-				//if (isHidden(dp->d_name)) continue;
+				//if (is(dp->d_name)) continue;
 				if (dp->d_type!=DT_DIR) continue;
 				strcpy(tmp, dp->d_name);
 			
@@ -1418,7 +1418,7 @@ static void openRom(char* path, char* last) {
 		}
 	}
 	//else
-	 //putInt(RESUME_SLOT_PATH,AUTO_RESUME_SLOT); // resume hidden default state
+	 //putInt(RESUME_SLOT_PATH,AUTO_RESUME_SLOT); // resume  default state
 	// loadslot=-1;	
 	char emu_path[256];
 	getEmuPath(emu_name, emu_path);
@@ -1569,7 +1569,7 @@ static void loadLast(void) { // call after loading root directory
 							top->start = top->end - ( MAIN_ROW_COUNT + fancy_mode );
 						}
 					}
-					if (last->count==0 && !exactMatch(entry->path, FAUX_RECENT_PATH) && !exactMatch(entry->path, FAUX_HIDDEN_PATH) && !(!exactMatch(entry->path, COLLECTIONS_PATH) && prefixMatch(COLLECTIONS_PATH, entry->path))) break; // don't show contents of auto-launch dirs
+					if (last->count==0 && !exactMatch(entry->path, FAUX_RECENT_PATH) && !exactMatch(entry->path, FAUX__PATH) && !(!exactMatch(entry->path, COLLECTIONS_PATH) && prefixMatch(COLLECTIONS_PATH, entry->path))) break; // don't show contents of auto-launch dirs
 				
 					if (entry->type==ENTRY_DIR) {
 						openDirectory(entry->path, 0);
@@ -1661,7 +1661,7 @@ static void Menu_init(void) {
 	stack = Array_new(); // array of open Directories
 	recents = Array_new();
 	favorites = Array_new();
-	hiddens = Array_new();
+	s = Array_new();
 
 	openDirectory(SDCARD_PATH, 0);
 	loadLast(); // restore state when available
@@ -1669,7 +1669,7 @@ static void Menu_init(void) {
 static void Menu_quit(void) {
 	RecentArray_free(recents);
 	FavoriteArray_free(favorites);
-	HiddenArray_free(hiddens);
+	Array_free(s);
 	DirectoryArray_free(stack);
 }
 
@@ -1962,10 +1962,10 @@ int main (int argc, char *argv[]) {
 			}*/
 			else if (total>0 && PAD_justPressed(BTN_START)) {
 				if (selected_modifier){
-					//SELECT pressed so toggle Hidden
+					//SELECT pressed so toggle 
 					Entry* myentry = top->entries->items[top->selected];
 					if (myentry->type == ENTRY_ROM) {
-						toggleHidden(myentry->path);
+						toggle(myentry->path);
 						if (selected>0) {
 							selected--;
 						} else {
@@ -2255,12 +2255,12 @@ int main (int argc, char *argv[]) {
 			
 				// buttons
 				if (show_setting && !GetHDMI()) GFX_blitHardwareHints(screen, show_setting, fancy_mode);
-				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RSM","START",selected_modifier?"HIDE":"FAV",  NULL }, 0, screen, 0, fancy_mode);
+				else if (can_resume) GFX_blitButtonGroup((char*[]){ "X","RSM","START","FAV",  NULL }, 0, screen, 0, fancy_mode);
 				else {
 					if (stack->count>1){
 						GFX_blitButtonGroup((char*[]){ 
 						BTN_SLEEP==BTN_POWER?"PWR":"MENU",
-						BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO", "START", (selected_modifier?"HIDE":"FAV"), 
+						BTN_SLEEP==BTN_POWER||simple_mode?pwractionstr:"INFO", "START", "FAV", 
 						NULL }, 0, screen, 0, fancy_mode);
 					} else { 
 						GFX_blitButtonGroup((char*[]){ 
